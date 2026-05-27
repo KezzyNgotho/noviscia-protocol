@@ -1,0 +1,36 @@
+{
+  "name": "noviscia-protocal",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "anchor build",
+    "test": "anchor test",
+    "test:integration": "tsx tests/integration.ts",
+    "deploy": "anchor deploy",
+    "deploy:devnet": "anchor deploy --provider.cluster devnet",
+    "deploy:mainnet": "anchor deploy --provider.cluster mainnet",
+    "lint": "eslint . --ext .ts,.tsx",
+    "setup:localnet": "bash scripts/setup/localnet.sh",
+    "monitor:health": "bash scripts/monitor/health.sh"
+  },
+  "dependencies": {
+    "@project-serum/anchor": "^0.29.0",
+    "@solana/web3.js": "^1.87.6",
+    "@solana/spl-token": "^0.3.9",
+    "@solana/buffer-layout": "^4.0.1",
+    "axios": "^1.6.0",
+    "redis": "^4.6.0",
+    "dotenv": "^16.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/jest": "^29.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "tsx": "^3.14.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0"
+  }
+}

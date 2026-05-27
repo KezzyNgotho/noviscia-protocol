@@ -1,0 +1,37 @@
+[workspace]
+members = [
+    "programs/escrow",
+    "programs/lending-integrator",
+    "programs/staking-manager",
+    "programs/burn-engine",
+    "programs/token-nvsc",
+    "programs/yield-distributor"
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+anchor-lang = "0.29.0"
+anchor-spl = "0.29.0"
+solana-program = "1.17.0"
+spl-token = "3.5.0"
+spl-associated-token-account = "2.2.0"
+mpl-token-metadata = "3.6.0"
+pyth-sdk-solana = "0.5.0"
+switchboard-on-demand = "0.3.0"
+jupiter-swap-api-client = "0.1.0"
+
+[[test]]
+name = "integration_tests"
+path = "tests/integration.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[profile.release-with-logs]
+inherits = "release"
+debug = true

@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: novisca-postgres
+    environment:
+      POSTGRES_DB: novisca
+      POSTGRES_USER: novisca
+      POSTGRES_PASSWORD: novisca-dev-password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novisca"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: novisca-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Server
+  api:
+    build:
+      context: ./app/api
+      dockerfile: Dockerfile
+    container_name: novisca-api
+    environment:
+      DATABASE_URL: postgresql://novisca:novisca-dev-password@postgres:5432/novisca
+      REDIS_URL: redis://redis:6379
+      SOLANA_RPC_DEVNET: https://api.devnet.solana.com
+      SOLANA_RPC_MAINNET: https://api.mainnet-beta.solana.com
+      PORT: 3001
+      CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # WebSocket Server
+  websocket:
+    build:
+      context: ./services/websocket
+      dockerfile: Dockerfile
+    container_name: novisca-websocket
+    environment:
+      WEBSOCKET_PORT: 8080
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  # Price Feed Service
+  price-feed:
+    build:
+      context: ./services/price-feed
+      dockerfile: Dockerfile
+    container_name: novisca-price-feed
+    environment:
+      SOLANA_RPC_DEVNET: https://api.devnet.solana.com
+    depends_on:
+      - websocket
+    restart: unless-stopped
+
+  # Indexer Service
+  indexer:
+    build:
+      context: ./services/indexer
+      dockerfile: Dockerfile
+    container_name: novisca-indexer
+    environment:
+      DATABASE_URL: postgresql://novisca:novisca-dev-password@postgres:5432/novisca
+      SOLANA_RPC_DEVNET: https://api.devnet.solana.com
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Keeper Bot Service
+  keeper:
+    build:
+      context: ./services/keeper
+      dockerfile: Dockerfile
+    container_name: novisca-keeper
+    environment:
+      SOLANA_RPC_DEVNET: https://api.devnet.solana.com
+      DATABASE_URL: postgresql://novisca:novisca-dev-password@postgres:5432/novisca
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Web Frontend (optional, use npm run dev instead)
+  web:
+    build:
+      context: ./app/web
+      dockerfile: Dockerfile
+    container_name: novisca-web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_WEBSOCKET_URL: ws://localhost:8080
+      NEXT_PUBLIC_SOLANA_RPC: https://api.devnet.solana.com
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: novisca-network
