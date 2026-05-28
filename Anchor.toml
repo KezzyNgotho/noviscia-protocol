@@ -1,33 +1,40 @@
 [build]
 shell = "bash"
 
+[features]
+seeds = false
+skip-lint = false
+
+[tool]
+anchor_version = "0.30.1"
+
 [provider]
 cluster = "devnet"
-wallet = "~/.config/solana/id.json"
+wallet = "/home/kezz/.config/solana/id.json"
 
 [programs.devnet]
-escrow = "EscrowProgramID11111111111111111111111111"
-lending_integrator = "LendingIntegrator11111111111111111111111"
-staking_manager = "StakingManager111111111111111111111111111"
-burn_engine = "BurnEngine1111111111111111111111111111111"
-token_nvsc = "TokenNVSC11111111111111111111111111111"
-yield_distributor = "YieldDistributor11111111111111111111111"
+escrow = "BeKePzdZ8m5pDX4nXVASvr2Smd4pPWPQisr1Mzt2v1Q9"
+lending_integrator = "9VcNGW4Tvsm7qj116ri5yyxdKoX8bYXX3ygPhyNiTw6Q"
+staking_manager = "3UDFbC6jY91dBsdkynT3RXEwHDebYb6KhXWhYJuihxu2"
+burn_engine = "6mQLf2GxfF1rmPywubTfuB7wmkdAZYFiKLFnpmMoq1Ff"
+token_nvsc = "5mxBrVn6JHw815d9J4riQyoRJxzaKNnhjunqkLtsSeuL"
+yield_distributor = "odRsRVqCMU295ZkHV2GDSpRjVR4wdfuoZZ4U2Gb2Fhq"
 
 [programs.localnet]
-escrow = "EscrowProgramID11111111111111111111111111"
-lending_integrator = "LendingIntegrator11111111111111111111111"
-staking_manager = "StakingManager111111111111111111111111111"
-burn_engine = "BurnEngine1111111111111111111111111111111"
-token_nvsc = "TokenNVSC11111111111111111111111111111"
-yield_distributor = "YieldDistributor11111111111111111111111"
+escrow = "BeKePzdZ8m5pDX4nXVASvr2Smd4pPWPQisr1Mzt2v1Q9"
+lending_integrator = "9VcNGW4Tvsm7qj116ri5yyxdKoX8bYXX3ygPhyNiTw6Q"
+staking_manager = "3UDFbC6jY91dBsdkynT3RXEwHDebYb6KhXWhYJuihxu2"
+burn_engine = "6mQLf2GxfF1rmPywubTfuB7wmkdAZYFiKLFnpmMoq1Ff"
+token_nvsc = "5mxBrVn6JHw815d9J4riQyoRJxzaKNnhjunqkLtsSeuL"
+yield_distributor = "odRsRVqCMU295ZkHV2GDSpRjVR4wdfuoZZ4U2Gb2Fhq"
 
 [programs.mainnet]
-escrow = "EscrowProgramID11111111111111111111111111"
-lending_integrator = "LendingIntegrator11111111111111111111111"
-staking_manager = "StakingManager111111111111111111111111111"
-burn_engine = "BurnEngine1111111111111111111111111111111"
-token_nvsc = "TokenNVSC11111111111111111111111111111"
-yield_distributor = "YieldDistributor11111111111111111111111"
+escrow = "BeKePzdZ8m5pDX4nXVASvr2Smd4pPWPQisr1Mzt2v1Q9"
+lending_integrator = "9VcNGW4Tvsm7qj116ri5yyxdKoX8bYXX3ygPhyNiTw6Q"
+staking_manager = "3UDFbC6jY91dBsdkynT3RXEwHDebYb6KhXWhYJuihxu2"
+burn_engine = "6mQLf2GxfF1rmPywubTfuB7wmkdAZYFiKLFnpmMoq1Ff"
+token_nvsc = "5mxBrVn6JHw815d9J4riQyoRJxzaKNnhjunqkLtsSeuL"
+yield_distributor = "odRsRVqCMU295ZkHV2GDSpRjVR4wdfuoZZ4U2Gb2Fhq"
 
 [registry]
 url = "https://api.anchor-lang.com"
@@ -38,3 +45,22 @@ test = "yarn run ts-mocha -p ./tsconfig.json ./tests/**/*.ts"
 [test]
 startup_wait = 5000
 shutdown_wait = 2000
+upgradeable = true
+
+[test.validator]
+bind_address = "0.0.0.0"
+rpc_port = 8899
+ledger_dir = "test-ledger"
+slots_per_epoch = "32"
+
+[[test.validator.clone]]
+address = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+
+[[test.validator.clone]]
+address = "SysvarRent111111111111111111111111111111111"
+
+[[test.validator.clone]]
+address = "SysvarClock111111111111111111111111111111111"
+
+[[test.validator.clone]]
+address = "PythV1XkHkR6y7fZbXK3gU5hQkQ6WJzY6ZKqXb3zY"
