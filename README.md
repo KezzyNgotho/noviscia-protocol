@@ -1,8 +1,8 @@
-# Novisca: Zero-Waste Perpetual DEX on Solana
+# Noviscia: Zero-Waste Perpetual DEX on Solana
 
 ## 🚀 Overview
 
-Novisca is a decentralized perpetual futures exchange on Solana where traders can:
+Noviscia is a decentralized perpetual futures exchange on Solana where traders can:
 - Deposit USDC and trade perpetual futures with up to 20x leverage
 - Earn yield on idle margin automatically through lending protocols (Kamino, Solend, Marginfi)
 - Recall funds atomically in <400ms for instant trading
@@ -102,7 +102,7 @@ noviscia-protocal/
 
 ```bash
 # Clone repository
-git clone https://github.com/novisca/noviscia-protocal.git
+git clone https://github.com/noviscia/noviscia-protocal.git
 cd noviscia-protocal
 
 # Install dependencies
@@ -290,6 +290,6 @@ Contributions welcome! Please follow our [CONTRIBUTING.md](./docs/CONTRIBUTING.m
 
 ## 📞 Support
 
-- Documentation: https://docs.novisca.io
-- Discord: https://discord.gg/novisca
+- Documentation: https://docs.noviscia.io
+- Discord: https://discord.gg/noviscia
 - Twitter: @NovisCAFinance
