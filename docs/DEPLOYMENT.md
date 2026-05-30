@@ -99,6 +99,20 @@ solana airdrop 10
 ./scripts/deploy/verify.sh devnet
 ```
 
+### Deployed Program IDs (devnet)
+
+The following programs were deployed to devnet during the current delivery run:
+
+- `burn_engine` = nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id
+- `escrow` = CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D
+- `lending_integrator` = Ea5TXHxsVcnKwMAcAsQkpPN88xr8ndBRpNGDkREWrbSZ
+- `staking_manager` = 4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75
+- `token_nvsc` = HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT
+- `yield_distributor` = CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw
+
+Provider wallet used for deployment: `~/.config/solana/new-id.json` (devnet)
+
+
 ### 3. Deploy Frontend
 
 ```bash

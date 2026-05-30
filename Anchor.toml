@@ -1,46 +1,41 @@
-[build]
-shell = "bash"
+[toolchain]
 
 [features]
-seeds = false
+resolution = true
 skip-lint = false
 
-[tool]
-anchor_version = "0.30.1"
+[programs.devnet]
+burn_engine = "nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id"
+escrow = "CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D"
+lending_integrator = "Ea5TXHxsVcnKwMAcAsQkpPN88xr8ndBRpNGDkREWrbSZ"
+staking_manager = "4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75"
+token_nvsc = "HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT"
+yield_distributor = "CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw"
+
+[programs.localnet]
+burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
+escrow = "23ramxxc62tPL81ziVRcQRzk5MnPZdrkeYcn2P9USfhj"
+lending_integrator = "5KQptZydqjzsctFSenwBpUh5Cr5FJaZ8AiDXhrC7y6Ht"
+staking_manager = "2QSN7YVpLXsjKzABqP6HG3NfahgcVgynhCdSjviXWWiD"
+token_nvsc = "3RXGctRZX25dcVHAdgmVuVKnPUsB1NSeQppLSn8hfaNK"
+yield_distributor = "Bg7Es69512z86iXNBnA9nqQJDyuyf6DhQqTty1rdsW7"
+
+[programs.mainnet]
+burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
+escrow = "23ramxxc62tPL81ziVRcQRzk5MnPZdrkeYcn2P9USfhj"
+lending_integrator = "5KQptZydqjzsctFSenwBpUh5Cr5FJaZ8AiDXhrC7y6Ht"
+staking_manager = "2QSN7YVpLXsjKzABqP6HG3NfahgcVgynhCdSjviXWWiD"
+token_nvsc = "3RXGctRZX25dcVHAdgmVuVKnPUsB1NSeQppLSn8hfaNK"
+yield_distributor = "Bg7Es69512z86iXNBnA9nqQJDyuyf6DhQqTty1rdsW7"
 
 [provider]
 cluster = "devnet"
-wallet = "/home/kezz/.config/solana/id.json"
-
-[programs.devnet]
-escrow = "BeKePzdZ8m5pDX4nXVASvr2Smd4pPWPQisr1Mzt2v1Q9"
-lending_integrator = "9VcNGW4Tvsm7qj116ri5yyxdKoX8bYXX3ygPhyNiTw6Q"
-staking_manager = "3UDFbC6jY91dBsdkynT3RXEwHDebYb6KhXWhYJuihxu2"
-burn_engine = "6mQLf2GxfF1rmPywubTfuB7wmkdAZYFiKLFnpmMoq1Ff"
-token_nvsc = "5mxBrVn6JHw815d9J4riQyoRJxzaKNnhjunqkLtsSeuL"
-yield_distributor = "odRsRVqCMU295ZkHV2GDSpRjVR4wdfuoZZ4U2Gb2Fhq"
-
-[programs.localnet]
-escrow = "BeKePzdZ8m5pDX4nXVASvr2Smd4pPWPQisr1Mzt2v1Q9"
-lending_integrator = "9VcNGW4Tvsm7qj116ri5yyxdKoX8bYXX3ygPhyNiTw6Q"
-staking_manager = "3UDFbC6jY91dBsdkynT3RXEwHDebYb6KhXWhYJuihxu2"
-burn_engine = "6mQLf2GxfF1rmPywubTfuB7wmkdAZYFiKLFnpmMoq1Ff"
-token_nvsc = "5mxBrVn6JHw815d9J4riQyoRJxzaKNnhjunqkLtsSeuL"
-yield_distributor = "odRsRVqCMU295ZkHV2GDSpRjVR4wdfuoZZ4U2Gb2Fhq"
-
-[programs.mainnet]
-escrow = "BeKePzdZ8m5pDX4nXVASvr2Smd4pPWPQisr1Mzt2v1Q9"
-lending_integrator = "9VcNGW4Tvsm7qj116ri5yyxdKoX8bYXX3ygPhyNiTw6Q"
-staking_manager = "3UDFbC6jY91dBsdkynT3RXEwHDebYb6KhXWhYJuihxu2"
-burn_engine = "6mQLf2GxfF1rmPywubTfuB7wmkdAZYFiKLFnpmMoq1Ff"
-token_nvsc = "5mxBrVn6JHw815d9J4riQyoRJxzaKNnhjunqkLtsSeuL"
-yield_distributor = "odRsRVqCMU295ZkHV2GDSpRjVR4wdfuoZZ4U2Gb2Fhq"
-
-[registry]
-url = "https://api.anchor-lang.com"
+wallet = "~/.config/solana/new-id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json ./tests/**/*.ts"
+
+[hooks]
 
 [test]
 startup_wait = 5000
@@ -49,8 +44,8 @@ upgradeable = true
 
 [test.validator]
 bind_address = "0.0.0.0"
+ledger = ".anchor/test-ledger"
 rpc_port = 8899
-ledger_dir = "test-ledger"
 slots_per_epoch = "32"
 
 [[test.validator.clone]]
