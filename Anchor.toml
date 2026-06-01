@@ -8,25 +8,31 @@ skip-lint = false
 burn_engine = "nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id"
 escrow = "CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D"
 lending_integrator = "Ea5TXHxsVcnKwMAcAsQkpPN88xr8ndBRpNGDkREWrbSZ"
+position_tracker = "3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY"
 staking_manager = "4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75"
 token_nvsc = "HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT"
 yield_distributor = "CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw"
+prediction_market = "3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv"
 
 [programs.localnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
 escrow = "23ramxxc62tPL81ziVRcQRzk5MnPZdrkeYcn2P9USfhj"
 lending_integrator = "5KQptZydqjzsctFSenwBpUh5Cr5FJaZ8AiDXhrC7y6Ht"
+position_tracker = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
 staking_manager = "2QSN7YVpLXsjKzABqP6HG3NfahgcVgynhCdSjviXWWiD"
 token_nvsc = "3RXGctRZX25dcVHAdgmVuVKnPUsB1NSeQppLSn8hfaNK"
 yield_distributor = "Bg7Es69512z86iXNBnA9nqQJDyuyf6DhQqTty1rdsW7"
+prediction_market = "3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv"
 
 [programs.mainnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
 escrow = "23ramxxc62tPL81ziVRcQRzk5MnPZdrkeYcn2P9USfhj"
 lending_integrator = "5KQptZydqjzsctFSenwBpUh5Cr5FJaZ8AiDXhrC7y6Ht"
+position_tracker = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
 staking_manager = "2QSN7YVpLXsjKzABqP6HG3NfahgcVgynhCdSjviXWWiD"
 token_nvsc = "3RXGctRZX25dcVHAdgmVuVKnPUsB1NSeQppLSn8hfaNK"
 yield_distributor = "Bg7Es69512z86iXNBnA9nqQJDyuyf6DhQqTty1rdsW7"
+prediction_market = "3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv"
 
 [provider]
 cluster = "devnet"

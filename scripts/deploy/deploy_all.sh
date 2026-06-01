@@ -15,6 +15,9 @@ PROGRAMS=(
   "burn-engine"
   "token-nvsc"
   "yield-distributor"
+  "position-tracker"
+  "liquidation-vault"
+  "prediction_market"
 )
 
 echo "🚀 Deploying Novisca Protocol to $NETWORK"

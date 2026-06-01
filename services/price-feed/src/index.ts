@@ -171,8 +171,8 @@ export class PriceFeedService {
   /**
    * Calculate liquidation price
    * 
-   * liquidation_price = entry_price * (1 - 1/leverage) for longs
-   * liquidation_price = entry_price * (1 + 1/leverage) for shorts
+    * liquidation_price = entry_price * (1 - 5 * maintenance_margin / leverage) for longs
+    * liquidation_price = entry_price * (1 + 5 * maintenance_margin / leverage) for shorts
    */
   calculateLiquidationPrice(
     symbol: string,
@@ -183,11 +183,13 @@ export class PriceFeedService {
     const currentPrice = this.getPrice(symbol);
     if (!currentPrice) return null;
 
-    // Simplified: liquidation at 5% maintenance margin
+    const leverageFactor = Math.max(leverage, 1);
+    const liquidationBuffer = (maintenanceMargin * 5) / leverageFactor;
+
     if (side === 'LONG') {
-      return currentPrice * (1 - maintenanceMargin);
+      return currentPrice * (1 - liquidationBuffer);
     } else {
-      return currentPrice * (1 + maintenanceMargin);
+      return currentPrice * (1 + liquidationBuffer);
     }
   }
 

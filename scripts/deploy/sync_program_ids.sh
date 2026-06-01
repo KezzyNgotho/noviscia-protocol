@@ -17,6 +17,9 @@ PROGRAMS=(
   "burn-engine"
   "token-nvsc"
   "yield-distributor"
+  "position-tracker"
+  "liquidation-vault"
+  "prediction_market"
 )
 
 declare -A PROGRAM_KEYS
@@ -72,6 +75,9 @@ programs = [
     ("burn-engine", "BURN_PROGRAM_ID"),
     ("token-nvsc", "TOKEN_NVSC_PROGRAM_ID"),
     ("yield-distributor", "YIELD_PROGRAM_ID"),
+    ("position-tracker", "POSITION_TRACKER_PROGRAM_ID"),
+    ("liquidation-vault", "LIQUIDATION_VAULT_PROGRAM_ID"),
+  ("prediction_market", "PREDICTION_MARKET_PROGRAM_ID"),
 ]
 
 program_keys = {}
@@ -98,6 +104,9 @@ env_updates = {
     "STAKING_PROGRAM_ID": program_keys["staking-manager"],
     "BURN_PROGRAM_ID": program_keys["burn-engine"],
     "YIELD_PROGRAM_ID": program_keys["yield-distributor"],
+    "POSITION_TRACKER_PROGRAM_ID": program_keys["position-tracker"],
+    "LIQUIDATION_VAULT_PROGRAM_ID": program_keys["liquidation-vault"],
+  "PREDICTION_MARKET_PROGRAM_ID": program_keys["prediction_market"],
 }
 for key, value in env_updates.items():
     env_text = re.sub(rf'^{re.escape(key)}=.*$', f'{key}={value}', env_text, flags=re.M)
@@ -111,6 +120,9 @@ lib_map = {
     "burn-engine": "programs/burn-engine/src/lib.rs",
     "token-nvsc": "programs/token-nvsc/src/lib.rs",
     "yield-distributor": "programs/yield-distributor/src/lib.rs",
+  "position-tracker": "programs/position-tracker/src/lib.rs",
+  "liquidation-vault": "programs/liquidation-vault/src/lib.rs",
+  "prediction_market": "programs/prediction_market/src/lib.rs",
 }
 
 for program, relative_path in lib_map.items():

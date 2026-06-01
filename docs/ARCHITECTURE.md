@@ -97,8 +97,9 @@ Trading Fees Accumulated
   └─> 40% routed to Burn Engine
       └─> Accumulates USDC
           └─> Threshold check ($10,000)
-              └─> Swap USDC → NVSC via Jupiter
-                  └─> Send to dead address (11111...)
+              └─> Off-chain keeper swaps USDC → NVSC
+                  └─> Deposit NVSC into burn vault
+                      └─> Burn engine sends to dead address (11111...)
                       └─> Emit burn event
 ```
 
