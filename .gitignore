@@ -4,6 +4,7 @@ node_modules/
 target/
 *.key
 *.pem
+.keys/
 .DS_Store
 .env
 dist/
