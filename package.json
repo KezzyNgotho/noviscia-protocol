@@ -11,12 +11,18 @@
     "deploy:mainnet": "anchor deploy --provider.cluster mainnet",
     "lint": "eslint . --ext .ts,.tsx",
     "setup:localnet": "bash scripts/setup/localnet.sh",
-    "monitor:health": "bash scripts/monitor/health.sh"
+    "monitor:health": "bash scripts/monitor/health.sh",
+    "sync:idls": "bash scripts/sync-idls.sh",
+    "verify:phase1": "tsx scripts/phase1_verify.ts",
+    "verify:phase2": "tsx scripts/phase2_verify.ts",
+    "verify:phase3": "tsx scripts/phase3_verify.ts",
+    "verify:phase4": "tsx scripts/phase4_verify.ts",
+    "keeper:dev": "npm run dev --prefix services/keeper"
   },
   "dependencies": {
-    "@project-serum/anchor": "^0.29.0",
-    "@solana/web3.js": "^1.87.6",
-    "@solana/spl-token": "^0.3.9",
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/web3.js": "^1.95.0",
+    "@solana/spl-token": "^0.4.0",
     "@solana/buffer-layout": "^4.0.1",
     "axios": "^1.6.0",
     "redis": "^4.6.0",
