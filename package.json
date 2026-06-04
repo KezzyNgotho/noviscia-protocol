@@ -18,7 +18,9 @@
     "verify:phase3": "tsx scripts/phase3_verify.ts",
     "verify:phase4": "tsx scripts/phase4_verify.ts",
     "verify:phase5": "tsx scripts/phase5_verify.ts",
+    "verify:e2e": "tsx scripts/e2e_verify.ts",
     "init:devnet-rewire": "tsx scripts/init-rewire-devnet.ts",
+    "init:perp-oracles": "tsx scripts/init-perp-oracles-devnet.ts",
     "check:ai-layer": "tsx scripts/check-ai-layer.ts",
     "keeper:dev": "npm run dev --prefix services/keeper"
   },
