@@ -21,9 +21,57 @@ export class NoviscaWebSocketServer extends EventEmitter {
   constructor(port: number = 8080) {
     super();
     this.port = port;
-    this.server = http.createServer();
+    this.server = http.createServer((req, res) => this.handleHttp(req, res));
     this.wss = new WebSocket.Server({ server: this.server });
     this.setupConnectionHandler();
+  }
+
+  /** Internal ingest for keeper AI liquidation alerts */
+  private handleHttp(req: http.IncomingMessage, res: http.ServerResponse): void {
+    if (req.method === 'GET' && (req.url === '/health' || req.url === '/')) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, service: 'noviscia-websocket', port: this.port }));
+      return;
+    }
+    if (req.method === 'POST' && req.url === '/internal/broadcast') {
+      let body = '';
+      req.on('data', (chunk) => {
+        body += chunk;
+      });
+      req.on('end', () => {
+        try {
+          const { channel, data } = JSON.parse(body);
+          if (!channel || !data) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'channel and data required' }));
+            return;
+          }
+          this.broadcast(channel, data);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, channel }));
+        } catch {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: 'invalid json' }));
+        }
+      });
+      return;
+    }
+    res.writeHead(404);
+    res.end();
+  }
+
+  broadcastAlert(data: {
+    type: string;
+    wallet?: string;
+    probability: number;
+    message: string;
+    severity: string;
+    timestamp: number;
+  }): void {
+    this.broadcast('alerts:global', { type: 'alert', ...data });
+    if (data.wallet) {
+      this.broadcast(`alerts:${data.wallet}`, { type: 'alert', ...data });
+    }
   }
 
   /**
@@ -215,7 +263,7 @@ export class NoviscaWebSocketServer extends EventEmitter {
   private broadcast(channel: string, data: any): void {
     const clients = this.clients.get(channel);
     if (clients && clients.size > 0) {
-      const message = JSON.stringify(data);
+      const message = JSON.stringify({ channel, ...data });
       clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(message);

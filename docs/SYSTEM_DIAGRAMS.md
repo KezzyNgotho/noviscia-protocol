@@ -99,6 +99,40 @@ flowchart LR
 - **Programs:** own custody, staking, yield, and burn logic
 - **Data:** PostgreSQL for persistence, Redis for fast live state
 
+## 5) AI Orchestration Layer (devnet — local Ollama)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                         AI ORCHESTRATION LAYER                                      │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  ┌───────────────┐ │
+│  │  AI Yield       │  │  AI Risk        │  │  AI Rebalancer  │  │  AI Trading   │ │
+│  │  Router         │  │  Predictor      │  │                 │  │  Agent API    │ │
+│  │  (30-min)       │  │  (Real-time)    │  │  (Hourly)       │  │  (NL / hint)  │ │
+│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘  └───────┬───────┘ │
+│           └────────────────────┴────────────────────┴──────────────────┘         │
+│                                      │                                              │
+│                              ┌───────┴───────┐                                      │
+│                              │  Orchestrator │  :11435                              │
+│                              │  + Ollama     │  qwen2.5:7b                          │
+│                              └───────┬───────┘                                      │
+└──────────────────────────────────────┼──────────────────────────────────────────────┘
+                                       │
+                    ┌──────────────────┴──────────────────┐
+                    │ Keeper (execute) · Web (advise/UI)   │
+                    └─────────────────────────────────────┘
+```
+
+| Agent | Cadence | Service | Orchestrator path |
+|-------|---------|---------|-------------------|
+| Yield Router | 30 min | `services/keeper` | `POST /agents/yield` |
+| Risk Predictor | Real-time (mark crank) | `services/keeper` | `POST /agents/risk` |
+| Rebalancer | Hourly | `services/ai-rebalancer` | `POST /agents/rebalance` |
+| Trading Agent | On-demand | `app/web` perps UI | `POST /agents/parse-trade`, `/agents/trade-hint` |
+
+Live status: `GET /api/ai/orchestration` (web) · `GET /orchestration/status` (orchestrator).
+
+Rules engine validates all AI JSON before keeper acts. See `docs/AI_INTEGRATION.md`.
+
 ## Notes
 
 - Keep the **web app** as the only user-facing entry point.

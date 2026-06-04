@@ -93,6 +93,34 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  ai-orchestrator:
+    build:
+      context: ./services/ai-orchestrator
+      dockerfile: Dockerfile
+    container_name: noviscia-ai-orchestrator
+    environment:
+      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: qwen2.5:7b
+      AI_PORT: 11435
+    ports:
+      - "11435:11435"
+    restart: unless-stopped
+
+  ai-rebalancer:
+    build:
+      context: ./services/ai-rebalancer
+      dockerfile: Dockerfile
+    container_name: noviscia-ai-rebalancer
+    environment:
+      AI_ORCHESTRATOR_URL: http://ai-orchestrator:11435
+      NOVISCIA_API_URL: http://api:3001
+      NOVISCIA_WEB_URL: http://web:3000
+      AI_REBALANCE_INTERVAL_MS: 3600000
+    depends_on:
+      - ai-orchestrator
+      - api
+    restart: unless-stopped
+
   # Keeper Bot Service
   keeper:
     build:
@@ -101,7 +129,16 @@ services:
     container_name: novisca-keeper
     environment:
       SOLANA_RPC_DEVNET: https://api.devnet.solana.com
-      DATABASE_URL: postgresql://novisca:novisca-dev-password@postgres:5432/novisca
+      DATABASE_URL: postgresql://novisca:noviscia-dev-password@postgres:5432/novisca
+      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: qwen2.5:7b
+      NOVISCIA_WEB_URL: http://web:3000
+      NOVISCIA_API_URL: http://api:3001
+      KEEPER_ROOT: /app
+      AI_YIELD_ROUTER_INTERVAL_MS: 1800000
+      AI_ORCHESTRATOR_URL: http://ai-orchestrator:11435
+      USE_AI_ORCHESTRATOR: "1"
+      WEBSOCKET_INGEST_URL: http://websocket:8080
     depends_on:
       postgres:
         condition: service_healthy
@@ -114,7 +151,9 @@ services:
       dockerfile: Dockerfile
     container_name: novisca-web
     environment:
+      AI_ORCHESTRATOR_URL: http://ai-orchestrator:11435
       NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_WEBSOCKET_URL: ws://localhost:8080
       NEXT_PUBLIC_WEBSOCKET_URL: ws://localhost:8080
       NEXT_PUBLIC_SOLANA_RPC: https://api.devnet.solana.com
       NEXT_PUBLIC_USDC_MINT: Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr

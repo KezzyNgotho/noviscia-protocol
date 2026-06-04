@@ -2,6 +2,7 @@
 members = [
     "programs/escrow",
     "programs/lending-integrator",
+    "programs/nv-usdc-vault",
     "programs/staking-manager",
     "programs/burn-engine",
     "programs/token-nvsc",

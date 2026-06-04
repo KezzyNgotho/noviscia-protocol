@@ -17,6 +17,9 @@
     "verify:phase2": "tsx scripts/phase2_verify.ts",
     "verify:phase3": "tsx scripts/phase3_verify.ts",
     "verify:phase4": "tsx scripts/phase4_verify.ts",
+    "verify:phase5": "tsx scripts/phase5_verify.ts",
+    "init:devnet-rewire": "tsx scripts/init-rewire-devnet.ts",
+    "check:ai-layer": "tsx scripts/check-ai-layer.ts",
     "keeper:dev": "npm run dev --prefix services/keeper"
   },
   "dependencies": {

@@ -716,6 +716,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "lending-integrator",
+ "nv-usdc-vault",
  "solana-program",
  "spl-token",
 ]
@@ -1166,6 +1167,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "nv-usdc-vault"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "burn-engine",
+ "solana-program",
+ "spl-token",
 ]
 
 [[package]]
@@ -2831,6 +2843,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "lending-integrator",
  "solana-program",
  "spl-token",
 ]
@@ -3149,6 +3162,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "burn-engine",
  "solana-program",
  "spl-token",
 ]
