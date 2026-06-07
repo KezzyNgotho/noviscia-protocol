@@ -1256,6 +1256,7 @@ dependencies = [
  "anchor-spl",
  "burn-engine",
  "escrow",
+ "liquidation-vault",
  "solana-program",
  "spl-token",
  "staking-manager",

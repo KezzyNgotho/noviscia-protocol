@@ -21,6 +21,7 @@
     "verify:e2e": "tsx scripts/e2e_verify.ts",
     "init:devnet-rewire": "tsx scripts/init-rewire-devnet.ts",
     "init:perp-oracles": "tsx scripts/init-perp-oracles-devnet.ts",
+    "init:phase1-devnet": "tsx scripts/init-phase1-devnet.ts",
     "check:ai-layer": "tsx scripts/check-ai-layer.ts",
     "keeper:dev": "npm run dev --prefix services/keeper",
     "keeper:start": "bash scripts/keeper/start-local.sh",
