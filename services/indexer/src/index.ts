@@ -1,184 +1,75 @@
+import 'dotenv/config';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { insertFill, insertOracleTick } from './db';
+import { startHttpServer } from './server';
 
-/**
- * Novisca Indexer - Listens to on-chain events and indexes them
- * 
- * Events indexed:
- * - Trades (from escrow)
- * - Position opens/closes
- * - Yield distributions
- * - Staking events
- * - Burn events
- */
-export class NoviscaIndexer {
-  private connection: Connection;
-  private rpcUrl: string;
-  private lastProcessedSlot: number = 0;
+const RPC = process.env.SOLANA_RPC_DEVNET || process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
+const PT_PID = new PublicKey(
+  process.env.NEXT_PUBLIC_POSITION_TRACKER_PROGRAM_ID || '3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY'
+);
+const PORT = parseInt(process.env.PORT || process.env.INDEXER_PORT || '8092', 10);
 
-  constructor(rpcUrl: string = process.env.SOLANA_RPC_DEVNET || '') {
-    this.rpcUrl = rpcUrl;
-    this.connection = new Connection(rpcUrl, 'confirmed');
-  }
+const POSITION_OPENED = 'Program log: Instruction: OpenPosition';
+const POSITION_CLOSED = 'Program log: Instruction: ClosePosition';
+const PARTIAL_CLOSE = 'Program log: Instruction: ClosePositionPartial';
+const LIQUIDATED = 'Program log: Instruction: Liquidate';
 
-  async start(): Promise<void> {
-    console.log('📊 Novisca Indexer started');
+async function ingestSlot(conn: Connection, slot: number) {
+  const block = await conn.getBlock(slot, {
+    maxSupportedTransactionVersion: 0,
+    transactionDetails: 'full',
+    rewards: false,
+  });
+  if (!block?.transactions) return;
 
-    // Get current slot as starting point
-    this.lastProcessedSlot = await this.connection.getSlot();
+  for (const tx of block.transactions) {
+    const sig = tx.transaction.signatures[0];
+    if (!sig || tx.meta?.err) continue;
+    const logs = tx.meta?.logMessages || [];
+    const touchesPt = logs.some((l) => l.includes(PT_PID.toBase58()));
+    if (!touchesPt) continue;
 
-    // Start listening for new blocks
-    this.connection.onSlotChange((slotInfo) => {
-      if (slotInfo.slot > this.lastProcessedSlot) {
-        this.processNewSlot(slotInfo.slot).catch(console.error);
-        this.lastProcessedSlot = slotInfo.slot;
-      }
-    });
+    let eventType = 'unknown';
+    if (logs.some((l) => l.includes(POSITION_OPENED))) eventType = 'open';
+    else if (logs.some((l) => l.includes(POSITION_CLOSED))) eventType = 'close';
+    else if (logs.some((l) => l.includes(PARTIAL_CLOSE))) eventType = 'partial_close';
+    else if (logs.some((l) => l.includes(LIQUIDATED))) eventType = 'liquidate';
+    else continue;
 
-    console.log(`✅ Listening from slot ${this.lastProcessedSlot}`);
-  }
-
-  /**
-   * Process new slot and index events
-   */
-  async processNewSlot(slot: number): Promise<void> {
-    try {
-      console.log(`📍 Processing slot ${slot}`);
-
-      const block = await this.connection.getBlock(slot);
-      if (!block || !block.transactions) return;
-
-      for (const tx of block.transactions) {
-        if (!tx.meta || !tx.transaction) continue;
-
-        // Check for errors
-        if (tx.meta.err) {
-          continue; // Skip failed transactions
-        }
-
-        // Parse transaction
-        const signature = tx.transaction.signatures[0];
-        await this.indexTransaction(signature, tx);
-      }
-    } catch (error) {
-      console.error(`❌ Error processing slot ${slot}:`, error);
-    }
-  }
-
-  /**
-   * Index a single transaction
-   */
-  async indexTransaction(signature: string, tx: any): Promise<void> {
-    try {
-      const logs = tx.meta?.logMessages || [];
-
-      // Check for program events
-      for (const log of logs) {
-        if (log.includes('Trade')) {
-          await this.indexTradeEvent(signature, log);
-        } else if (log.includes('Yield')) {
-          await this.indexYieldEvent(signature, log);
-        } else if (log.includes('Burn')) {
-          await this.indexBurnEvent(signature, log);
-        } else if (log.includes('Stake')) {
-          await this.indexStakingEvent(signature, log);
-        }
-      }
-    } catch (error) {
-      console.error(`❌ Error indexing transaction ${signature}:`, error);
-    }
-  }
-
-  /**
-   * Index trade event
-   */
-  async indexTradeEvent(signature: string, log: string): Promise<void> {
-    try {
-      console.log(`📈 Indexing trade event: ${signature}`);
-
-      // Parse event data from log
-      // Example: "Program log: Trade { wallet: ..., symbol: ..., size: ... }"
-
-      // TODO: Extract data and store in database
-      // TODO: Update TVL metrics
-      // TODO: Update user positions
-      // TODO: Broadcast via WebSocket
-    } catch (error) {
-      console.error('❌ Error indexing trade:', error);
-    }
-  }
-
-  /**
-   * Index yield event
-   */
-  async indexYieldEvent(signature: string, log: string): Promise<void> {
-    try {
-      console.log(`💰 Indexing yield event: ${signature}`);
-
-      // TODO: Extract yield data
-      // TODO: Store distribution
-      // TODO: Update user balances
-    } catch (error) {
-      console.error('❌ Error indexing yield:', error);
-    }
-  }
-
-  /**
-   * Index burn event
-   */
-  async indexBurnEvent(signature: string, log: string): Promise<void> {
-    try {
-      console.log(`🔥 Indexing burn event: ${signature}`);
-
-      // TODO: Extract burn data (amount, NVSC burned)
-      // TODO: Update total burned metrics
-      // TODO: Update supply reduction
-    } catch (error) {
-      console.error('❌ Error indexing burn:', error);
-    }
-  }
-
-  /**
-   * Index staking event
-   */
-  async indexStakingEvent(signature: string, log: string): Promise<void> {
-    try {
-      console.log(`🔒 Indexing staking event: ${signature}`);
-
-      // TODO: Extract staking data (stake/unstake/claim)
-      // TODO: Update user tier
-      // TODO: Update staking metrics
-    } catch (error) {
-      console.error('❌ Error indexing staking:', error);
-    }
-  }
-
-  /**
-   * Get indexing status
-   */
-  async getStatus(): Promise<any> {
-    try {
-      const currentSlot = await this.connection.getSlot();
-      return {
-        status: 'running',
-        lastProcessedSlot: this.lastProcessedSlot,
-        currentSlot,
-        behindSlots: currentSlot - this.lastProcessedSlot,
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        error: String(error),
-      };
-    }
+    await insertFill({
+      signature: sig,
+      wallet: 'unknown',
+      market: 'unknown',
+      side: 'unknown',
+      eventType,
+      slot,
+    }).catch(() => undefined);
   }
 }
 
-// Start indexer
-const indexer = new NoviscaIndexer();
-indexer.start().catch(console.error);
+async function main() {
+  await startHttpServer(PORT);
+  const conn = new Connection(RPC, 'confirmed');
+  let last = await conn.getSlot('confirmed');
+  console.log(`📡 indexing position-tracker ${PT_PID.toBase58()} from slot ${last}`);
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🛑 Indexer shutting down...');
-  process.exit(0);
+  const slotIntervalMs = parseInt(process.env.INDEXER_SLOT_INTERVAL_MS || '30000', 10);
+  setInterval(async () => {
+    try {
+      const current = await conn.getSlot('confirmed');
+      for (let s = last + 1; s <= current; s++) {
+        await ingestSlot(conn, s);
+      }
+      last = current;
+    } catch (e) {
+      console.warn('indexer slot loop:', (e as Error).message);
+    }
+  }, slotIntervalMs);
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
 });
+
+export { insertOracleTick };

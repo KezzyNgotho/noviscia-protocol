@@ -1,14 +1,15 @@
-FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY services/indexer ./services/indexer
+FROM node:20-alpine
 
 WORKDIR /app/services/indexer
 
+COPY services/indexer/package.json services/indexer/package-lock.json ./
 RUN npm ci
+
+COPY services/indexer/tsconfig.json ./
+COPY services/indexer/src ./src
+RUN npm run build
+
+ENV NODE_ENV=production
+EXPOSE 8092
 
 CMD ["npm", "start"]

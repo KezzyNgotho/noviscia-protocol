@@ -82,12 +82,16 @@ services:
   # Indexer Service
   indexer:
     build:
-      context: ./services/indexer
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/indexer/Dockerfile
     container_name: novisca-indexer
     environment:
       DATABASE_URL: postgresql://novisca:novisca-dev-password@postgres:5432/novisca
       SOLANA_RPC_DEVNET: https://api.devnet.solana.com
+      INDEXER_PORT: 8092
+      INDEXER_INGEST_SECRET: ee7629e75c83d902059e3befe0f4f218f16a48353cef6e3faf3f72caaaad145a
+    ports:
+      - "8092:8092"
     depends_on:
       postgres:
         condition: service_healthy
@@ -139,6 +143,7 @@ services:
       AI_ORCHESTRATOR_URL: http://ai-orchestrator:11435
       USE_AI_ORCHESTRATOR: "1"
       WEBSOCKET_INGEST_URL: http://websocket:8080
+      PERPS_INDEXER_URL: http://indexer:8092
     depends_on:
       postgres:
         condition: service_healthy
@@ -153,7 +158,6 @@ services:
     environment:
       AI_ORCHESTRATOR_URL: http://ai-orchestrator:11435
       NEXT_PUBLIC_API_URL: http://localhost:3001
-      NEXT_PUBLIC_WEBSOCKET_URL: ws://localhost:8080
       NEXT_PUBLIC_WEBSOCKET_URL: ws://localhost:8080
       NEXT_PUBLIC_SOLANA_RPC: https://api.devnet.solana.com
       NEXT_PUBLIC_USDC_MINT: Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr
