@@ -1,295 +1,270 @@
-# Noviscia: Zero-Waste Perpetual DEX on Solana
+# Noviscia Protocol
 
-## 🚀 Overview
+**Zero-waste perpetuals on Solana** — margin that earns yield between trades, with atomic recall when you open a position.
 
-Noviscia is a decentralized perpetual futures exchange on Solana where traders can:
-- Deposit USDC and trade perpetual futures with up to 20x leverage
-- Earn yield on idle margin automatically through lending protocols (Kamino, Solend, Marginfi)
-- Recall funds atomically in <400ms for instant trading
-- Stake NVSC tokens for fee discounts (10%-100%)
-- Participate in protocol governance through token burns and rewards
+| | |
+|---|---|
+| **Status** | Devnet beta live · Mainnet target Q3 2026 (post-audit) |
+| **App** | [noviscia.com](https://noviscia.com) |
+| **Whitepaper** | [`docs/WHITEPAPER.md`](docs/WHITEPAPER.md) |
+| **Contact** | [Discord](https://discord.gg/Noviscia-protocol) · keziengotho18@gmail.com |
 
-**Tagline:** "The New Science of Capital Efficiency"
+> **Disclaimer:** Devnet software for testing only. Not financial advice, an offer of securities, or a commitment to future features.
 
-## 🎨 Branding
+---
 
-- **Primary Color:** Deep Quantum Emerald (#00A86B)
-- **Background:** Matte Black (#0A0A0A)
-- **Secondary:** Dark Graphite (#1A1A1A)
-- **Typography:** Inter (sans-serif)
-- **Design:** Glassmorphism, Minimal, Architectural
+## Executive summary
 
-## 📋 System Architecture
+Noviscia is a non-custodial perpetual DEX where traders deposit stablecoin margin once, trade USDC-settled perps (up to 50× on majors), and **earn yield on capital that would otherwise sit idle**. Idle margin is deployed across multiple lending venues; when a trader opens a position, funds are **recalled atomically**—no manual withdrawals from external protocols.
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    Frontend (Next.js)                │
-│  ├─ Trading Terminal (/trade)                       │
-│  ├─ Staking Dashboard (/stake)                      │
-│  ├─ Yield Tracker (/yield)                          │
-│  ├─ Portfolio Dashboard (/dashboard)                │
-│  └─ Burn Statistics (/burn)                         │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│           Backend API (Express.js)                  │
-│  ├─ Market Data Endpoints                           │
-│  ├─ Position Management                             │
-│  ├─ User Analytics                                  │
-│  └─ WebSocket Real-time Updates                     │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│          Off-Chain Services (Node.js)               │
-│  ├─ Indexer (Parse on-chain events)                 │
-│  ├─ Keeper Bot (Auto-trigger burns)                 │
-│  ├─ Price Feed (Aggregate oracles)                  │
-│  └─ WebSocket Server (Real-time updates)            │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│      Solana Programs (Anchor Rust)                  │
-│  ├─ Escrow (User funds custody)                     │
-│  ├─ Lending Integrator (Yield farming)              │
-│  ├─ Staking Manager (Governance staking)            │
-│  ├─ Burn Engine (Token buyback)                     │
-│  ├─ Token NVSC (Governance token)                   │
-│  └─ Yield Distributor (Reward distribution)         │
-└─────────────────────────────────────────────────────┘
+A **dual-token design** separates economics from governance:
+
+| Token | Role |
+|-------|------|
+| **nvscUSDC** | Yield-bearing vault share · perp margin · no votes |
+| **NVSC** | Fixed 1B supply · staking tiers · fee share · venue governance |
+
+Revenue flows through a **deflationary flywheel**: perp fees split 40% burn / 60% stakers; lend and vault yield route 85% to users and 15% to the burn engine.
+
+---
+
+## Market opportunity
+
+Perp DEX users routinely hold **$2B+ in idle margin** across venues at any moment. That capital earns **0%** inside typical perp wallets while the same USDC could earn 5–8%+ in lending markets. The friction of manually moving funds between trade and earn products keeps capital inefficient.
+
+Noviscia collapses trade + earn into one non-custodial stack.
+
+---
+
+## Product flow
+
+```text
+Deposit USDC
+  → Mint nvscUSDC (optional vault shares at NAV)
+  → Escrow PDA (user-owned margin account)
+  → Keeper deploys idle USDC to venue pools
+  → Open perp → atomic recall of lent margin
+  → Close position → fees routed on-chain
+  → Claim yield · stake NVSC · vote venue weights
 ```
 
-## 🏗️ Project Structure
+---
+
+## What's live (devnet)
+
+| Product | Status |
+|---------|--------|
+| nvscUSDC vault (mint/redeem at NAV) | Live |
+| Escrow margin (USDC + nvscUSDC) | Live |
+| Perps — SOL, BTC, ETH, BONK, JUP, RAY, WIF, PYTH | Live |
+| Auto-lend on idle escrow USDC | Live |
+| NVSC staking & governance | Live |
+| Rewards, burn engine, yield claim | Live |
+| Limit orders (indexer + keeper) | Live |
+| Prediction markets | Devnet |
+| Jupiter swap | Mainnet |
+| PWA (installable web app) | Live |
+
+**Infrastructure:** Keeper and indexer on Railway; Next.js frontend on Vercel; all 10 programs deployed on devnet with on-chain IDLs.
+
+---
+
+## Devnet program IDs
+
+| Program | Address |
+|---------|---------|
+| position_tracker | `3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY` |
+| escrow | `CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D` |
+| lending_integrator | `Ea5TXHxsVcnKwMAcAsQkpPN88xr8ndBRpNGDkREWrbSZ` |
+| nv_usdc_vault | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` |
+| staking_manager | `4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75` |
+| burn_engine | `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` |
+| yield_distributor | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |
+| token_nvsc | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
+| liquidation_vault | `C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1` |
+| prediction_market | `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` |
+
+Verify: `anchor idl fetch <PROGRAM_ID> --provider.cluster devnet`
+
+---
+
+## Token economics
+
+### NVSC distribution (planned, pre-TGE)
+
+| Allocation | % | Notes |
+|------------|---|-------|
+| Ecosystem | 35% | 4-year emission |
+| Public sale | 25% | TGE schedule TBD |
+| Liquidity | 15% | 24-month lock |
+| Team | 15% | 12-month cliff, 24-month vest |
+| Partners | 10% | 12-month vest |
+
+### Staking tiers
+
+| Tier | Min stake | Documented fee discount |
+|------|-----------|-------------------------|
+| Bronze | 100 NVSC | −10% |
+| Silver | 1,000 NVSC | −25% |
+| Gold | 10,000 NVSC | −50% |
+| Platinum | 100,000 NVSC | −100% |
+
+On-chain perp fee discount wiring is on the mainnet roadmap; tiers are live for governance and fee-pool share.
+
+### Revenue splits
+
+| Source | User / protocol |
+|--------|-----------------|
+| Perp trading fees | 60% stakers · 40% burn engine |
+| Escrow lend yield | 85% user · 15% burn engine |
+| Vault yield | 85% NAV · 15% burn engine |
+
+Full tokenomics: [`docs/WHITEPAPER.md`](docs/WHITEPAPER.md) §4.
+
+---
+
+## Architecture
 
 ```
-noviscia-protocal/
-├── programs/
-│   ├── escrow/                 # Non-custodial user fund management
-│   ├── lending-integrator/     # Yield farming integration
-│   ├── staking-manager/        # Governance token staking
-│   ├── burn-engine/            # Protocol token buyback
-│   ├── token-nvsc/             # Native governance token
-│   └── yield-distributor/      # Yield and rewards distribution
-├── app/
-│   ├── web/                    # Next.js 14 trading frontend
-│   ├── mobile/                 # React Native mobile app
-│   └── api/                    # Express.js backend
-├── services/
-│   ├── indexer/                # Solana event indexer
-│   ├── keeper/                 # Automation bot
-│   ├── price-feed/             # Oracle aggregator
-│   └── websocket/              # Real-time updates
-├── scripts/
-│   ├── deploy/                 # Deployment automation
-│   ├── monitor/                # Health monitoring
-│   └── test/                   # Testing utilities
-├── tests/
-│   ├── e2e/                    # End-to-end tests
-│   └── integration/            # Integration tests
-└── docs/                       # Documentation
+┌─────────────────────────────────────────────────────────┐
+│  Next.js PWA (vault · perps · stake · rewards · swap)   │
+└──────────────────────────┬──────────────────────────────┘
+                             │
+┌────────────────────────────▼──────────────────────────────┐
+│  Off-chain: Keeper (marks, lend, liq, burn) · Indexer     │
+└────────────────────────────┬──────────────────────────────┘
+                             │
+┌────────────────────────────▼──────────────────────────────┐
+│  Solana programs (Anchor 0.31.1)                          │
+│  escrow · vault · lending · position-tracker · staking    │
+│  yield-distributor · burn-engine · token-nvsc · …         │
+└───────────────────────────────────────────────────────────┘
 ```
 
-## 🚀 Quick Start
+| Program | Role |
+|---------|------|
+| `position_tracker` | Perps, dual oracle, liquidation, fee routing |
+| `escrow` | Margin custody, idle lend/recall, settlement |
+| `nv_usdc_vault` | USDC ↔ nvscUSDC at NAV |
+| `lending_integrator` | Multi-venue pools, governed weights |
+| `yield_distributor` | User lend-yield claims |
+| `staking_manager` | Tiers, proposals, fee pool |
+| `burn_engine` | USDC → NVSC buyback & burn |
+| `token_nvsc` | Fixed-supply NVSC |
+| `liquidation_vault` | Insurance layer (beta) |
+| `prediction_market` | Yes/No markets |
+
+---
+
+## Roadmap
+
+| Phase | Deliverables | Target |
+|-------|--------------|--------|
+| **Phase 0 · Now** | Devnet beta, docs, community testing, keeper/indexer | Live |
+| **Phase 1** | Security audit, external Kamino/Solend CPI | Q2 2026 |
+| **Phase 2** | Mainnet soft launch, NVSC TGE, production oracles | Q3 2026 |
+| **Phase 3** | More markets, mobile, session trading agents | Q4 2026+ |
+
+Detail: [`docs/LAUNCH_ROADMAP.md`](docs/LAUNCH_ROADMAP.md).
+
+---
+
+## Security
+
+- Non-custodial PDA escrow per user
+- Dual-oracle consensus (Pyth + keeper marks)
+- Maintenance margin and keeper liquidation
+- Explicit CPI account constraints across programs
+- **Independent audit required before mainnet — not yet completed**
+
+[`docs/SECURITY.md`](docs/SECURITY.md) · [`docs/LEGAL.md`](docs/LEGAL.md)
+
+---
+
+## For developers
 
 ### Prerequisites
 
-- Node.js 18+
-- Rust 1.70+
-- Solana CLI
-- Anchor Framework
-- Docker (optional)
+Node.js 18+, Rust 1.70+, Solana CLI, Anchor 0.31.1 (`avm install 0.31.1`)
 
-### Installation
+### Setup
 
 ```bash
-# Clone repository
-git clone https://github.com/noviscia/noviscia-protocal.git
-cd noviscia-protocal
-
-# Install dependencies
 npm install
-
-# Setup environment
+cd app/web && npm install && cd ../..
 cp .env.example .env
-# Edit .env with your configuration
+cp app/web/.env.example app/web/.env.local
 
-# Install Solana programs
-cd programs/escrow && cargo install --path .
-cd ../lending-integrator && cargo install --path .
-# ... repeat for other programs
-
-# Install web app dependencies
-cd app/web && npm install
-
-# Install API dependencies
-cd app/api && npm install
+anchor build
+anchor deploy --provider.cluster devnet
+npm run idl:upload-devnet
+npm run sync:idls
 ```
 
-### Development
+### Run locally
 
 ```bash
-# Start local Solana validator
-solana-test-validator
-
-# Build programs
-npm run build
-
-# Deploy to devnet
-npm run deploy:devnet
-
-# Start web app (localhost:3000)
+# Web app → http://localhost:3000
 cd app/web && npm run dev
 
-# Start API server (localhost:3001)
-cd app/api && npm run dev
+# Keeper
+npm run keeper:dev
 
-# Start services
-cd services/indexer && npm run dev
-cd services/keeper && npm run dev
-cd services/websocket && npm run dev
-cd services/price-feed && npm run dev
+# Indexer
+npm run indexer:dev
 ```
 
-## 📚 Key Features
-
-### 1. **Zero-Waste Margin** 💚
-- Idle margin automatically lent to yield protocols
-- Recall triggered atomically on trade (<400ms)
-- 85% of yield returns to user, 15% platform fee
-
-### 2. **Perpetual Trading** 📈
-- Up to 20x leverage
-- Limit, Market, Stop Loss, Take Profit orders
-- Real-time liquidation protection
-- Cross-margin collateral
-
-### 3. **Fee Discount Staking** 🔒
-- Bronze: 100 NVSC → 10% discount
-- Silver: 1,000 NVSC → 25% discount
-- Gold: 10,000 NVSC → 50% discount
-- Platinum: 100,000 NVSC → 100% discount + priority
-
-### 4. **Protocol Token Economics** 🪙
-- 40% of trading fees: Protocol buyback → burn
-- 60% of trading fees: Distributed to stakers
-- Deflationary mechanics via continuous burn
-
-### 5. **Multi-Protocol Yield** 🌾
-- Kamino Finance (default)
-- Solend (fallback)
-- Marginfi (fallback)
-- Circuit breaker at 95% utilization
-
-## 🔐 Security Considerations
-
-### Non-Custodial Design
-- User funds in PDAs controlled only by user
-- Escrow = Pubkey Derived Address
-- Seeds: `["escrow", user_pubkey]`
-- Only user can withdraw
-
-### Liquidation Protection
-- Real-time mark price from Pyth
-- 5% maintenance margin buffer
-- Auto-liquidation at 5% remaining equity
-- Liquidation fee: 1% to keeper
-
-### Oracle Security
-- Dual oracle (Pyth + Switchboard)
-- Median price with 5% deviation threshold
-- Circuit breaker on extreme moves
-- 30-minute stale price detection
-
-## 📊 API Endpoints
-
-### Markets
-```
-GET /api/markets/{symbol}
-GET /api/markets/depth/{symbol}
-GET /api/markets/trades/{symbol}
-```
-
-### User
-```
-GET /api/user/{wallet}/positions
-GET /api/user/{wallet}/yield
-GET /api/user/{wallet}/history
-POST /api/user/{wallet}/trade
-```
-
-### Staking
-```
-GET /api/staking/total
-GET /api/staking/{wallet}
-POST /api/staking/{wallet}/stake
-POST /api/staking/{wallet}/unstake
-```
-
-### Protocol
-```
-GET /api/burn/stats
-GET /api/analytics/tvl
-GET /api/analytics/volume
-```
-
-## 🧪 Testing
+### Verification scripts
 
 ```bash
-# Run all tests
-npm test
-
-# Run with coverage
-npm run test:coverage
-
-# Run integration tests
-npm run test:integration
-
-# Run E2E tests
-npm run test:e2e
+npm run verify:phase1   # Oracle + config init
+npm run verify:phase2   # Market oracles
+npm run init:phase1-devnet
+npm run init:phase2-devnet
 ```
 
-## 📦 Deployment
+### Project layout
 
-### Devnet
-```bash
-npm run deploy:devnet
-npm run verify:devnet
+```
+noviscia-protocal/
+├── programs/           # Anchor Rust (10 programs)
+├── app/web/            # Next.js 14 frontend + API routes
+├── services/
+│   ├── keeper/         # Oracle, lend crank, liquidation, burn
+│   └── indexer/        # Limit orders, Postgres history
+├── scripts/            # Deploy, init, verify, IDL upload
+└── docs/               # Whitepaper, roadmap, security, legal
 ```
 
-### Mainnet
-```bash
-npm run deploy:mainnet
-npm run verify:mainnet
-```
+---
 
-## 🛠️ Development Commands
+## Domain
 
-```bash
-# Build smart contracts
-npm run build
+Production: **https://noviscia.com** — setup guide: [`docs/DOMAIN.md`](docs/DOMAIN.md)
 
-# Deploy programs
-npm run deploy
+## Documentation
 
-# Run tests
-npm run test
+| Doc | Path |
+|-----|------|
+| Whitepaper | [`docs/WHITEPAPER.md`](docs/WHITEPAPER.md) |
+| Custom domain | [`docs/DOMAIN.md`](docs/DOMAIN.md) |
+| User guide | [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) |
+| Launch roadmap | [`docs/LAUNCH_ROADMAP.md`](docs/LAUNCH_ROADMAP.md) |
+| Security | [`docs/SECURITY.md`](docs/SECURITY.md) |
+| Legal / risk | [`docs/LEGAL.md`](docs/LEGAL.md) |
+| Keeper HA | [`docs/KEEPER_HA.md`](docs/KEEPER_HA.md) |
 
-# Check health
-npm run monitor:health
+---
 
-# Setup localnet
-npm run setup:localnet
-```
+## Links
 
-## 📝 License
+| | |
+|---|---|
+| App | https://noviscia.com |
+| Discord | https://discord.gg/Noviscia-protocol |
+| Twitter | https://twitter.com/noviscia |
+| Email | keziengotho18@gmail.com |
 
-MIT License - See LICENSE file for details
+---
 
-## 🤝 Contributing
-
-Contributions welcome! Please follow our [CONTRIBUTING.md](./docs/CONTRIBUTING.md)
-
-## 📞 Support
-
-- Documentation: https://docs.noviscia.io
-- Discord: https://discord.gg/noviscia
-- Twitter: @NovisCAFinance
+© Noviscia Protocol
