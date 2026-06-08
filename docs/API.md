@@ -2,8 +2,8 @@
 
 ## Base URL
 
-**Production:** `https://api.novisca.io`  
-**Staging:** `https://staging-api.novisca.io`  
+**Production:** `https://noviscia.com/api` (Next.js route handlers)  
+**Staging:** Vercel preview URL or `https://staging.noviscia.com/api` (optional)  
 **Development:** `http://localhost:3001`
 
 ## Authentication
@@ -404,7 +404,7 @@ GET /api/analytics/tvl
 ### Connect to WebSocket
 
 ```
-wss://ws.novisca.io
+wss://noviscia.com (Phoenix WS via app routes where configured)
 ws://localhost:8080 (development)
 ```
 

@@ -125,7 +125,7 @@ const query = `SELECT * FROM users WHERE wallet = '${userInput}'`;
 
 ```typescript
 cors({
-  origin: ['https://novisca.io', 'https://app.novisca.io'],
+  origin: ['https://noviscia.com', 'https://www.noviscia.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -245,7 +245,7 @@ emit!(TradeEvent {
 
 ### Contact
 
-- Security Issues: security@novisca.io
+- Security Issues: security@noviscia.com
 - Report format: Include steps to reproduce, severity level
 - Response time: <24 hours for critical issues
 

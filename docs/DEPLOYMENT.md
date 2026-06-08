@@ -391,6 +391,7 @@ if (!cachedPositions) {
 ## Support
 
 For deployment assistance:
-- Documentation: https://docs.novisca.io
-- Discord: https://discord.gg/novisca
-- Email: support@novisca.io
+- App: https://noviscia.com
+- Documentation: https://noviscia.com/more/docs
+- Discord: https://discord.gg/Noviscia-protocol
+- Email: keziengotho18@gmail.com
