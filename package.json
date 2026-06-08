@@ -13,6 +13,7 @@
     "setup:localnet": "bash scripts/setup/localnet.sh",
     "monitor:health": "bash scripts/monitor/health.sh",
     "sync:idls": "bash scripts/sync-idls.sh",
+    "idl:upload-devnet": "bash scripts/upload-idl-devnet.sh",
     "verify:phase1": "tsx scripts/phase1_verify.ts",
     "verify:phase2": "tsx scripts/phase2_verify.ts",
     "verify:phase3": "tsx scripts/phase3_verify.ts",
