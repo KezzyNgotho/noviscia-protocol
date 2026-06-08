@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from 'crypto';
 import { Pool } from 'pg';
 
 const pool = new Pool({
@@ -39,6 +40,9 @@ export async function initDb(): Promise<void> {
       trigger_price BIGINT,
       filled_signature TEXT,
       expires_at TIMESTAMPTZ,
+      twap_slices INT,
+      twap_slices_filled INT DEFAULT 0,
+      twap_interval_secs INT,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
@@ -56,6 +60,35 @@ export async function initDb(): Promise<void> {
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_oracle_ticks_market_ts ON perps_oracle_ticks(market, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS copy_followers (
+      id SERIAL PRIMARY KEY,
+      follower_wallet TEXT NOT NULL,
+      leader_wallet TEXT NOT NULL,
+      copy_ratio_bps INT NOT NULL DEFAULT 10000,
+      max_notional_usdc BIGINT,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(follower_wallet, leader_wallet)
+    );
+    CREATE INDEX IF NOT EXISTS idx_copy_leader ON copy_followers(leader_wallet) WHERE active;
+
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id SERIAL PRIMARY KEY,
+      wallet TEXT NOT NULL,
+      key_hash TEXT NOT NULL UNIQUE,
+      label TEXT,
+      rate_limit_per_min INT NOT NULL DEFAULT 120,
+      revoked BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_api_keys_wallet ON api_keys(wallet);
+  `);
+
+  await pool.query(`
+    ALTER TABLE perps_orders ADD COLUMN IF NOT EXISTS twap_slices INT;
+    ALTER TABLE perps_orders ADD COLUMN IF NOT EXISTS twap_slices_filled INT DEFAULT 0;
+    ALTER TABLE perps_orders ADD COLUMN IF NOT EXISTS twap_interval_secs INT;
   `);
 }
 
@@ -76,6 +109,9 @@ export type PerpsOrderRow = {
   trigger_price: string | null;
   filled_signature: string | null;
   expires_at: Date | null;
+  twap_slices: number | null;
+  twap_slices_filled: number | null;
+  twap_interval_secs: number | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -121,11 +157,15 @@ export async function createOrder(row: {
   reduceOnly: boolean;
   closeBps?: number;
   expiresAt?: Date;
+  twapSlices?: number;
+  twapIntervalSecs?: number;
 }) {
+  const isTwap = row.orderType === 'twap' && row.twapSlices && row.twapIntervalSecs;
   await pool.query(
     `INSERT INTO perps_orders
-      (id, wallet, market, side, order_type, limit_price, collateral_usdc, leverage, reduce_only, close_bps, expires_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      (id, wallet, market, side, order_type, limit_price, collateral_usdc, leverage, reduce_only, close_bps, expires_at,
+       twap_slices, twap_interval_secs, status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
     [
       row.id,
       row.wallet,
@@ -138,6 +178,9 @@ export async function createOrder(row: {
       row.reduceOnly,
       row.closeBps ?? null,
       row.expiresAt ?? null,
+      row.twapSlices ?? null,
+      row.twapIntervalSecs ?? null,
+      isTwap ? 'twap_active' : 'pending',
     ]
   );
 }
@@ -158,6 +201,28 @@ export async function listPendingOrders(): Promise<PerpsOrderRow[]> {
   return res.rows;
 }
 
+export async function listActiveTwapOrders(): Promise<PerpsOrderRow[]> {
+  const res = await pool.query<PerpsOrderRow>(
+    `SELECT * FROM perps_orders
+     WHERE order_type = 'twap' AND status IN ('twap_active','pending')
+       AND twap_slices IS NOT NULL AND twap_slices_filled < twap_slices
+     ORDER BY created_at ASC`
+  );
+  return res.rows;
+}
+
+export async function advanceTwapSlice(id: string, sliceIndex: number): Promise<void> {
+  const res = await pool.query<PerpsOrderRow>(`SELECT * FROM perps_orders WHERE id = $1`, [id]);
+  const row = res.rows[0];
+  if (!row?.twap_slices) return;
+  const filled = Math.min(sliceIndex, row.twap_slices);
+  const status = filled >= row.twap_slices ? 'filled' : 'twap_active';
+  await pool.query(
+    `UPDATE perps_orders SET twap_slices_filled = $2, status = $3, updated_at = NOW() WHERE id = $1`,
+    [id, filled, status]
+  );
+}
+
 export async function updateOrderStatus(
   id: string,
   status: string,
@@ -173,7 +238,7 @@ export async function updateOrderStatus(
 export async function cancelOrder(id: string, wallet: string): Promise<boolean> {
   const res = await pool.query(
     `UPDATE perps_orders SET status = 'cancelled', updated_at = NOW()
-     WHERE id = $1 AND wallet = $2 AND status IN ('pending','fillable')`,
+     WHERE id = $1 AND wallet = $2 AND status IN ('pending','fillable','twap_active')`,
     [id, wallet]
   );
   return (res.rowCount ?? 0) > 0;
@@ -207,4 +272,74 @@ export async function insertOracleTick(row: {
       row.slot ?? null,
     ]
   );
+}
+
+export async function followLeader(row: {
+  followerWallet: string;
+  leaderWallet: string;
+  copyRatioBps: number;
+  maxNotionalUsdc?: bigint;
+}) {
+  await pool.query(
+    `INSERT INTO copy_followers (follower_wallet, leader_wallet, copy_ratio_bps, max_notional_usdc)
+     VALUES ($1,$2,$3,$4)
+     ON CONFLICT (follower_wallet, leader_wallet)
+     DO UPDATE SET copy_ratio_bps = $3, max_notional_usdc = $4, active = TRUE`,
+    [
+      row.followerWallet,
+      row.leaderWallet,
+      row.copyRatioBps,
+      row.maxNotionalUsdc?.toString() ?? null,
+    ]
+  );
+}
+
+export async function unfollowLeader(followerWallet: string, leaderWallet: string): Promise<boolean> {
+  const res = await pool.query(
+    `UPDATE copy_followers SET active = FALSE WHERE follower_wallet = $1 AND leader_wallet = $2`,
+    [followerWallet, leaderWallet]
+  );
+  return (res.rowCount ?? 0) > 0;
+}
+
+export async function listCopyFollowers(leaderWallet: string) {
+  const res = await pool.query(
+    `SELECT follower_wallet, copy_ratio_bps, max_notional_usdc, created_at
+     FROM copy_followers WHERE leader_wallet = $1 AND active ORDER BY created_at DESC`,
+    [leaderWallet]
+  );
+  return res.rows;
+}
+
+export async function listCopyFollowing(followerWallet: string) {
+  const res = await pool.query(
+    `SELECT leader_wallet, copy_ratio_bps, max_notional_usdc, created_at
+     FROM copy_followers WHERE follower_wallet = $1 AND active ORDER BY created_at DESC`,
+    [followerWallet]
+  );
+  return res.rows;
+}
+
+export async function createApiKey(wallet: string, label?: string): Promise<{ key: string; id: number }> {
+  const key = `nvk_${randomBytes(24).toString('hex')}`;
+  const keyHash = createHash('sha256').update(key).digest('hex');
+  const res = await pool.query<{ id: number }>(
+    `INSERT INTO api_keys (wallet, key_hash, label) VALUES ($1,$2,$3) RETURNING id`,
+    [wallet, keyHash, label ?? null]
+  );
+  return { key, id: res.rows[0].id };
+}
+
+export async function verifyApiKey(key: string): Promise<{ valid: boolean; wallet?: string; rateLimit?: number }> {
+  const keyHash = createHash('sha256').update(key).digest('hex');
+  const res = await pool.query<{ wallet: string; rate_limit_per_min: number }>(
+    `SELECT wallet, rate_limit_per_min FROM api_keys WHERE key_hash = $1 AND NOT revoked`,
+    [keyHash]
+  );
+  if (!res.rows[0]) return { valid: false };
+  return {
+    valid: true,
+    wallet: res.rows[0].wallet,
+    rateLimit: res.rows[0].rate_limit_per_min,
+  };
 }

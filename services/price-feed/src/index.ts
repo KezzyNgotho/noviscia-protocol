@@ -100,23 +100,25 @@ export class PriceFeedService {
    * Get price from Pyth
    */
   private async getPythPrice(symbol: string): Promise<{ price: number; confidence: number } | null> {
+    const feedHex: Record<string, string> = {
+      'SOL/USD': process.env.PYTH_SOL_FEED_HEX || 'ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d',
+      'BTC/USD': 'e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
+      'ETH/USD': 'ff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace',
+      'USDC/USD': 'eaa020c61cc4797128134ce9572db7b777001d538a9f38636d33b7b1d20a9302',
+    };
+    const hex = feedHex[symbol];
+    if (!hex) return null;
     try {
-      const account = this.pythAccounts[symbol];
-      if (!account) return null;
-
-      // TODO: Decode Pyth account data
-      // Pyth stores prices in a specific format with on-chain price data
-      // For now, return mock data
-      
-      // In production:
-      // const accountInfo = await this.connection.getAccountInfo(new PublicKey(account));
-      // const priceData = decodePythPrice(accountInfo?.data);
-      // return { price: priceData.price, confidence: priceData.confidence };
-
-      return {
-        price: this.getMockPrice(symbol),
-        confidence: 0.01, // 1% confidence
-      };
+      const url = `https://hermes.pyth.network/v2/updates/price/latest?ids[]=${hex}&parsed=true`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) return null;
+      const json = (await res.json()) as { parsed?: { price?: { price: string; conf: string; expo: number } }[] };
+      const p = json.parsed?.[0]?.price;
+      if (!p) return null;
+      const scale = 10 ** Math.abs(p.expo);
+      const price = Number(p.price) / scale;
+      const confidence = Number(p.conf) / scale;
+      return { price, confidence };
     } catch (error) {
       console.error(`❌ Error getting Pyth price for ${symbol}:`, error);
       return null;

@@ -14,6 +14,44 @@ const POSITION_CLOSED = 'Program log: Instruction: ClosePosition';
 const PARTIAL_CLOSE = 'Program log: Instruction: ClosePositionPartial';
 const LIQUIDATED = 'Program log: Instruction: Liquidate';
 
+const MARKET_KEYS = [
+  'SOL-PERP', 'BTC-PERP', 'ETH-PERP', 'BONK-PERP', 'WIF-PERP', 'JUP-PERP',
+  'PYTH-PERP', 'RAY-PERP', 'JTO-PERP', 'ORCA-PERP', 'POPCAT-PERP', 'MEW-PERP',
+  'RENDER-PERP', 'HNT-PERP', 'TRUMP-PERP', 'PNUT-PERP',
+];
+
+function parseFillFromTx(
+  tx: NonNullable<Awaited<ReturnType<Connection['getBlock']>>>['transactions'][number],
+  eventType: string
+): { wallet: string; market: string; side: string } {
+  const keys = tx.transaction.message.getAccountKeys().staticAccountKeys.map((k) => k.toBase58());
+  const wallet = keys[0] ?? 'unknown';
+
+  let market = 'unknown';
+  let side = 'unknown';
+
+  for (const log of tx.meta?.logMessages ?? []) {
+    for (const mk of MARKET_KEYS) {
+      if (log.includes(mk)) {
+        market = mk;
+        break;
+      }
+    }
+    if (log.includes('side: long') || log.includes('Side: Long')) side = 'long';
+    if (log.includes('side: short') || log.includes('Side: Short')) side = 'short';
+  }
+
+  if (market === 'unknown' && eventType === 'liquidate') {
+    for (const k of keys) {
+      if (k !== wallet && k.length >= 32) {
+        /* liquidator is often first signer; position owner resolved via logs in future */
+      }
+    }
+  }
+
+  return { wallet, market, side };
+}
+
 async function ingestSlot(conn: Connection, slot: number) {
   const block = await conn.getBlock(slot, {
     maxSupportedTransactionVersion: 0,
@@ -36,11 +74,13 @@ async function ingestSlot(conn: Connection, slot: number) {
     else if (logs.some((l) => l.includes(LIQUIDATED))) eventType = 'liquidate';
     else continue;
 
+    const { wallet, market, side } = parseFillFromTx(tx, eventType);
+
     await insertFill({
       signature: sig,
-      wallet: 'unknown',
-      market: 'unknown',
-      side: 'unknown',
+      wallet,
+      market,
+      side,
       eventType,
       slot,
     }).catch(() => undefined);

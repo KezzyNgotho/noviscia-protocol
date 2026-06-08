@@ -34,6 +34,15 @@ export class NoviscaWebSocketServer extends EventEmitter {
       return;
     }
     if (req.method === 'POST' && req.url === '/internal/broadcast') {
+      const ingestSecret = process.env.WS_INGEST_SECRET || process.env.WEBSOCKET_INGEST_SECRET || '';
+      if (ingestSecret) {
+        const auth = req.headers['x-ingest-secret'] || req.headers.authorization?.replace(/^Bearer\s+/i, '');
+        if (auth !== ingestSecret) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'unauthorized' }));
+          return;
+        }
+      }
       let body = '';
       req.on('data', (chunk) => {
         body += chunk;
