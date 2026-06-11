@@ -24,6 +24,7 @@
     "init:perp-oracles": "tsx scripts/init-perp-oracles-devnet.ts",
     "init:phase1-devnet": "tsx scripts/init-phase1-devnet.ts",
     "init:phase2-devnet": "tsx scripts/init-phase2-devnet.ts",
+    "migrate:pt-config-phase3-devnet": "tsx scripts/migrate-pt-config-phase3-devnet.ts",
     "configure:kamino-venue": "tsx scripts/configure-kamino-venue.ts",
     "bootstrap:kamino-devnet": "bash scripts/bootstrap-kamino-devnet.sh",
     "add:kamino-reserve-devnet": "cd app/web && npx tsx scripts/add-kamino-reserve-devnet.ts",
