@@ -125,21 +125,91 @@ Full tokenomics: [`docs/WHITEPAPER.md`](docs/WHITEPAPER.md) §4.
 
 ## Architecture
 
+End-to-end flow — deposit, idle-lend, atomic recall on trade open, settlement, and the fee/burn flywheel:
+
+<p align="center">
+  <img src="docs/assets/architecture-flow.svg" alt="Noviscia system architecture and flow diagram" width="100%" />
+</p>
+
+**Solid arrows** = funds / instruction flow · **bold arrows** = the atomic recall-and-trade and close-and-settle paths · **dotted arrows** = off-chain cranks and read-only feeds.
+
+<details>
+<summary>Mermaid source</summary>
+
+```mermaid
+flowchart TB
+    User(["User Wallet"])
+
+    subgraph FE["Frontend — Next.js PWA (Vercel)"]
+        Web["Web App<br/>Vault · Perps · Stake · Rewards · Swap"]
+    end
+
+    subgraph OFF["Off-chain Services (Railway)"]
+        Keeper["Keeper<br/>oracle marks · lend crank<br/>liquidations · burn trigger"]
+        Indexer["Indexer<br/>limit orders · fills · history"]
+    end
+
+    subgraph ONCHAIN["Solana Programs — Anchor 0.31.1"]
+        Escrow["escrow<br/>margin custody<br/>idle lend / recall"]
+        Lending["lending_integrator<br/>multi-venue pools"]
+        PT["position_tracker<br/>perps · dual oracle<br/>liquidation · fees"]
+        Vault["nv_usdc_vault<br/>USDC ⇄ nvscUSDC"]
+        Yield["yield_distributor"]
+        Staking["staking_manager"]
+        Burn["burn_engine"]
+        Token["token_nvsc"]
+        LiqVault["liquidation_vault"]
+        Pred["prediction_market"]
+    end
+
+    subgraph EXT["External"]
+        Pyth["Pyth Oracle"]
+        Venues["Kamino · Solend · Marginfi"]
+        Jup["Jupiter"]
+    end
+
+    User --> Web
+    Web <--> Jup
+    Web --> Vault
+    Web --> Escrow
+    Web --> PT
+    Web --> Staking
+    Web --> Pred
+
+    Escrow -- "idle USDC" --> Lending
+    Lending <--> Venues
+    Lending -- "yield" --> Yield
+    Yield -- "85% user / 15% burn" --> Escrow
+    Yield --> Burn
+
+    User == "open position<br/>(atomic recall + open)" ==> PT
+    PT -- "recall lent margin" --> Escrow
+    PT -- "marks" --> Pyth
+    PT == "close → fee split" ==> Staking
+    PT --> Burn
+    PT -.-> LiqVault
+
+    Burn -- "buyback & burn" --> Token
+
+    Keeper -.-> PT
+    Keeper -.-> Escrow
+    Keeper -.-> Burn
+    Keeper --> Pyth
+    Indexer --> PT
+    Indexer -.-> Web
+
+    classDef onchain fill:#0f172a,stroke:#10b981,stroke-width:1px,color:#e5e7eb
+    classDef offchain fill:#0f172a,stroke:#f59e0b,stroke-width:1px,color:#e5e7eb
+    classDef frontend fill:#0f172a,stroke:#3b82f6,stroke-width:1px,color:#e5e7eb
+    classDef external fill:#0f172a,stroke:#9ca3af,stroke-width:1px,color:#e5e7eb
+
+    class Escrow,Lending,PT,Vault,Yield,Staking,Burn,Token,LiqVault,Pred onchain
+    class Keeper,Indexer offchain
+    class Web frontend
+    class Pyth,Venues,Jup external
 ```
-┌─────────────────────────────────────────────────────────┐
-│  Next.js PWA (vault · perps · stake · rewards · swap)   │
-└──────────────────────────┬──────────────────────────────┘
-                             │
-┌────────────────────────────▼──────────────────────────────┐
-│  Off-chain: Keeper (marks, lend, liq, burn) · Indexer     │
-└────────────────────────────┬──────────────────────────────┘
-                             │
-┌────────────────────────────▼──────────────────────────────┐
-│  Solana programs (Anchor 0.31.1)                          │
-│  escrow · vault · lending · position-tracker · staking    │
-│  yield-distributor · burn-engine · token-nvsc · …         │
-└───────────────────────────────────────────────────────────┘
-```
+
+</details>
 
 | Program | Role |
 |---------|------|
@@ -157,6 +227,24 @@ Full tokenomics: [`docs/WHITEPAPER.md`](docs/WHITEPAPER.md) §4.
 ---
 
 ## Roadmap
+
+<p align="center">
+  <img src="docs/assets/roadmap-timeline.svg" alt="Noviscia launch roadmap timeline" width="100%" />
+</p>
+
+<details>
+<summary>Mermaid source</summary>
+
+```mermaid
+timeline
+    title Noviscia Launch Roadmap
+    Now - Phase 0 Devnet Beta : Vault, escrow and perps live : Auto-lend plus atomic recall : Staking, burn and yield claim : 16-market catalog, limit orders
+    Q2 2026 - Phase 1 Hardening : Independent security audit : External Kamino, Solend, Marginfi CPI : Production Pyth oracles : On-chain fee-tier discounts : Insurance vault UI
+    Q3 2026 - Phase 2 Mainnet Soft Launch : NVSC token generation event : SOL, BTC, ETH perps live : Deposit and TVL caps : Redundant keeper infrastructure
+    Q4 2026 plus - Phase 3 Scale : Expanded market catalog : Session trading agents : LST collateral tiers : Prediction markets UI : Protocol-owned liquidity
+```
+
+</details>
 
 | Phase | Deliverables | Target |
 |-------|--------------|--------|

@@ -1,0 +1,70 @@
+flowchart TB
+    User(["User Wallet"])
+
+    subgraph FE["Frontend — Next.js PWA (Vercel)"]
+        Web["Web App<br/>Vault · Perps · Stake · Rewards · Swap"]
+    end
+
+    subgraph OFF["Off-chain Services (Railway)"]
+        Keeper["Keeper<br/>oracle marks · lend crank<br/>liquidations · burn trigger"]
+        Indexer["Indexer<br/>limit orders · fills · history"]
+    end
+
+    subgraph ONCHAIN["Solana Programs — Anchor 0.31.1"]
+        Escrow["escrow<br/>margin custody<br/>idle lend / recall"]
+        Lending["lending_integrator<br/>multi-venue pools"]
+        PT["position_tracker<br/>perps · dual oracle<br/>liquidation · fees"]
+        Vault["nv_usdc_vault<br/>USDC ⇄ nvscUSDC"]
+        Yield["yield_distributor"]
+        Staking["staking_manager"]
+        Burn["burn_engine"]
+        Token["token_nvsc"]
+        LiqVault["liquidation_vault"]
+        Pred["prediction_market"]
+    end
+
+    subgraph EXT["External"]
+        Pyth["Pyth Oracle"]
+        Venues["Kamino · Solend · Marginfi"]
+        Jup["Jupiter"]
+    end
+
+    User --> Web
+    Web <--> Jup
+    Web --> Vault
+    Web --> Escrow
+    Web --> PT
+    Web --> Staking
+    Web --> Pred
+
+    Escrow -- "idle USDC" --> Lending
+    Lending <--> Venues
+    Lending -- "yield" --> Yield
+    Yield -- "85% user / 15% burn" --> Escrow
+    Yield --> Burn
+
+    User == "open position<br/>(atomic recall + open)" ==> PT
+    PT -- "recall lent margin" --> Escrow
+    PT -- "marks" --> Pyth
+    PT == "close → fee split" ==> Staking
+    PT --> Burn
+    PT -.-> LiqVault
+
+    Burn -- "buyback & burn" --> Token
+
+    Keeper -.-> PT
+    Keeper -.-> Escrow
+    Keeper -.-> Burn
+    Keeper --> Pyth
+    Indexer --> PT
+    Indexer -.-> Web
+
+    classDef onchain fill:#0f172a,stroke:#10b981,stroke-width:1px,color:#e5e7eb
+    classDef offchain fill:#0f172a,stroke:#f59e0b,stroke-width:1px,color:#e5e7eb
+    classDef frontend fill:#0f172a,stroke:#3b82f6,stroke-width:1px,color:#e5e7eb
+    classDef external fill:#0f172a,stroke:#9ca3af,stroke-width:1px,color:#e5e7eb
+
+    class Escrow,Lending,PT,Vault,Yield,Staking,Burn,Token,LiqVault,Pred onchain
+    class Keeper,Indexer offchain
+    class Web frontend
+    class Pyth,Venues,Jup external
