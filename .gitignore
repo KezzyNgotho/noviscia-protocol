@@ -17,3 +17,5 @@ build/
 *.log
 .anchor/
 test-ledger/
+solana.tar.bz2/
+
