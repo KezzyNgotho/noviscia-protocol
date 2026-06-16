@@ -26,6 +26,7 @@
     "init:phase2-devnet": "tsx scripts/init-phase2-devnet.ts",
     "migrate:pt-config-phase3-devnet": "tsx scripts/migrate-pt-config-phase3-devnet.ts",
     "migrate:pt-config-phase4-devnet": "tsx scripts/migrate-pt-config-phase4-devnet.ts",
+    "migrate:oracle-state-v2-devnet": "tsx scripts/migrate-oracle-state-v2-devnet.ts",
     "set-oracle-pyth-feeds-devnet": "tsx scripts/set-oracle-pyth-feeds-devnet.ts",
     "configure:kamino-venue": "tsx scripts/configure-kamino-venue.ts",
     "bootstrap:kamino-devnet": "bash scripts/bootstrap-kamino-devnet.sh",
