@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
     "@solana/web3.js": "^1.95.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",

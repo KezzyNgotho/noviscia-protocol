@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { insertFill, insertOracleTick } from './db';
+import { insertActivity, insertFill, insertOracleTick } from './db';
+import { parseActivityFromLogs } from './events';
 import { startHttpServer } from './server';
 
 const RPC = process.env.SOLANA_RPC_DEVNET || process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
@@ -20,11 +21,13 @@ const MARKET_KEYS = [
   'RENDER-PERP', 'HNT-PERP', 'TRUMP-PERP', 'PNUT-PERP',
 ];
 
+type BlockTx = { transaction: { signatures: string[]; message: { getAccountKeys(): { staticAccountKeys: { toBase58(): string }[] } } }; meta: { logMessages?: string[] | null; err?: unknown } | null };
+
 function parseFillFromTx(
-  tx: NonNullable<Awaited<ReturnType<Connection['getBlock']>>>['transactions'][number],
+  tx: BlockTx,
   eventType: string
 ): { wallet: string; market: string; side: string } {
-  const keys = tx.transaction.message.getAccountKeys().staticAccountKeys.map((k) => k.toBase58());
+  const keys = tx.transaction.message.getAccountKeys().staticAccountKeys.map((k: { toBase58(): string }) => k.toBase58());
   const wallet = keys[0] ?? 'unknown';
 
   let market = 'unknown';
@@ -52,6 +55,20 @@ function parseFillFromTx(
   return { wallet, market, side };
 }
 
+// Program IDs we want to scan — position-tracker plus all other protocol programs.
+const WATCHED_PIDS = new Set(
+  (process.env.WATCHED_PROGRAM_IDS || [
+    '3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY',
+    process.env.NEXT_PUBLIC_ESCROW_PROGRAM_ID,
+    process.env.NEXT_PUBLIC_STAKING_MANAGER_PROGRAM_ID,
+    process.env.NEXT_PUBLIC_LIQUIDATION_VAULT_PROGRAM_ID,
+    process.env.NEXT_PUBLIC_BURN_ENGINE_PROGRAM_ID,
+    process.env.NEXT_PUBLIC_NV_USDC_VAULT_PROGRAM_ID,
+    process.env.NEXT_PUBLIC_YIELD_DISTRIBUTOR_PROGRAM_ID,
+    process.env.NEXT_PUBLIC_LENDING_INTEGRATOR_PROGRAM_ID,
+  ].filter(Boolean) as string[])
+);
+
 async function ingestSlot(conn: Connection, slot: number) {
   const block = await conn.getBlock(slot, {
     maxSupportedTransactionVersion: 0,
@@ -64,26 +81,43 @@ async function ingestSlot(conn: Connection, slot: number) {
     const sig = tx.transaction.signatures[0];
     if (!sig || tx.meta?.err) continue;
     const logs = tx.meta?.logMessages || [];
-    const touchesPt = logs.some((l) => l.includes(PT_PID.toBase58()));
-    if (!touchesPt) continue;
 
-    let eventType = 'unknown';
-    if (logs.some((l) => l.includes(POSITION_OPENED))) eventType = 'open';
-    else if (logs.some((l) => l.includes(POSITION_CLOSED))) eventType = 'close';
-    else if (logs.some((l) => l.includes(PARTIAL_CLOSE))) eventType = 'partial_close';
-    else if (logs.some((l) => l.includes(LIQUIDATED))) eventType = 'liquidate';
-    else continue;
+    const touchesProtocol = logs.some((l) => {
+      for (const pid of WATCHED_PIDS) if (l.includes(pid)) return true;
+      return false;
+    });
+    if (!touchesProtocol) continue;
 
-    const { wallet, market, side } = parseFillFromTx(tx, eventType);
+    // ── Perps fills (existing path, kept for backwards-compat) ────────────────
+    if (logs.some((l) => l.includes(PT_PID.toBase58()))) {
+      let fillType = '';
+      if (logs.some((l) => l.includes(POSITION_OPENED))) fillType = 'open';
+      else if (logs.some((l) => l.includes(POSITION_CLOSED))) fillType = 'close';
+      else if (logs.some((l) => l.includes(PARTIAL_CLOSE))) fillType = 'partial_close';
+      else if (logs.some((l) => l.includes(LIQUIDATED))) fillType = 'liquidate';
 
-    await insertFill({
-      signature: sig,
-      wallet,
-      market,
-      side,
-      eventType,
-      slot,
-    }).catch(() => undefined);
+      if (fillType) {
+        const { wallet, market, side } = parseFillFromTx(tx, fillType);
+        await insertFill({ signature: sig, wallet, market, side, eventType: fillType, slot }).catch(() => undefined);
+      }
+    }
+
+    // ── Unified activity log: parse all Anchor events ─────────────────────────
+    const events = parseActivityFromLogs(logs);
+    for (const ev of events) {
+      if (!ev.wallet) continue; // skip protocol-level events with no user wallet
+      await insertActivity({
+        signature: sig,
+        wallet: ev.wallet,
+        program: ev.program,
+        eventType: ev.eventType,
+        market: ev.market ?? undefined,
+        amountUsdc: ev.amountUsdc ?? undefined,
+        pnlUsdc: ev.pnlUsdc ?? undefined,
+        slot,
+        metadata: ev.metadata,
+      }).catch(() => undefined);
+    }
   }
 }
 
@@ -91,7 +125,7 @@ async function main() {
   await startHttpServer(PORT);
   const conn = new Connection(RPC, 'confirmed');
   let last = await conn.getSlot('confirmed');
-  console.log(`📡 indexing position-tracker ${PT_PID.toBase58()} from slot ${last}`);
+  console.log(`📡 indexing ${WATCHED_PIDS.size} programs from slot ${last}`);
 
   const slotIntervalMs = parseInt(process.env.INDEXER_SLOT_INTERVAL_MS || '30000', 10);
   setInterval(async () => {

@@ -90,6 +90,26 @@ export async function initDb(): Promise<void> {
     ALTER TABLE perps_orders ADD COLUMN IF NOT EXISTS twap_slices_filled INT DEFAULT 0;
     ALTER TABLE perps_orders ADD COLUMN IF NOT EXISTS twap_interval_secs INT;
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_activity (
+      id BIGSERIAL PRIMARY KEY,
+      signature TEXT NOT NULL,
+      wallet TEXT NOT NULL,
+      program TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      market TEXT,
+      amount_usdc BIGINT,
+      pnl_usdc BIGINT,
+      slot BIGINT,
+      metadata JSONB,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE (signature, event_type)
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_activity_wallet ON user_activity(wallet, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_user_activity_program ON user_activity(program, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_user_activity_type ON user_activity(event_type, created_at DESC);
+  `);
 }
 
 export { pool };
@@ -248,6 +268,70 @@ export async function listFills(wallet: string, limit = 50) {
   const res = await pool.query(
     `SELECT * FROM perps_fills WHERE wallet = $1 ORDER BY created_at DESC LIMIT $2`,
     [wallet, limit]
+  );
+  return res.rows;
+}
+
+// ── User activity log ──────────────────────────────────────────────────────────
+
+export type ActivityRow = {
+  id: string;
+  signature: string;
+  wallet: string;
+  program: string;
+  event_type: string;
+  market: string | null;
+  amount_usdc: string | null;
+  pnl_usdc: string | null;
+  slot: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: Date;
+};
+
+export async function insertActivity(row: {
+  signature: string;
+  wallet: string;
+  program: string;
+  eventType: string;
+  market?: string;
+  amountUsdc?: bigint;
+  pnlUsdc?: bigint;
+  slot?: number;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  await pool.query(
+    `INSERT INTO user_activity
+       (signature, wallet, program, event_type, market, amount_usdc, pnl_usdc, slot, metadata)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+     ON CONFLICT (signature, event_type) DO NOTHING`,
+    [
+      row.signature,
+      row.wallet,
+      row.program,
+      row.eventType,
+      row.market ?? null,
+      row.amountUsdc != null ? row.amountUsdc.toString() : null,
+      row.pnlUsdc != null ? row.pnlUsdc.toString() : null,
+      row.slot ?? null,
+      row.metadata != null ? JSON.stringify(row.metadata) : null,
+    ]
+  );
+}
+
+export async function listActivity(
+  wallet: string,
+  opts: { limit?: number; program?: string; eventType?: string } = {}
+): Promise<ActivityRow[]> {
+  const { limit = 100, program, eventType } = opts;
+  const conditions: string[] = ['wallet = $1'];
+  const params: unknown[] = [wallet];
+  if (program) { conditions.push(`program = $${params.push(program)}`); }
+  if (eventType) { conditions.push(`event_type = $${params.push(eventType)}`); }
+  params.push(limit);
+  const res = await pool.query<ActivityRow>(
+    `SELECT * FROM user_activity WHERE ${conditions.join(' AND ')}
+     ORDER BY created_at DESC LIMIT $${params.length}`,
+    params
   );
   return res.rows;
 }

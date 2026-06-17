@@ -6,8 +6,10 @@ import {
   createOrder,
   followLeader,
   initDb,
+  insertActivity,
   insertOracleTick,
   listActiveTwapOrders,
+  listActivity,
   listCopyFollowers,
   listCopyFollowing,
   listFills,
@@ -211,6 +213,40 @@ export async function startHttpServer(port = 8092): Promise<void> {
     if (!wallet) return res.status(400).json({ error: 'wallet required' });
     const fills = await listFills(wallet, Number(req.query.limit || 50));
     res.json({ fills });
+  });
+
+  // ── Unified activity log ───────────────────────────────────────────────────
+  app.get('/activity', async (req, res) => {
+    const wallet = String(req.query.wallet || '');
+    if (!wallet) return res.status(400).json({ error: 'wallet required' });
+    const rows = await listActivity(wallet, {
+      limit: Number(req.query.limit || 100),
+      program: req.query.program ? String(req.query.program) : undefined,
+      eventType: req.query.type ? String(req.query.type) : undefined,
+    });
+    res.json({ activity: rows, total: rows.length });
+  });
+
+  // Ingest endpoint — keeper/backend can push events without waiting for the
+  // next slot scan (useful for low-latency activity feeds).
+  app.post('/activity', async (req, res) => {
+    if (!authIngest(req)) return res.status(401).json({ error: 'unauthorized' });
+    const b = req.body || {};
+    if (!b.signature || !b.wallet || !b.program || !b.eventType) {
+      return res.status(400).json({ error: 'signature, wallet, program, eventType required' });
+    }
+    await insertActivity({
+      signature: String(b.signature),
+      wallet: String(b.wallet),
+      program: String(b.program),
+      eventType: String(b.eventType),
+      market: b.market ? String(b.market) : undefined,
+      amountUsdc: b.amountUsdc != null ? BigInt(b.amountUsdc) : undefined,
+      pnlUsdc: b.pnlUsdc != null ? BigInt(b.pnlUsdc) : undefined,
+      slot: b.slot != null ? Number(b.slot) : undefined,
+      metadata: b.metadata ?? undefined,
+    });
+    res.json({ ok: true });
   });
 
   app.listen(port, '0.0.0.0', () => {
