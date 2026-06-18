@@ -44,7 +44,7 @@
     "fix:kamino-reserve-oracle": "cd app/web && npx tsx scripts/fix-kamino-reserve-oracle-devnet.ts",
     "init:nvsc-mint-devnet": "tsx scripts/init-nvsc-mint-devnet.ts",
     "setup:kamino-pool": "tsx scripts/run-kamino-setup-only.ts",
-    "set-burn-keeper-authority": "tsx scripts/set-burn-keeper-authority.ts",
+    "verify:burn-authority": "tsx scripts/verify-burn-authority-devnet.ts",
     "check:ai-layer": "tsx scripts/check-ai-layer.ts",
     "keeper:dev": "npm run dev --prefix services/keeper",
     "keeper:start": "bash scripts/keeper/start-local.sh",
