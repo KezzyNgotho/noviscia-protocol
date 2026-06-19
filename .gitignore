@@ -4,6 +4,7 @@ node_modules/
 .next/
 *.tsbuildinfo
 target/
+.cache/
 *.key
 *.pem
 .keys/
