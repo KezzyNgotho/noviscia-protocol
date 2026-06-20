@@ -42,14 +42,11 @@
     "crank:burn-mock-once": "tsx scripts/crank-burn-mock-once.ts",
     "fund:burn-vault-nvsc": "tsx scripts/fund-burn-vault-nvsc.ts",
     "fix:kamino-reserve-oracle": "cd app/web && npx tsx scripts/fix-kamino-reserve-oracle-devnet.ts",
+    "execute:limit-twap-devnet": "tsx scripts/executor/execute-limit-twap-devnet.ts",
     "init:nvsc-mint-devnet": "tsx scripts/init-nvsc-mint-devnet.ts",
     "setup:kamino-pool": "tsx scripts/run-kamino-setup-only.ts",
     "verify:burn-authority": "tsx scripts/verify-burn-authority-devnet.ts",
     "check:ai-layer": "tsx scripts/check-ai-layer.ts",
-    "keeper:dev": "npm run dev --prefix services/keeper",
-    "keeper:start": "bash scripts/keeper/start-local.sh",
-    "keeper:deploy": "bash scripts/keeper/deploy-docker.sh",
-    "keeper:railway": "bash scripts/keeper/deploy-railway.sh",
     "indexer:dev": "npm run dev --prefix services/indexer",
     "indexer:install": "npm install --prefix services/indexer",
     "indexer:railway": "bash scripts/indexer/deploy-railway.sh",
@@ -57,22 +54,30 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
-    "@solana/web3.js": "^1.95.0",
-    "@solana/spl-token": "^0.4.0",
+    "@pythnetwork/pyth-solana-receiver": "^0.8.2",
     "@solana/buffer-layout": "^4.0.1",
+    "@solana/spl-token": "^0.4.0",
+    "@solana/web3.js": "^1.95.0",
     "axios": "^1.6.0",
-    "redis": "^4.6.0",
-    "dotenv": "^16.3.0"
+    "dotenv": "^16.3.0",
+    "redis": "^4.6.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
     "@types/jest": "^29.0.0",
-    "typescript": "^5.0.0",
-    "eslint": "^8.0.0",
+    "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "tsx": "^3.14.0",
+    "eslint": "^8.0.0",
     "jest": "^29.0.0",
-    "ts-jest": "^29.0.0"
+    "ts-jest": "^29.0.0",
+    "tsx": "^3.14.0",
+    "typescript": "^5.0.0"
+  },
+  "overrides": {
+    "jito-ts": {
+      "@solana/web3.js": {
+        "rpc-websockets": "7.5.1"
+      }
+    }
   }
 }

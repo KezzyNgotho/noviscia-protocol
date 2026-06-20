@@ -126,35 +126,6 @@ services:
       - api
     restart: unless-stopped
 
-  # Keeper Bot Service
-  keeper:
-    build:
-      context: .
-      dockerfile: services/keeper/Dockerfile
-    container_name: novisca-keeper
-    environment:
-      SOLANA_RPC_DEVNET: https://api.devnet.solana.com
-      DATABASE_URL: postgresql://novisca:noviscia-dev-password@postgres:5432/novisca
-      OLLAMA_URL: http://host.docker.internal:11434
-      OLLAMA_MODEL: qwen2.5:7b
-      NOVISCIA_WEB_URL: http://web:3000
-      NOVISCIA_API_URL: http://api:3001
-      KEEPER_ROOT: /app
-      AI_YIELD_ROUTER_INTERVAL_MS: 1800000
-      AI_ORCHESTRATOR_URL: http://ai-orchestrator:11435
-      USE_AI_ORCHESTRATOR: "1"
-      WEBSOCKET_INGEST_URL: http://websocket:8080
-      PERPS_INDEXER_URL: http://indexer:8092
-      KAMINO_DEVNET_MOCK: "1"
-      BURN_DEVNET_MOCK: "1"
-      BURN_BUYBACK_ENABLED: "1"
-      SESSION_FILL_ENABLED: "1"
-      INDEXER_INGEST_SECRET: ee7629e75c83d902059e3befe0f4f218f16a48353cef6e3faf3f72caaaad145a
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
   # Web Frontend (optional, use npm run dev instead)
   web:
     build:
