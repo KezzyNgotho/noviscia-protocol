@@ -8,6 +8,7 @@ members = [
     "programs/token-nvsc",
     "programs/yield-distributor",
     "programs/liquidation-vault",
+    "programs/protocol-lp-vault",
     "programs/position-tracker",
     "programs/prediction_market",
 ]

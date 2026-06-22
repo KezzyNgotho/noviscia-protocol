@@ -3166,6 +3166,7 @@ dependencies = [
  "burn-engine",
  "escrow",
  "liquidation-vault",
+ "protocol-lp-vault",
  "pyth-solana-receiver-sdk",
  "solana-program",
  "solana-program-test",
@@ -3286,6 +3287,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "protocol-lp-vault"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "solana-program",
+ "spl-token",
 ]
 
 [[package]]

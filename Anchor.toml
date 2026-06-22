@@ -16,6 +16,7 @@ token_nvsc = "HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT"
 yield_distributor = "CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw"
 prediction_market = "3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv"
 liquidation_vault = "C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1"
+protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
 
 [programs.localnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
@@ -28,6 +29,7 @@ token_nvsc = "3RXGctRZX25dcVHAdgmVuVKnPUsB1NSeQppLSn8hfaNK"
 yield_distributor = "Bg7Es69512z86iXNBnA9nqQJDyuyf6DhQqTty1rdsW7"
 prediction_market = "3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv"
 liquidation_vault = "C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1"
+protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
 
 [programs.mainnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
@@ -40,6 +42,7 @@ token_nvsc = "3RXGctRZX25dcVHAdgmVuVKnPUsB1NSeQppLSn8hfaNK"
 yield_distributor = "Bg7Es69512z86iXNBnA9nqQJDyuyf6DhQqTty1rdsW7"
 prediction_market = "3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv"
 liquidation_vault = "C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1"
+protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
 
 [provider]
 cluster = "devnet"
