@@ -42,7 +42,7 @@ Noviscia treats margin as a **productive asset inside the trading stack**, not a
 
 ```text
 USDC → nvscUSDC vault (optional) → Escrow PDA (user-owned)
-     → Idle lend (keeper) → Atomic recall → Perps → Settle → Claim / stake / govern
+     → Idle auto-lend (permissionless) → Atomic recall → Perps → Settle → Claim / stake / govern
 ```
 
 **Design principles**
@@ -57,7 +57,7 @@ USDC → nvscUSDC vault (optional) → Escrow PDA (user-owned)
 
 ## Traction (devnet)
 
-All ten Anchor programs are **deployed on Solana devnet** with on-chain IDLs. Off-chain keeper and indexer run in production on Railway.
+All ten Anchor programs are **deployed on Solana devnet** with on-chain IDLs. The indexer runs in production on Railway. (A legacy keeper build from before the permissionless-crank rework is still running on Railway too — see note below; the keeper codebase itself has been removed from this repo.)
 
 | Layer | What's live |
 |-------|-------------|
@@ -71,7 +71,7 @@ All ten Anchor programs are **deployed on Solana devnet** with on-chain IDLs. Of
 |---------|----------|
 | Web app | [noviscia.com](https://noviscia.com) |
 | Indexer | `indexer-production-cac8.up.railway.app` |
-| Keeper | `keeper-production-c457.up.railway.app` |
+| Legacy keeper (deprecated, still running) | `keeper-production-c457.up.railway.app` — predates the permissionless-crank rework; codebase removed from this repo, instance not yet decommissioned on Railway |
 
 ---
 
@@ -114,7 +114,7 @@ All ten Anchor programs are **deployed on Solana devnet** with on-chain IDLs. Of
 | Escrow lend yield | 85% user · 15% burn engine |
 | Vault yield | 85% NAV accrual · 15% burn engine |
 
-**Burn loop:** USDC accumulates in the burn engine → keeper swaps USDC→NVSC → on-chain burn destroys supply.
+**Burn loop:** USDC accumulates in the burn engine → permissionless caller swaps USDC→NVSC → on-chain burn destroys supply.
 
 Full detail: [`docs/WHITEPAPER.md`](noviscia-protocal/docs/WHITEPAPER.md) §4.
 
@@ -142,7 +142,7 @@ flowchart TB
     end
 
     subgraph OFF["Off-chain Services (Railway)"]
-        Keeper["Keeper<br/>oracle marks · lend crank<br/>liquidations · burn trigger"]
+        Cranks["Permissionless cranks<br/>oracle marks · lend crank<br/>liquidations · burn trigger<br/>(no required operator)"]
         Indexer["Indexer<br/>limit orders · fills · history"]
     end
 
@@ -188,10 +188,10 @@ flowchart TB
 
     Burn -- "buyback & burn" --> Token
 
-    Keeper -.-> PT
-    Keeper -.-> Escrow
-    Keeper -.-> Burn
-    Keeper --> Pyth
+    Cranks -.-> PT
+    Cranks -.-> Escrow
+    Cranks -.-> Burn
+    Cranks --> Pyth
     Indexer --> PT
     Indexer -.-> Web
 
@@ -201,7 +201,7 @@ flowchart TB
     classDef external fill:#0f172a,stroke:#9ca3af,stroke-width:1px,color:#e5e7eb
 
     class Escrow,Lending,PT,Vault,Yield,Staking,Burn,Token,LiqVault,Pred onchain
-    class Keeper,Indexer offchain
+    class Cranks,Indexer offchain
     class Web frontend
     class Pyth,Venues,Jup external
 ```
@@ -221,7 +221,9 @@ flowchart TB
 | `liquidation_vault` | Insurance / LP layer (beta) |
 | `prediction_market` | On-chain prediction markets |
 
-Off-chain: **keeper** (oracle marks, lend crank, liquidations, burns) and **indexer** (limit orders, history) on Railway. Frontend: Next.js 14 PWA.
+Off-chain: **permissionless cranks** (oracle marks, lend crank, liquidations, burns — anyone can run the automation, no required operator) and **indexer** (limit orders, history) on Railway. Frontend: Next.js 14 PWA.
+
+> The `architecture-flow.svg` image above still shows the old "Keeper" box from before this rework — it needs regenerating from the mermaid source above. Not yet done.
 
 ---
 
@@ -239,7 +241,7 @@ timeline
     title Noviscia Launch Roadmap
     Now - Phase 0 Devnet Beta : Vault, escrow and perps live : Auto-lend plus atomic recall : Staking, burn and yield claim : 16-market catalog, limit orders
     Q2 2026 - Phase 1 Hardening : Independent security audit : External Kamino, Solend, Marginfi CPI : Production Pyth oracles : On-chain fee-tier discounts : Insurance vault UI
-    Q3 2026 - Phase 2 Mainnet Soft Launch : NVSC token generation event : SOL, BTC, ETH perps live : Deposit and TVL caps : Redundant keeper infrastructure
+    Q3 2026 - Phase 2 Mainnet Soft Launch : NVSC token generation event : SOL, BTC, ETH perps live : Deposit and TVL caps : Redundant crank automation
     Q4 2026 plus - Phase 3 Scale : Expanded market catalog : Session trading agents : LST collateral tiers : Prediction markets UI : Protocol-owned liquidity
 ```
 
@@ -259,7 +261,7 @@ See [`docs/LAUNCH_ROADMAP.md`](noviscia-protocal/docs/LAUNCH_ROADMAP.md).
 ## Security & risk
 
 - **Non-custodial PDAs** — No pooled custodial wallet; users control escrow accounts.
-- **Dual-oracle consensus** — Pyth marks with on-chain deviation checks; keeper liquidation crank.
+- **Dual-oracle consensus** — Pyth marks with on-chain deviation checks; permissionless liquidation crank.
 - **Pre-mainnet audit** — Independent security audit required; **not yet completed**.
 - **Devnet only** — Current deployment is for testing; do not use mainnet funds.
 
