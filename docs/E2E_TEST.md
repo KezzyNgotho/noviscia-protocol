@@ -26,12 +26,6 @@ npm run init:devnet-rewire      # venues + oracle + reservoirs
 npm run verify:e2e              # runs phase1–5 + prints UI checklist
 ```
 
-Keeper (lend, oracle, NAV):
-
-```bash
-npm run keeper:dev
-```
-
 ## If verify scripts fail with `offset is out of range` on escrow
 
 On-chain **escrow PDA** was created with an older program layout. IDL expects the current `EscrowAccount` size.

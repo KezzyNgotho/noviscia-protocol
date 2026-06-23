@@ -5,9 +5,9 @@
 
 ## Terms of use
 
-1. **Experimental software.** Noviscia is under active development. Contracts, keepers, and UIs may change without notice. You use the protocol at your own risk.
+1. **Experimental software.** Noviscia is under active development. Contracts and UIs may change without notice. You use the protocol at your own risk.
 
-2. **No custody.** You retain control of your wallet. Noviscia does not hold private keys or guarantee execution of keeper cranks, oracle updates, or liquidations.
+2. **No custody.** You retain control of your wallet. Noviscia does not hold private keys or guarantee execution of permissionless cranks, oracle updates, or liquidations.
 
 3. **Devnet assets.** Tokens on devnet have no real-world value. Do not use mainnet funds, production secrets, or personally identifiable data in devnet testing.
 
@@ -36,7 +36,7 @@
 
 ### Operational
 
-- Keepers, indexers, and APIs are best-effort. Outages can delay marks, funding accrual, or liquidations.
+- Permissionless crank automation, indexers, and APIs are best-effort. If no one is running the cranks, marks, funding accrual, or liquidations can be delayed.
 - Devnet resets, redeploys, and migrations can orphan old accounts.
 
 ## Limitation of liability

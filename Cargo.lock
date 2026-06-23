@@ -1526,7 +1526,11 @@ dependencies = [
  "lending-integrator",
  "nv-usdc-vault",
  "solana-program",
+ "solana-program-test",
+ "solana-sdk",
+ "spl-associated-token-account",
  "spl-token",
+ "tokio",
 ]
 
 [[package]]

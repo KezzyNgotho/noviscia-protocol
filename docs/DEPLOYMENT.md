@@ -45,7 +45,6 @@ cd app/api && npm install && npm run prisma:migrate && cd ../..
 
 # Services
 cd services/indexer && npm install && cd ../..
-cd services/keeper && npm install && cd ../..
 cd services/price-feed && npm install && cd ../..
 cd services/websocket && npm install && cd ../..
 ```
@@ -69,7 +68,6 @@ cd app/api && npm run dev
 
 # Terminal 5: Start services
 cd services/indexer && npm run dev
-cd services/keeper && npm run dev
 cd services/price-feed && npm run dev
 cd services/websocket && npm run dev
 ```
@@ -143,9 +141,6 @@ pm2 save
 # Deploy each service similarly
 cd services/indexer && npm run build
 pm2 start dist/index.js --name "novisca-indexer"
-
-cd services/keeper && npm run build
-pm2 start dist/index.js --name "novisca-keeper"
 
 cd services/price-feed && npm run build
 pm2 start dist/index.js --name "novisca-price-feed"
@@ -241,7 +236,6 @@ pm2 status
 # View logs
 pm2 logs novisca-api
 pm2 logs novisca-indexer
-pm2 logs novisca-keeper
 
 # Monitor performance
 pm2 monit

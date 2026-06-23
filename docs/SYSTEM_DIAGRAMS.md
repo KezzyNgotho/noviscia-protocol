@@ -19,7 +19,7 @@ graph TD
   P --> O1[Pyth Oracle]
   P --> O2[Switchboard Oracle]
   Y --> K[Kamino / Solend / Marginfi]
-  B --> KEEPER[Keeper Bot]
+  B --> CRANK[Permissionless crank\nno required operator]
 
   A --> DB[(PostgreSQL + Prisma)]
   L --> DB
@@ -27,7 +27,6 @@ graph TD
 
   A --> O[Off-chain Services]
   O --> I[Indexer]
-  O --> KEEPER[Keeper Bot]
   O --> PF[Price Feed]
   O --> WS[WebSocket Broadcaster]
 
@@ -118,20 +117,21 @@ flowchart LR
 └──────────────────────────────────────┼──────────────────────────────────────────────┘
                                        │
                     ┌──────────────────┴──────────────────┐
-                    │ Keeper (execute) · Web (advise/UI)   │
+                    │ ai-rebalancer (execute) · Web (advise/UI) │
                     └─────────────────────────────────────┘
 ```
 
 | Agent | Cadence | Service | Orchestrator path |
 |-------|---------|---------|-------------------|
-| Yield Router | 30 min | `services/keeper` | `POST /agents/yield` |
-| Risk Predictor | Real-time (mark crank) | `services/keeper` | `POST /agents/risk` |
+| Yield Router | 30 min | `services/ai-rebalancer` | `POST /agents/yield` |
 | Rebalancer | Hourly | `services/ai-rebalancer` | `POST /agents/rebalance` |
 | Trading Agent | On-demand | `app/web` perps UI | `POST /agents/parse-trade`, `/agents/trade-hint` |
 
+(Risk Predictor was removed along with the keeper service and has no replacement.)
+
 Live status: `GET /api/ai/orchestration` (web) · `GET /orchestration/status` (orchestrator).
 
-Rules engine validates all AI JSON before keeper acts. See `docs/AI_INTEGRATION.md`.
+Rules engine validates all AI JSON before it acts. See `docs/AI_INTEGRATION.md`.
 
 ## Notes
 

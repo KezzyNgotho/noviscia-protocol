@@ -100,13 +100,15 @@ These are **different** choices:
 
 ## NVSCUSDC vs USDC margin
 
+Both options share the same underlying nv-usdc-vault pool now — there's one yield engine, not two. The choice is just whether you hold the appreciating shares directly or let idle USDC auto-convert into them.
+
 | | NVSCUSDC | USDC |
 |--|----------|------|
-| Yield | Vault NAV accrual | Optional idle lend (keeper) |
-| Best for | Default perp margin | Users who want plain stable + lend toggle |
-| Recall | Shares reserved on open | Keeper recalls lent USDC before open |
+| Yield | Hold vault shares directly | Auto-converts to vault shares when idle |
+| Best for | Default perp margin | Users who want plain stable + auto-convert toggle |
+| Recall | Shares reserved on open; only what's needed is redeemed | Same — only the amount needed is recalled, not your whole balance |
 
-**Tip:** If you see a recall error, disable lending temporarily or wait for keeper recall, then retry open.
+**Tip:** If you see a recall error, disable lending temporarily, then retry open.
 
 ---
 
@@ -139,7 +141,7 @@ Exact bps are on-chain in `pt-config` and vault config.
 Yes—deposit USDC directly to escrow and select **USDC** margin on perps.
 
 **Why is the trade button disabled on BONK?**  
-That market is preview-only until oracle + keeper support is enabled.
+That market is preview-only until its oracle is initialized and live.
 
 **Do I need NVSC to trade?**  
 No. NVSC is for staking and governance.
@@ -161,7 +163,7 @@ Your escrow may be from an older program version. Use a fresh devnet wallet or a
 |-------|-----|
 | Simulation failed / 2006 | See `DEVNET.md` — escrow upgrade or position-tracker deploy |
 | Insufficient margin | Deposit more NVSCUSDC/USDC; recall lent funds |
-| Oracle / mark stale | Ensure keeper is running (`npm run keeper:dev`) |
+| Oracle / mark stale | Ensure something is running the permissionless update cranks (any automation can call them) |
 | BTC/ETH won’t open | Run `npm run init:perp-oracles` with deploy wallet |
 
 ---

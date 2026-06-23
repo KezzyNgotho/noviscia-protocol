@@ -38,8 +38,8 @@ Capital efficiency is left on the table. Noviscia treats margin as a **productiv
 USDC
   → NVSCUSDC Vault (optional)     mint yield-bearing shares at NAV
   → Escrow PDA (non-custodial)      user-owned margin account
-  → Idle lend (keeper)              deploy free USDC to venue pools
-  → Recall (atomic)                 before perp open
+  → Idle auto-lend (permissionless) deploy free USDC into the same vault
+  → Recall (atomic, amount-scoped)  before perp open
   → Perps (position-tracker)          long/short with oracle marks
   → Close & settle                    PnL + fees routed on-chain
   → Claim yield / stake / govern      85% user yield; NVSC flywheel
@@ -67,7 +67,7 @@ USDC
 | **position-tracker** | Perp positions; dual oracle; open/close; marks; liquidation; fee routing |
 | **yield-distributor** | Escrow lend yield: 85% user / 15% burn-engine |
 | **staking-manager** | NVSC stake tiers; governance proposals; trading fee pool |
-| **burn-engine** | USDC fee accumulation; NVSC buyback & burn (keeper-triggered) |
+| **burn-engine** | USDC fee accumulation; NVSC buyback & burn (permissionless trigger) |
 | **token-nvsc** | Fixed-supply NVSC SPL token |
 | **liquidation-vault** | Insurance / LP layer (program deployed; product UI roadmap) |
 | **prediction_market** | On-chain prediction markets (adjacent product) |
@@ -76,14 +76,14 @@ USDC
 
 | Service | Role |
 |---------|------|
-| **Keeper** | `lend_idle_venue`, dual oracle push, position marks, liquidation, yield distribution, vault NAV sync |
-| **AI orchestrator** (optional) | Local LLM yield router, risk monitor, trade copilot |
+| **Permissionless cranks** | `lend_idle_venue`, dual oracle push, position marks, liquidation, yield distribution, vault NAV sync — no required operator, anyone can run automation that calls these |
+| **AI orchestrator** (optional) | Local LLM yield router, trade copilot |
 | **Web app** | Next.js terminal: vault, perps, stake, rewards |
 
 ### 3.3 Oracle & marks
 
 - **Dual oracle** (Pyth + optional Switchboard) with on-chain consensus in `position-tracker`.
-- Keeper publishes prices; marks must match oracle consensus.
+- Permissionless cranks publish prices; marks must match oracle consensus.
 - **Live devnet markets:** SOL-PERP, BTC-PERP, ETH-PERP (catalog-driven; see `perps-catalog.json`).
 
 ### 3.4 Collateral tiers
@@ -139,9 +139,9 @@ NVSCUSDC is the **primary margin asset** for capital-efficient perps: shares in 
 | Perp trading fees | 40% burn-engine · 60% staking pool (configurable on-chain) |
 | Escrow lend yield | 85% user · 15% burn-engine |
 | Vault yield accrual | 85% NAV · 15% burn-engine |
-| Liquidation | Keeper incentive (e.g. 1% `liquidation_fee_bps`) |
+| Liquidation | Permissionless caller incentive (e.g. 1% `liquidation_fee_bps`) |
 
-**Burn loop:** USDC accumulates in burn-engine → keeper swaps USDC→NVSC off-chain → `trigger_burn` destroys NVSC on-chain.
+**Burn loop:** USDC accumulates in burn-engine → permissionless caller swaps USDC→NVSC off-chain → `trigger_burn` destroys NVSC on-chain.
 
 ---
 
@@ -152,7 +152,7 @@ NVSCUSDC is the **primary margin asset** for capital-efficient perps: shares in 
 - **Settlement:** USDC-denominated PnL.
 - **Margin:** NVSCUSDC (default) or USDC in escrow.
 - **Leverage:** Up to 50× on majors (SOL/BTC/ETH per catalog); lower caps on memecoins when enabled.
-- **Markets:** Catalog in `app/web/app/lib/perps/perps-catalog.json`; `tradeable: true` requires oracle PDA + keeper marks.
+- **Markets:** Catalog in `app/web/app/lib/perps/perps-catalog.json`; `tradeable: true` requires an initialized oracle PDA with live marks.
 
 ### 5.2 User flow (devnet)
 
@@ -160,7 +160,7 @@ NVSCUSDC is the **primary margin asset** for capital-efficient perps: shares in 
 2. Enable idle lending (USDC path) or hold NVSCUSDC shares in escrow.
 3. Select market (SOL / BTC / ETH live).
 4. Open long or short — protocol recalls lent USDC if needed.
-5. Keeper updates marks; user closes → fees split to burn/staking.
+5. Permissionless cranks update marks; user closes → fees split to burn/staking.
 
 ### 5.3 vs typical perps
 
@@ -178,7 +178,7 @@ NVSCUSDC is the **primary margin asset** for capital-efficient perps: shares in 
 The **Noviscia Allocator** routes idle escrow USDC across labeled venues (Kamino, Solend, Marginfi):
 
 - **Rules engine** — Transparent coefficients (`ALLOCATION_POLICY.md`).
-- **Keeper** — Executes `lend_idle_venue` on eligible escrows.
+- **Permissionless crank** — Anyone can execute `lend_idle_venue` on eligible escrows; no required operator.
 - **Governance** — NVSC stakers vote venue weights via `set_venue_weights_governed`.
 - **AI layer** (optional) — Local Ollama suggests weights; rules engine validates; never sole authority.
 
@@ -202,7 +202,7 @@ NVSCUSDC holders do **not** vote—preventing double influence from yield capita
 
 - **PDA escrow** per user; no pooled custodial wallet.
 - **Oracle consensus** required for marks; deviation caps on-chain.
-- **Maintenance margin** + keeper liquidation.
+- **Maintenance margin** + permissionless liquidation.
 - **CPI boundaries** — Escrow, vault, lending, burn, and staking programs invoked with explicit account constraints.
 - **Pre-mainnet:** Independent security audit required (not yet completed in repo).
 
@@ -217,11 +217,10 @@ Noviscia ships an **optional, local-first** AI stack:
 | Agent | Function |
 |-------|----------|
 | Yield Router | Venue weight recommendations |
-| Risk Monitor | Liquidation proximity alerts |
 | Trade Copilot | Perps UI hints (advisory) |
 | Session policy | Off-chain agent scoping (roadmap: on-chain session keys) |
 
-**No cloud LLM is required.** Production deployments can disable AI entirely (`AI_YIELD_ROUTER_IN_KEEPER=0`).
+**No cloud LLM is required.** Production deployments can disable AI entirely (`USE_AI_ORCHESTRATOR=0`).
 
 ---
 
@@ -229,7 +228,7 @@ Noviscia ships an **optional, local-first** AI stack:
 
 | Phase | Milestone | Target |
 |-------|-----------|--------|
-| **0 — Devnet beta** | Vault, escrow, perps (SOL/BTC/ETH), keeper, governance | **Now** |
+| **0 — Devnet beta** | Vault, escrow, perps (SOL/BTC/ETH), permissionless cranks, governance | **Now** |
 | **1 — Hardening** | Audit, external lending CPI, fee-tier on-chain, insurance vault UI | Pre-mainnet |
 | **2 — Mainnet soft launch** | NVSC TGE, production oracles, Kamino CPI | Q3 2026 |
 | **3 — Scale** | More perp markets, mobile, session agents, POL | Post-launch |
@@ -243,9 +242,9 @@ Full checklist: `LAUNCH_ROADMAP.md`.
 | Risk | Mitigation |
 |------|------------|
 | Smart contract bugs | Audit, phased rollout, devnet soak |
-| Oracle failure / manipulation | Dual feed, deviation bps, keeper monitoring |
+| Oracle failure / manipulation | Dual feed, deviation bps, permissionless monitoring (anyone can flag stale marks) |
 | Lending venue insolvency | Multi-venue caps, governance weights, recall before trade |
-| Liquidity / slippage on burn | Min/max burn thresholds, keeper cadence |
+| Liquidity / slippage on burn | Min/max burn thresholds, crank cadence |
 | Regulatory uncertainty | Users responsible for local compliance; no investment advice |
 
 ---

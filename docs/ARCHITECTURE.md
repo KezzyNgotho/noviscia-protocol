@@ -97,7 +97,7 @@ Trading Fees Accumulated
   └─> 40% routed to Burn Engine
       └─> Accumulates USDC
           └─> Threshold check ($10,000)
-              └─> Off-chain keeper swaps USDC → NVSC
+              └─> Permissionless caller swaps USDC → NVSC
                   └─> Deposit NVSC into burn vault
                       └─> Burn engine sends to dead address (11111...)
                       └─> Emit burn event
@@ -273,13 +273,13 @@ Listens to Solana logs via WebSocket, parses events:
 - Burn events → Database
 - Updates cache on new blocks
 
-### Keeper Bot
+### Cranks (permissionless)
 
-Automated tasks:
-- **Hourly:** Check burn threshold, trigger if met
-- **Daily:** Harvest yield from lending protocols
-- **On Trade:** Auto-relend idle funds
-- **On Liquidation:** Execute liquidation and distribute fees
+There is no required keeper/operator — every crank below is a permissionless on-chain instruction anyone can call (and anyone can run their own automation to call it on a schedule, or call it by hand):
+- `trigger_burn()` — fires once the burn threshold is met
+- `lend_idle_venue()` — sweeps idle escrow USDC into the yield vault
+- Oracle/funding update cranks — keep TWAP/funding/marks current
+- `liquidate_permissionless()` — liquidates an underwater position and distributes fees
 
 ### Price Feed
 
@@ -324,7 +324,7 @@ Maintains client connections, broadcasts:
    └─> toggle_lending(true)
        └─> Idle USDC sent to Kamino
            └─> Weekly interest accrues
-               └─> Keeper bot harvests yield
+               └─> Permissionless recall harvests yield
                    └─> 15% performance fee auto-burns NVSC
                        └─> 85% returned to user escrow
                            └─> User can claim or re-stake
@@ -346,13 +346,15 @@ Only [USER] can call:
 - withdraw_usdc() from escrow
 - unstake_tokens() from staking
 
-Only [KEEPER BOT] can call:
+Permissionless — anyone can call:
 - trigger_burn()
-- harvest_yield()
+- lend_idle_venue() / recall_funds()
+- liquidate_permissionless()
 
-Only [PROTOCOL] can call:
+Only [PROTOCOL/ADMIN] can call:
 - distribute_yield()
 - compensate_yield()
+- risk-parameter setters (oracle config, fee config, etc.)
 ```
 
 ## Scalability

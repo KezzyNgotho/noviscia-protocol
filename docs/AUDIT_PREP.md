@@ -31,9 +31,9 @@ anchor test
 
 ## Off-chain scope
 
-- Keeper key custody (`KEEPER_KEYPAIR_JSON` on Railway)
 - Indexer SQL injection / auth on ingest routes
 - Session policy and API key storage (Postgres)
+- Crank automation is permissionless on-chain — no privileged off-chain key custody to review for these instructions
 
 ## Deliverables requested from auditor
 

@@ -167,23 +167,24 @@ ALTER TABLE users ADD COLUMN encrypted_data BYTEA;
 
 ```typescript
 // ✅ Use environment variables
-const privateKey = process.env.KEEPER_PRIVATE_KEY;
+const privateKey = process.env.ADMIN_PRIVATE_KEY;
 
 // ✅ Or use AWS Secrets Manager
 const secret = await secretsManager.getSecretValue({
-  SecretId: 'keeper-private-key'
+  SecretId: 'admin-private-key'
 });
 
 // ❌ NEVER hardcode
 const badKey = "3LkR9m2bV8x9nLm0pO1qR2sTu3vW4xY5z";
 ```
 
-### Keeper Bot Keys
+### Crank automation keys (optional)
 
-- Separate from admin keys
-- Limited permissions
-- Rotating keys monthly
-- Monitored for unusual activity
+All cranks (lend_idle_venue, mark/funding updates, liquidations, burn triggers) are permissionless on-chain instructions — no required operator key, anyone's wallet can call them. If you choose to run your own automation to call them on a schedule:
+
+- Use a wallet with no special on-chain privileges (the instructions themselves are permissionless, so the caller needs no elevated role)
+- Keep it separate from admin/governance keys
+- Monitor for unusual activity
 
 ## Audit Trail
 

@@ -9,7 +9,7 @@ Noviscia does not take custody of user funds at any point:
 
 - All margin, vault deposits, and staked NVSC are held in per-user **Program Derived Accounts (PDAs)**, not protocol- or operator-controlled wallets.
 - Every state-changing action (deposit, withdraw, open/close position, recall) requires the user's own wallet signature.
-- Keepers and the lending allocator can only trigger permissionless, on-chain-bounded operations (mark updates, funding, recalls into program-registered pools) — they cannot redirect funds to arbitrary destinations or withdraw on a user's behalf.
+- Crank callers and the lending allocator can only trigger permissionless, on-chain-bounded operations (mark updates, funding, recalls into program-registered pools) — they cannot redirect funds to arbitrary destinations or withdraw on a user's behalf. No operator key has any special on-chain privilege here; anyone can call these instructions.
 
 This non-custodial design is the basis for treating Noviscia as software infrastructure rather than a money-services business. It does not by itself guarantee a particular regulatory classification in any jurisdiction.
 
