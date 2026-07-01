@@ -30,13 +30,13 @@
 
 ### Margin & vault
 
-- **Idle-lend risk:** USDC margin may be deployed to lending venues. Recall delays can block withdrawals or new trades.
+- **Omni-Pool risk:** Idle USDC margin is swept into the Sovereign Omni-Pool. Recall is atomic and bundled with trade opens, but smart-contract bugs could block recalls or withdrawals.
 - **nvscUSDC NAV risk:** Vault share price can decrease if marked assets or yields underperform.
 - **Insurance vault:** LP deposits backstop bad debt but are not FDIC-insured. Withdrawals may be subject to cooldowns.
 
 ### Operational
 
-- Permissionless crank automation, indexers, and APIs are best-effort. If no one is running the cranks, marks, funding accrual, or liquidations can be delayed.
+- All cranks (oracle refresh, liquidation, ADL, burn, bad-debt coverage) are permissionless — no single operator controls them. However, if no participant calls them for an extended period, marks or liquidations may be delayed.
 - Devnet resets, redeploys, and migrations can orphan old accounts.
 
 ## Limitation of liability
