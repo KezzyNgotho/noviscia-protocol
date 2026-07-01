@@ -2939,7 +2939,6 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "burn-engine",
  "solana-program",
  "spl-token",
 ]
@@ -3170,6 +3169,7 @@ dependencies = [
  "burn-engine",
  "escrow",
  "liquidation-vault",
+ "nv-usdc-vault",
  "protocol-lp-vault",
  "pyth-solana-receiver-sdk",
  "solana-program",
