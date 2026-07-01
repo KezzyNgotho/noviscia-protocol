@@ -8,7 +8,6 @@ skip-lint = false
 [programs.devnet]
 burn_engine = "nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id"
 escrow = "CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D"
-lending_integrator = "Ea5TXHxsVcnKwMAcAsQkpPN88xr8ndBRpNGDkREWrbSZ"
 nv_usdc_vault = "CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC"
 position_tracker = "3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY"
 staking_manager = "4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75"
@@ -21,7 +20,6 @@ protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
 [programs.localnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
 escrow = "23ramxxc62tPL81ziVRcQRzk5MnPZdrkeYcn2P9USfhj"
-lending_integrator = "5KQptZydqjzsctFSenwBpUh5Cr5FJaZ8AiDXhrC7y6Ht"
 nv_usdc_vault = "CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC"
 position_tracker = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
 staking_manager = "2QSN7YVpLXsjKzABqP6HG3NfahgcVgynhCdSjviXWWiD"
@@ -34,7 +32,6 @@ protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
 [programs.mainnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
 escrow = "23ramxxc62tPL81ziVRcQRzk5MnPZdrkeYcn2P9USfhj"
-lending_integrator = "5KQptZydqjzsctFSenwBpUh5Cr5FJaZ8AiDXhrC7y6Ht"
 nv_usdc_vault = "CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC"
 position_tracker = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
 staking_manager = "2QSN7YVpLXsjKzABqP6HG3NfahgcVgynhCdSjviXWWiD"

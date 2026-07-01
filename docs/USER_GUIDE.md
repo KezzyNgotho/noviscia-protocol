@@ -1,180 +1,241 @@
 # Noviscia User Guide
 
 **Audience:** Traders and liquidity users  
-**Network:** Solana devnet (mainnet guide will ship with TGE)  
+**Network:** Solana devnet (mainnet guide ships with TGE — Q3 2026)  
+**Last updated:** July 2026
 
 ---
 
 ## What is Noviscia?
 
-Noviscia is a perpetual futures exchange where your **margin can earn yield while you are not trading**. Deposit once, trade SOL/BTC/ETH perps, and let idle USDC work across lending venues—with **automatic recall** when you open a position.
+Noviscia is a perpetual futures exchange where your **margin earns yield while you are not trading**. You post collateral once, trade SOL/BTC/ETH perps, and let idle USDC compound in the **Sovereign Omni-Pool** — recalled atomically when you open a position. Every dollar of idle margin also earns a share of protocol trading fees, claimable anytime.
 
-**You need:** Phantom (or any Solana wallet) on **devnet**, plus devnet SOL for fees.
+**You need:** Any Solana wallet (Phantom recommended) on **devnet**, plus devnet SOL for fees.
 
 ---
 
-## Quick start (5 minutes)
+## Quick start (10 minutes)
 
-### 1. Connect wallet
+### Step 1 — Connect your wallet
 
-1. Open the app (local: `http://localhost:3000` or your deployed URL).
-2. Switch wallet to **Solana Devnet**.
+1. Open the app at [noviscia.com](https://noviscia.com) (or `localhost:3000` locally).
+2. Switch your wallet to **Solana Devnet**.
 3. Click **Connect Wallet**.
 
-### 2. Get devnet USDC
+### Step 2 — Get devnet tokens
 
-Use the in-app faucet or devnet USDC mint configured for the deployment (`NEXT_PUBLIC_USDC_MINT` in env). You need USDC before depositing.
+- **SOL:** Use `solana airdrop 2 <YOUR_WALLET> --url devnet` in terminal, or the Solana faucet.
+- **USDC:** The in-app faucet or the devnet USDC mint (`Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5`).
 
-### 3. Mint NVSCUSDC (recommended path)
-
-1. Go to **Earn → Vault** (`/earn/vault`).
-2. **Deposit USDC** → receive **NVSCUSDC** shares at current NAV.
-3. Open the **Margin** tab → **Deposit NVSCUSDC** into your escrow.
-
-NVSCUSDC is yield-bearing vault shares used as perp margin.
-
-### 4. Trade a perp
+### Step 3 — Deposit USDC to your escrow
 
 1. Go to **Trade → Perps** (`/trade/perps`).
-2. Pick a **live** market: **SOL**, **BTC**, or **ETH** (badge: **Live**).
-3. Choose margin: **NVSCUSDC** (default) or **USDC**.
-4. Set collateral, leverage, long/short → confirm in wallet.
+2. In the right account panel, enter a deposit amount and click **Deposit USDC**.
+3. Approve the transaction. Your balance appears under **Balance**.
 
-### 5. Close and claim
+> Alternatively, go to **Earn → Vault** → **Deposit USDC** to mint nvscUSDC shares (yield-bearing). You can then use those shares as perp margin.
 
-1. Close from the **Open Positions** panel on the perps page.
-2. Go to **Earn → Rewards** to **claim** accumulated lend yield (if you used USDC auto-lend).
+### Step 4 — Open a position
 
----
+1. Select a **Live** market (SOL, BTC, or ETH — badge: Live).
+2. Choose **Long** or **Short**.
+3. Set your collateral amount and leverage using the radial slider.
+4. Optionally set TP/SL prices.
+5. Click the **Intent-Settle** button — the UI shows "Routing Intent → Atomically Settled ✅".
+6. Your position appears in the **Positions** tab below.
 
-## Understanding markets vs margin
+### Step 5 — Claim yield
 
-These are **different** choices:
-
-| You choose | Meaning | Examples |
-|------------|---------|----------|
-| **Market** | What price you bet on | SOL-PERP, BTC-PERP, ETH-PERP |
-| **Margin** | What you post as collateral | NVSCUSDC or USDC in escrow |
-
-- **NVSCUSDC** = vault shares (earn NAV yield; primary margin).
-- **USDC** = plain stable in escrow (can enable **auto-lend** on idle slice).
-- **NVSC token** = governance & staking—not a perp market and not margin by default.
-
-**Preview markets** (BONK, WIF, JUP, etc.) show **charts only** until marked **Live** in the catalog.
+- Pending yield from your idle margin appears in the account panel under **Yield available**.
+- Click **Claim** to receive USDC directly into your escrow.
+- Or open the **Yield Tracker** tab at the bottom for detailed yield history.
 
 ---
 
-## Product flows
+## Product overview
 
-### Vault (`/earn/vault`)
+### `/trade/perps` — Perps Terminal
 
-| Tab | Action |
-|-----|--------|
-| **NVSCUSDC** | Deposit USDC → mint shares; redeem shares → USDC |
-| **Margin** | Deposit / withdraw NVSCUSDC or USDC to escrow |
-| **Markets** | View venue APYs and on-chain allocator weights |
+The main trading interface, organized in four zones:
 
-### Perps (`/trade/perps`)
+| Zone | Description |
+|------|-------------|
+| **Chart** | TradingView-style candles/bars/line/area · 1m–1d timeframes · entry & liquidation price lines |
+| **Order book / Depth** | Live book · recent trades · funding rate chart · liquidity depth chart |
+| **Order panel** | Long/Short tabs · Market/Limit/TWAP · radial leverage slider · TP/SL · intent-settle button |
+| **Account panel** | USDC & SOL balance · Collateral Basket (multi-asset weights, margin power gauge) · auto-lend toggle |
 
-- Market selector with **Live** / **Soon** badges.
-- Long / short, market or limit entry.
-- TP/SL fields (UI; full on-chain binding = roadmap).
-- Account summary: idle margin, lent amount, open positions.
+**Bottom panel tabs:**
 
-### Stake (`/earn/stake`)
-
-- Stake **NVSC** for governance and documented fee tiers.
-- Vote on venue weight proposals.
-- Unstake: partial = 7-day cooldown; full = instant.
-
-### Rewards (`/earn/rewards`)
-
-- Claim escrow lend yield.
-- View burn pool and staking fee pool stats.
-
-### Token (`/token`)
-
-- NVSC supply, distribution, and utility overview.
+| Tab | Description |
+|-----|-------------|
+| Positions | Open positions with grace-window countdown, inline margin adjust, TP/SL, partial close |
+| Open Orders | Active limit orders and TWAP slices |
+| Trade History | Settled fills and closed positions |
+| Pending Intents | TWAP and limit orders being routed |
+| Yield Tracker | Idle capital, live yield odometer, claimable amount |
 
 ---
 
-## NVSCUSDC vs USDC margin
+### `/trade/collateral` — Collateral Console
 
-Both options share the same underlying nv-usdc-vault pool now — there's one yield engine, not two. The choice is just whether you hold the appreciating shares directly or let idle USDC auto-convert into them.
+Dedicated capital management dashboard. Use this to:
 
-| | NVSCUSDC | USDC |
-|--|----------|------|
-| Yield | Hold vault shares directly | Auto-converts to vault shares when idle |
-| Best for | Default perp margin | Users who want plain stable + auto-convert toggle |
-| Recall | Shares reserved on open; only what's needed is redeemed | Same — only the amount needed is recalled, not your whole balance |
+- **Monitor your global risk** — NAV, effective margin power (after haircuts), utilization gauge, available to withdraw.
+- **Manage all asset types** — USDC and SOL shown live with oracle prices, haircut factors, effective collateral values, and Deposit/Withdraw inline actions.
+- **Stress-test your portfolio** — drag the volatility slider to simulate a SOL price crash and see exactly how your utilization gauge changes before it happens.
+- **Check pool capacity** — circular cap rings show how much of the protocol's SOL and USDC pool limits are used.
+- **Track idle yield** — live yield odometer, claimable counter, all-time earned, 7/30/90d sparkline.
 
-**Tip:** If you see a recall error, disable lending temporarily, then retry open.
+**Collateral asset LTV table:**
 
----
+| Asset | LTV (haircut) | Devnet |
+|-------|---------------|--------|
+| USDC | 100% | Live |
+| SOL | 80% | Live |
+| mSOL | 82% | Coming (mainnet mint) |
+| jitoSOL | 82% | Coming (mainnet mint) |
 
-## Live perp markets (devnet)
-
-| Market | Max leverage | Status |
-|--------|--------------|--------|
-| SOL-PERP | 50× | Live |
-| BTC-PERP | 50× | Live |
-| ETH-PERP | 50× | Live |
-| Others in dropdown | Varies | Preview (charts only) |
-
----
-
-## Fees (what you pay / earn)
-
-| Event | What happens |
-|-------|----------------|
-| Open / close perp | Trading fee (split: burn + stakers) |
-| Idle USDC lent | ~85% of yield to you; 15% to protocol burn pool |
-| NVSCUSDC in vault | NAV grows from vault yield (85% retained in NAV) |
-
-Exact bps are on-chain in `pt-config` and vault config.
+**Depositing SOL as collateral:**
+1. Go to `/trade/collateral`.
+2. Select **SOL** in the asset selector.
+3. Enter amount → **Deposit SOL**.
+4. SOL is wrapped and stored in your `CollateralPosition` PDA.
+5. When you next open a position, SOL is counted at 80% LTV alongside your USDC margin.
 
 ---
 
-## FAQ
+### `/analytics` — Analytics Dashboard
 
-**Can I trade without NVSCUSDC?**  
-Yes—deposit USDC directly to escrow and select **USDC** margin on perps.
+Protocol transparency engine with four zones:
 
-**Why is the trade button disabled on BONK?**  
-That market is preview-only until its oracle is initialized and live.
-
-**Do I need NVSC to trade?**  
-No. NVSC is for staking and governance.
-
-**Is this mainnet?**  
-No—current deployment targets **devnet**. Mainnet is planned after audit (~Q3 2026).
-
-**Where are my funds?**  
-In your **escrow PDA** (non-custodial)—not in a centralized wallet.
-
-**What if escrow shows “incompatible”?**  
-Your escrow may be from an older program version. Use a fresh devnet wallet or ask ops to close the old escrow with admin key.
+| Zone | Data |
+|------|------|
+| **Macro Activity** | 24h / cumulative volume area charts, revenue donut (fees / liq. penalties / funding), per-market OI table (live from oracle PDAs) |
+| **Solvency Terminal** | Insurance fund balance, bad debt counter ($0.00), MEV leaked ($0.00), three-tier safety status |
+| **Oracle Matrix** | Pyth vs Switchboard live divergence chart, per-market confidence bps, settlement lag |
+| **Inventory Matrix** | Vault TVL composition wheel, asset safety cap progress bars, global yield index compounding curve |
 
 ---
 
-## Troubleshooting
+### `/earn/vault` — nvscUSDC Vault
 
-| Issue | Try |
-|-------|-----|
-| Simulation failed / 2006 | See `DEVNET.md` — escrow upgrade or position-tracker deploy |
-| Insufficient margin | Deposit more NVSCUSDC/USDC; recall lent funds |
-| Oracle / mark stale | Ensure something is running the permissionless update cranks (any automation can call them) |
-| BTC/ETH won’t open | Run `npm run init:perp-oracles` with deploy wallet |
+Deposit USDC → mint nvscUSDC shares at current NAV. The vault deploys idle USDC into the Sovereign Omni-Pool. NAV compounds as the pool accrues protocol yield.
+
+**To use as perp margin:** After minting nvscUSDC, deposit into your escrow from the **Margin** tab, or deposit USDC directly to escrow and enable **Auto-lend** (which automatically deploys idle USDC into the Omni-Pool).
 
 ---
 
-## Learn more
+### `/earn/stake` — NVSC Staking
 
-- [Whitepaper](./WHITEPAPER.md)
-- [Tokenomics](./TOKENOMICS.md)
-- [Launch roadmap](./LAUNCH_ROADMAP.md)
-- In-app: `/more/docs`
+Stake NVSC tokens to earn trading fee share and governance rights.
+
+| Tier | Minimum NVSC | Fee Discount |
+|------|-------------|--------------|
+| Bronze | 100 | 10% |
+| Silver | 1,000 | 25% |
+| Gold | 10,000 | 50% |
+| Platinum | 100,000 | 100% (free trading) |
 
 ---
 
-*Noviscia — Make idle capital work every second.*
+## Sub-accounts
+
+Sub-accounts let you run isolated strategies under the same wallet — different margin, positions, and risk for each.
+
+**Creating a sub-account:**
+1. In the perps terminal, use the sub-account switcher (top of account panel).
+2. Click **New Sub-account** → enter a label (e.g. "Scalping", "Swing").
+3. Deposit margin into the sub-account's dedicated escrow.
+4. Positions opened in sub-account N are completely isolated from sub-account 0.
+
+> One sub-account being liquidated cannot touch margin in another sub-account.
+
+---
+
+## Auto-lend (idle yield)
+
+With **Auto-lend** enabled (default ON), idle USDC in your escrow is automatically deployed to the Sovereign Omni-Pool. Yield accrues continuously via the protocol's `fee_index` mechanism.
+
+- **Idle USDC** = `escrow.usdc_balance - reserved_margin` (the slice not backing active positions).
+- Yield appears as **pending** in the UI and the Yield Tracker tab.
+- Click **Claim** to collect pending yield into your escrow balance.
+- No lock-up: you can claim at any time, even with open positions.
+
+The **Collateral Console** (`/trade/collateral`) shows a live yield odometer ticking up in real time.
+
+---
+
+## Understanding liquidation
+
+A position is eligible for liquidation when:
+
+```
+effective_collateral < maintenance_margin_requirement
+```
+
+where `effective_collateral` = USDC balance + Σ (asset_balance × oracle_price × weight_bps / 10_000).
+
+**Grace window:** On breach, the position enters a ~150-slot (~60 second) grace window before permissionless liquidation is unlocked. The **Grace** column in the Positions tab shows a countdown. Use this time to add margin or close the position.
+
+**Three-tier safety:**
+1. Your collateral absorbs the loss first.
+2. If there's residual bad debt, the per-asset insurance fund absorbs it.
+3. If the insurance fund is depleted (never happened on devnet), a socialized haircut on LPs is the last resort.
+
+---
+
+## Order types
+
+| Type | Description |
+|------|-------------|
+| **Market** | Executes immediately at oracle consensus price |
+| **Limit** | Queued on-chain; fills when market crosses limit price |
+| **TWAP** | Splits order into N slices at T-second intervals; minimizes price impact |
+
+Limit and TWAP orders appear in the **Open Orders** and **Pending Intents** tabs.
+
+---
+
+## Fees
+
+| Fee type | Rate |
+|----------|------|
+| Open / close (market) | 0.08% of notional |
+| Limit order fill | 0.04% maker / 0.08% taker |
+| Funding rate | Variable; displayed in toolbar; settles 8-hourly |
+| NVSC Gold tier | 50% discount on all fees |
+| NVSC Platinum tier | 100% — free trading |
+
+---
+
+## Common issues
+
+**"Escrow not initialized"** — First deposit triggers escrow creation. Approve the initialization transaction.
+
+**"Insufficient margin"** — Your effective collateral (including SOL haircut) is below the required maintenance margin. Add USDC or SOL, or reduce position size.
+
+**"Stale oracle"** — The oracle hasn't been updated within the staleness window. Usually resolves within a few seconds as the permissionless crank refreshes it.
+
+**Position won't close** — If the oracle is stale, closing is blocked. Wait for the oracle to refresh, then retry.
+
+**"Auto-lend recall failed"** — Rare: the Sovereign Omni-Pool's cash buffer is temporarily fully utilised. Retry after a few seconds; the pool rebalances automatically.
+
+---
+
+## Supported wallets
+
+Phantom, Solflare, Backpack, Ledger (via Phantom). Any wallet supporting Solana's wallet-adapter standard.
+
+---
+
+## Links
+
+| Resource | |
+|----------|-|
+| App | https://noviscia.com |
+| Discord | https://discord.gg/Noviscia-protocol |
+| Twitter | https://twitter.com/noviscia |
+| Bug reports | https://github.com/noviscia/protocol/issues |
+| Whitepaper | [`WHITEPAPER.md`](./WHITEPAPER.md) |
+| Architecture | [`ARCHITECTURE_V2.md`](./ARCHITECTURE_V2.md) |

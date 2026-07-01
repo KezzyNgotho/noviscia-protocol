@@ -1,151 +1,231 @@
-# Devnet operations (Noviscia)
+# Devnet Runbook — Noviscia Protocol
 
-Stay on **devnet** until mainnet. This doc maps to the canonical diagrams in [SYSTEM_DIAGRAMS.md](./SYSTEM_DIAGRAMS.md).
-
-## Diagram alignment
-
-### §1 System structure
-
-| Diagram node | Devnet today |
-|--------------|--------------|
-| `U → W` Web App | Live — perps, vault toggle, recall-before-open |
-| `P → O1/O2` Pyth + Switchboard | Live — keeper `oracle.ts` + on-chain `PerpOracleState` |
-| `Y → K` Kamino / Solend / Marginfi | **Logical venues** — AI reads live APY; keeper `lend_idle_venue` → 3 venue PDAs |
-| `O → KEEPER` | Live — lend, dual oracle push, marks, liquidate |
-| `C → E`, `C → LI`, `C → PT` | Live — Escrow, Lending Integrator, Position Tracker |
-| `C → YD` Yield Distributor | Live — `distribute_yield` 85% user / 15% burn-engine CPI |
-| `C → NV` NVSCUSDC vault | Live — mint/redeem, NAV, cash buffer, `accrue_vault_yield` |
-| `C → SM` Governance | Live — NVSC proposals, vote, `execute_proposal` → venue weights |
-
-### §2 Trade flow
-
-| Diagram step | Devnet today |
-|--------------|--------------|
-| Connect wallet / submit trade | Live |
-| Validate price, margin, risk | Live — dual oracle + session policy on open |
-| **Recall funds / execute CPI** | Live — `ensureRecallBeforePerpOpen` → `recall_for_trade` / keeper recall |
-| Persist + WS broadcast | Partial — on-chain state yes; full API/WS stack optional |
-
-### §3 Yield flow
-
-```text
-[Diagram]  Idle Margin → Escrow → Lending Integrator → Kamino|Solend|Marginfi → Yield → Distributor → Users/Burn
-
-[Devnet]   Idle Margin → Escrow → Lending Integrator → venue-pool (0|1|2) → reservoir yield
-           Names match diagram; custody is internal until mainnet LEND_MODE_EXTERNAL.
-```
-
-| Diagram box | Devnet implementation |
-|-------------|------------------------|
-| Idle → Escrow | `deposit_usdc`, `deposit_nvusdc`, `reserve_margin` / `reserve_nvusdc_margin` |
-| Escrow → Lending Integrator | CPI `deposit_from_escrow` via `lend_idle_venue` |
-| → Kamino / Solend / Marginfi | Three `venue-pool` PDAs (not external program CPI) |
-| Accrued yield | `supply_apy` + `fund_reservoir` per venue |
-| Yield Distributor → 85/15 / burn | Live — `distribute_yield` + vault `accrue_vault_yield`; perp fees → burn/staking |
-
-### §4 Deployment flow
-
-Follow diagram: `anchor build` → deploy programs → update IDs → services → web → health. Use `TMPDIR`/`CARGO_TARGET_DIR` under repo if `/tmp` is full.
-
-### NVSCUSDC margin deposit fails (`vault_config` / simulation)
-
-If Phantom shows **simulation failed** / `AccountOwnedByWrongProgram` on `vault_config`, devnet **escrow** was upgraded before **nv-usdc-vault** and still expects the old vault program id (`GThUX…`) while your vault lives on `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC`.
-
-Fix (deploy wallet `~/.config/solana/new-id.json`):
-
-```bash
-./scripts/upgrade-escrow-devnet.sh
-```
-
-Then hard-refresh the web app and retry **Earn → Vault → Margin → NVSCUSDC**.
-
-### Perps: “Account not found / ensure escrow is initialised” (Anchor 2006)
-
-Often **not** a missing escrow — usually:
-
-1. **Open with NVSCUSDC** while position-tracker on devnet is stale → upgrade PT:
-   ```bash
-   ./scripts/upgrade-position-tracker-devnet.sh
-   ```
-2. **Close position** fails on fee routing (wrong staking fee vault mint) → web app now uses the pool’s **USDC ATA**; first close may create it (one small SOL tx). Ensure `NEXT_PUBLIC_BURN_VAULT_USDC` points at a real USDC account or leave unset to use the burn-state ATA.
-
-### On-chain IDL (`anchor idl init` / `Failed to initialize IDL`)
-
-Optional for the web UI (it uses `app/web/app/idl/*.json`). If deploy prints this after a **successful** program upgrade, ignore it.
-
-- **`idl init` fails** — an IDL metadata account already exists for the program (`AJ6L6…` on devnet). Use **`anchor idl upgrade`**, not `init`.
-- **`idl upgrade` / `idl close` still fail** — devnet has a **stale** metadata account (`AJ6L6…`) that Anchor 1.x / `@solana-program/program-metadata@0.5.1` cannot read or update (`fetch` → “Account not found”). The **program bytecode upgrade is still valid**; only optional explorer/CLI IDL is affected.
-- **Web app** — uses `app/web/app/idl/escrow.json`; no on-chain IDL required.
-- **Optional (new canonical IDL slot):** `anchor idl init --non-canonical --filepath .cache/cargo-target/idl/escrow.json CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D` (separate metadata; does not fix `AJ6L6…`).
+**Last updated:** July 2026  
+**Network:** Solana devnet  
+**Deployer wallet:** `pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA`  
+**Keypair path:** `~/.config/solana/new-id.json`
 
 ---
 
-Lending venues on devnet use the **internal yield engine** — real custody and recall, APY from on-chain pools + reservoirs (not Kamino/Solend/Marginfi CPI until mainnet).
+## Program IDs (devnet, current)
 
-## What is “solid” on devnet
+| Program | ID |
+|---------|----|
+| `escrow` | `CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D` |
+| `position_tracker` | `3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY` |
+| `nv_usdc_vault` | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` |
+| `lending_integrator` | `Ea5TXHxsVcnKwMAcAsQkpPN88xr8ndBRpNGDkREWrbSZ` |
+| `burn_engine` | `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` |
+| `staking_manager` | `4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75` |
+| `yield_distributor` | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |
+| `liquidation_vault` | `C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1` |
+| `prediction_market` | `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` |
 
-| Layer | Status |
-|-------|--------|
-| Escrow deposit / perp margin | Live |
-| `lend_idle_venue` → venue pool vault | Live (3 venues) |
-| `recall_funds` / `recall_for_trade` | Live (venue-aware) |
-| Yield on recall | Requires `fund_reservoir` per venue |
-| AI venue weights | Keeper + optional `SYNC_VENUE_WEIGHTS=true` |
-| Perp markets (UI catalog) | `app/web/app/lib/perps/perps-catalog.json` — **3 live** (SOL, BTC, ETH), rest preview |
-| Dual oracle + marks | `npm run init:perp-oracles` then keeper cranks **all tradeable** markets |
-| Kamino/Solend/Marginfi CPI | **Mainnet later** (`lend_mode = external`) |
+**Key devnet mints:**
+| Token | Mint |
+|-------|------|
+| USDC (devnet) | `Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5` |
+| nvscUSDC | `2TmaUey4Hh2om1kFR77Vw1RDh8H69qcW6UAACVidJeVk` |
+| NVSC | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
 
-## One-time setup
+---
+
+## What is live on devnet
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| USDC-settled perps (SOL/BTC/ETH) | **Live** | 3 tradeable markets; 13 preview |
+| Dual-oracle (Pyth + Switchboard) | **Live** | Switchboard can drift on devnet |
+| Multi-asset collateral (USDC + SOL) | **Live** | mSOL/jitoSOL wired, mainnet mints only |
+| Sovereign Omni-Pool (sweep + recall) | **Live** | Full sweep/recall round-trip proven |
+| Idle margin yield (`claim_idle_yield`) | **Live** | EscrowAccount V5 (SPACE=132) |
+| Sub-accounts (sub_id 1–255) | **Live** | Isolated UserState + Position + Escrow PDAs |
+| Limit orders + TWAP | **Live** | |
+| AMM depth / JIT matching | **Live** | |
+| Permissionless liquidation crank | **Live** | |
+| nvscUSDC vault | **Live** | NAV per share accrues from Omni-Pool yield |
+| NVSC staking tiers | **Live** | |
+| Per-asset insurance pools | **Live (USDC)** | SOL pool wired, needs seeding |
+| Collateral Console UI | **Live** | `/trade/collateral` |
+| Analytics dashboard | **Live** | `/analytics` |
+| NVSC TGE / mainnet | **Q3 2026** | |
+
+---
+
+## Standard deploy flow
 
 ```bash
+# 1. Build all programs
 cd noviscia-protocal
-TMPDIR="$PWD/.tmp-build" CARGO_TARGET_DIR="$PWD/target" anchor build --ignore-keys
-./scripts/sync-idls.sh
-anchor deploy --provider.cluster devnet
-npx tsx scripts/init-rewire-devnet.ts   # venues + fund reservoirs
-npm run init:perp-oracles               # oracle PDAs for SOL/BTC/ETH — uses Solana CLI wallet if set
-# Or explicitly: ADMIN_KEYPAIR_PATH=$HOME/.config/solana/new-id.json npm run init:perp-oracles
-# (.keys/admin.json does not exist; keeper.json is usually NOT pt-config admin)
+anchor build
+
+# 2. Check deployer balance (need ~15+ SOL for all 3 programs)
+solana balance pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA --url devnet
+
+# 3. Extend program space if binary grew (run before deploy if unsure)
+solana program extend CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D 10240 \
+  --keypair ~/.config/solana/new-id.json --url devnet
+solana program extend 3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY 10240 \
+  --keypair ~/.config/solana/new-id.json --url devnet
+solana program extend CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC 10240 \
+  --keypair ~/.config/solana/new-id.json --url devnet
+
+# 4. Deploy
+anchor deploy --provider.cluster devnet \
+  --provider.wallet ~/.config/solana/new-id.json \
+  -p escrow
+anchor deploy --provider.cluster devnet \
+  --provider.wallet ~/.config/solana/new-id.json \
+  -p nv-usdc-vault
+anchor deploy --provider.cluster devnet \
+  --provider.wallet ~/.config/solana/new-id.json \
+  -p position-tracker
+
+# 5. Copy IDLs to web app
+cp target/idl/escrow.json app/web/app/idl/escrow.json
+cp target/idl/nv_usdc_vault.json app/web/app/idl/nv_usdc_vault.json
+cp target/idl/position_tracker.json app/web/app/idl/position_tracker.json
+
+# 6. Run migrations (after escrow redeploy)
+npx tsx scripts/migrate-escrow-account-v5-devnet.ts
+npx tsx scripts/migrate-vault-config-omnipool-devnet.ts
+npx tsx scripts/migrate-vault-config-utilization-devnet.ts
+npx tsx scripts/migrate-user-state-clearing-cascade-devnet.ts
 ```
 
-**Perps trading (devnet):**
+---
 
-| You choose | Options |
-|------------|---------|
-| **Market** (what you long/short) | SOL, BTC, ETH — on-chain. Others — charts only until `tradeable: true` in catalog. |
-| **Margin** (collateral) | **NVSCUSDC** (vault shares) or **USDC** in escrow — not a separate “NVSC perp”. |
+## Recovering SOL from stranded buffers
 
-Env (`.env` / keeper):
-
-```
-SOLANA_RPC_DEVNET=https://api.devnet.solana.com
-USDC_MINT_DEVNET=Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5
-ADMIN_KEYPAIR_PATH=.keys/keeper.json
-KEEPER_KEYPAIR_PATH=.keys/keeper.json
-DEVNET_RESERVOIR_FUND_USDC=500000000
-SYNC_VENUE_WEIGHTS=true
-SYNC_VENUE_APY=true
-```
-
-## Verification
+Failed deploys leave upload buffers open. Reclaim the SOL:
 
 ```bash
-npm run verify:phase1   # legacy single pool lend/recall
-npm run verify:phase2   # perps + oracle
-npm run verify:phase3   # liquidation
-npm run verify:phase4   # fee split
-npm run verify:phase5   # Kamino + Solend + Marginfi venue pools
+solana program show --buffers --keypair ~/.config/solana/new-id.json --url devnet
+solana program close <BUFFER_ADDRESS> --keypair ~/.config/solana/new-id.json --url devnet
 ```
 
-Start keeper:
+---
+
+## RPC requirements
+
+**Critical:** Use Alchemy devnet RPC, not `api.devnet.solana.com`, for the web app. The public endpoint does not support `signatureSubscribe`, which causes a false "stale oracle" error in the UI even when oracles are fresh.
+
+```
+NEXT_PUBLIC_SOLANA_RPC=https://solana-devnet.g.alchemy.com/v2/<YOUR_KEY>
+```
+
+---
+
+## EscrowAccount space history
+
+| Version | SPACE | New fields |
+|---------|-------|-----------|
+| V3 | 108 | Original |
+| V4 | 116 | `sol_balance` (u64) |
+| V5 (current) | 132 | `fee_index_snapshot` (u128) |
+
+Migration: `migrate_escrow_account_v5` is permissionless (payer ≠ user). Script `scripts/migrate-escrow-account-v5-devnet.ts` handles both V3 and V4 accounts idempotently.
+
+---
+
+## Troubleshooting
+
+### "Error: invalid program argument" on deploy
+
+New binary exceeds allocated account space. Fix:
 
 ```bash
-npm run keeper:dev
+solana program extend <PROGRAM_ID> 10240 --keypair ~/.config/solana/new-id.json --url devnet
 ```
 
-## Internal vs external (later)
+Then retry deploy.
 
-- `LendingPool.lend_mode = 0` (`LEND_MODE_INTERNAL`) — **devnet default**
-- `lend_mode = 1` — mainnet CPI into real protocols (same venue PDAs, different deposit path)
+### "Program's authority does not match authority provided"
 
-AI router still uses live **mainnet APY feeds** for decisions; devnet pools simulate those rates via `update_pool_apy` when `SYNC_VENUE_APY=true`.
+Wrong keypair. Always pass `--provider.wallet ~/.config/solana/new-id.json` explicitly. The deployer is `pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA`, not the default `~/.config/solana/id.json`.
+
+### "ConstraintSeeds" on escrow migration
+
+The migration script passed `user: payer.publicKey` instead of the account owner extracted from raw bytes. The fix in V5: `MigrateEscrowAccountV5` uses `payer: Signer` (pays rent) + `user: UncheckedAccount` (PDA seed only, no signature required). Script reads owner from account bytes `[8..40]`.
+
+### Oracle shows stale / "stale oracle" error
+
+1. Check RPC — `api.devnet.solana.com` does not support `signatureSubscribe`. Switch to Alchemy.
+2. If using Alchemy: oracle is genuinely stale — run the oracle refresh crank: `npx tsx scripts/refresh-oracle-devnet.ts`.
+3. Switchboard feeds on devnet are sparsely maintained and can drift. Position-tracker falls back to Pyth-only consensus when Switchboard staleness guard triggers.
+
+### "Simulation failed / AccountOwnedByWrongProgram" on vault deposit
+
+Escrow was deployed after nv-usdc-vault and still expects the old vault program ID. Re-deploy escrow with the current vault ID in scope, or run `anchor deploy -p escrow`.
+
+### "Account not found" on IDL operations
+
+The on-chain IDL metadata account (`AJ6L6…`) is stale. The web app uses local `app/web/app/idl/*.json` files — not the on-chain IDL. Ignore this error unless debugging anchor CLI directly.
+
+### write transactions failing in bulk (rate limiting)
+
+Public devnet RPC rate-limits bulk writes. Add `await sleep(500)` between transactions in scripts, or switch to Alchemy.
+
+---
+
+## Permissionless cranks
+
+No trusted operator is required. Anyone can run these:
+
+| Crank | Script / instruction |
+|-------|---------------------|
+| Oracle mark push | `accrue_funding_if_due` on each open position |
+| Lend idle USDC | `lend_idle_venue` via escrow auto-lend |
+| Vault sweep to Omni-Pool | `sweep_to_pool` on nv-usdc-vault |
+| Liquidation | `liquidate_permissionless` on position-tracker |
+| Burn trigger | `trigger_burn` on burn-engine |
+| Yield distribution | `distribute_yield` on yield-distributor |
+
+---
+
+## Environment variables (web app)
+
+| Variable | Required | Default |
+|----------|----------|---------|
+| `NEXT_PUBLIC_SOLANA_RPC` | Yes | `https://api.devnet.solana.com` |
+| `NEXT_PUBLIC_ESCROW_PROGRAM_ID` | No | hardcoded devnet ID |
+| `NEXT_PUBLIC_POSITION_TRACKER_PROGRAM_ID` | No | hardcoded devnet ID |
+| `NEXT_PUBLIC_NV_USDC_VAULT_PROGRAM_ID` | No | hardcoded devnet ID |
+| `NEXT_PUBLIC_USDC_MINT` | No | hardcoded devnet mint |
+| `NEXT_PUBLIC_BURN_VAULT_USDC` | No | burn-state USDC ATA |
+| `NEXT_PUBLIC_IDLE_YIELD_APY_BPS` | No | `1200` (12% APY display) |
+
+---
+
+## Verifying a deployment
+
+```bash
+# 1. Check program deployed correctly
+solana program show CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D --url devnet
+
+# 2. Check vault config exists
+solana account $(npx tsx -e "
+  const { PublicKey } = require('@solana/web3.js');
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('nv-vault-config'), new PublicKey('Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5').toBuffer()],
+    new PublicKey('CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC')
+  );
+  console.log(pda.toBase58());
+") --url devnet
+
+# 3. Test idle yield flow
+#   a. Open a position to reserve margin
+#   b. Wait for fee_index to tick (or call accrue_vault_yield)
+#   c. Call claim_idle_yield — should CPI to vault and credit escrow
+#   d. Verify escrow.usdc_balance increased and fee_index_snapshot updated
+
+# 4. Test multi-asset collateral
+#   a. Deposit SOL into CollateralPosition via deposit_collateral(SOL_MINT, amount)
+#   b. Open a position — remaining_accounts should include [sol_oracle, sol_collateral_pos]
+#   c. Verify position opens with sol collateral counted at 80% LTV
+
+# 5. Test sub-account
+#   a. create_sub_account(1, "test")
+#   b. initialize_escrow_sub(1)
+#   c. open_position_sub — verify separate UserState PDA from sub_id=0
+```
