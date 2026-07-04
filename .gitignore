@@ -15,6 +15,9 @@ target/
 .tmp-build/
 dist/
 build/
+# TV datafeed bundle lives inside a dist/ folder but must be served in production
+!app/web/public/datafeeds/udf/dist/
+!app/web/public/datafeeds/udf/dist/bundle.js
 *.log
 .anchor/
 test-ledger/
