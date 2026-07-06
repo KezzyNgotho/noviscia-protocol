@@ -3155,18 +3155,14 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "burn-engine",
- "escrow",
- "liquidation-vault",
  "nv-usdc-vault",
- "protocol-lp-vault",
  "pyth-solana-receiver-sdk",
+ "pythnet-sdk",
  "solana-program",
  "solana-program-test",
  "solana-sdk",
  "spl-associated-token-account",
  "spl-token",
- "staking-manager",
  "tokio",
 ]
 
