@@ -19,51 +19,50 @@ The following programs are in-scope for the planned pre-mainnet audit:
 
 | Program | Description |
 |---------|-------------|
-| `position_tracker` | Perp positions, dual oracle, liquidation, fees, JIT/AMM |
-| `escrow` | Margin custody, Omni-Pool sweep, atomic recall, multi-asset collateral, sub-accounts |
-| `nv_usdc_vault` | Sovereign Omni-Pool — USDC ↔ nvscUSDC, NAV accrual, fee_index |
-| `liquidation_vault` | Insurance fund, bad-debt coverage |
+| `position_tracker` | JIT Pyth pull-oracle perp engine — open/close/liquidate, peer-to-peer funding, insurance fund, trading fees, TP/SL, limit/TWAP orders |
+| `nv_usdc_vault` | Single share-based USDC vault — NAV accrual, fee/liquidation-revenue sweep |
+| `protocol_lp_vault` | Trading-fee LP vault, share-based NAV |
 | `staking_manager` | NVSC staking, governance proposals, fee-tier discounts |
 | `burn_engine` | Protocol fee accumulation, permissionless burn trigger |
-| `protocol_lp_vault` | Trading-fee LP vault, share-based NAV |
 
-Out of scope for v1 audit: `token_nvsc`, `yield_distributor`, `prediction_market`.
+Out of scope for v1 audit: `token_nvsc`, `yield_distributor`, `prediction_market`, `escrow` (legacy — not part of the perps margin path; see root `README.md`).
 
 ---
 
 ## Known risk areas (pre-audit self-assessment)
 
-These areas have been identified internally as warranting close scrutiny. They are documented here to give auditors a starting point, not as an exhaustive list.
+These areas have been identified internally as warranting close scrutiny — updated 2026-07-06 to reflect `position-tracker`'s JIT-oracle rewrite. Not an exhaustive list.
 
-### 1. Escrow recall atomicity
-`recall_for_trade` in `escrow/src/lib.rs` is CPI-called by `position_tracker` in the same transaction as `open_position`. The check `lent_amount == 0` after recall must hold under concurrent transactions. Verify there is no TOCTOU window.
+### 1. JIT oracle freshness enforcement
+Every price-sensitive instruction (`open_position_jit`, `close_position`, `liquidate`, `execute_tp_sl`) calls `verify_jit_price`, which checks the Pyth Hermes VAA's embedded publish time against a strict ≤3-second ceiling before trusting it. Verify: (a) the ceiling is enforced identically across all four call sites, (b) the check cannot be satisfied by a VAA that's valid-but-stale relative to wall-clock time due to a slow `post_update_atomic` CPI, (c) `merkle_price_update_bytes`' hand-rolled Borsh encoding (`encodeMerklePriceUpdate`) can't be crafted to pass verification against a different price than the one actually used downstream.
 
-### 2. Oracle freshness enforcement
-`position_tracker` enforces a staleness bound (`MAX_ORACLE_AGE_SLOTS`) on `PerpOracleState.updated_at`. Verify this bound is correctly applied across `open_position`, `close_position`, `liquidate_permissionless`, `liquidate_sub`, and `execute_tp_sl`. Pull-oracle path bundles `update_oracle_from_pyth` in the same tx — verify the slot check cannot be bypassed.
+### 2. Liquidation fee split and insurance-fund carve-out
+`liquidate` splits the forfeited collateral 20% caller / 80% protocol-retained, then splits that 80% again — 10% to `Market.insurance_fund_usdc`, 90% to vault NAV via `accumulate_protocol_fees`. Verify: the double-split arithmetic is safe against overflow/rounding at both small (sub-cent) and large notional sizes; `caller_bounty_shares`/`protocol_shares` can't be manipulated to exceed the position's actual `collateral_shares`; a self-liquidation (trader == liquidator, permitted by design) can't be exploited to extract more than the intended 20% bounty.
 
-### 3. Liquidation fee split
-`liquidate_permissionless` and `liquidate_sub` split the penalty 20% to caller / 80% to protocol. Verify the arithmetic is safe against overflow/rounding and that `pay_liquidator_from_protocol` cannot be called with an arbitrary `liquidator_fee` exceeding the actual penalty.
+### 3. Peer-to-peer funding settlement
+`settle_funding` moves `Market.funding_index` as `skew * FUNDING_RATE_BPS_PER_SETTLE * FUNDING_INDEX_SCALE / BPS_DENOMINATOR / total_oi`. Verify: this cannot be called fast enough (bypassing `FundingSettleTooSoon`) to compound an outsized rate; the index calculation is symmetric (a long-heavy market charges longs and pays shorts by the same magnitude, and vice versa); `entry_funding_index` snapshotting at open and the delta computation at close/liquidate/TP-SL can't be gamed by opening/closing across a `settle_funding` call to extract funding without corresponding risk exposure.
 
-### 4. Admin-gated instructions
-Several instructions are admin-gated (`set_omnipool_params`, `set_collateral_weight`, `set_governance_authority`, migration helpers). Verify admin key is a multisig or at minimum documented. Centralization risk should be noted.
+### 4. Market risk-parameter validation
+A live misconfiguration was found and fixed 2026-07-06: ETH's `max_leverage_bps`/`maintenance_margin_bps` combination made positions liquidatable at open with zero price movement. `register_market` and the new `set_market_risk_params` now both enforce `maintenance_margin_bps * max_leverage_bps < 10_000²`. Verify this invariant is sufficient (not just necessary) for safety across the full range of valid inputs, and that no other instruction can set these fields without going through the same check.
 
-### 5. nv-usdc-vault `vault_authority` PDA
-The vault's `accumulate_protocol_fees` is callable by anyone but only advances NAV — it cannot withdraw funds. Verify no other instruction path allows unauthorised withdrawal from `vault_usdc`.
+### 5. Admin-gated instructions
+`set_market_fee_bps`, `set_market_risk_params`, `register_market`, `resize_market` are admin-gated via `pt_config.admin`. Verify the admin key's operational security (multisig recommended before mainnet) and that no instruction allows privilege escalation to admin-equivalent capability from a non-admin signer.
 
-### 6. Sub-account isolation
-Sub-account PDAs use `seeds = [b"user_state", user, &[sub_id]]`. Verify that a liquidation targeting sub_id=1 cannot touch sub_id=0's escrow, and that `settle_position_sub` only draws from the correct sub-account escrow.
+### 6. `nv-usdc-vault` CPI trust boundary
+`position-tracker` CPIs into `nv_usdc_vault` for `redeem_nvusdc`, `accumulate_protocol_fees`, and `adjust_locked_margin`, signing with the `pt_config` PDA. Verify `nv-usdc-vault`'s own account constraints don't allow a different caller program to reach these same CPI entry points and mutate vault state outside the intended flow.
 
-### 7. `remaining_accounts` collateral loop
-`liquidate_permissionless` and `adjust_margin` accept collateral oracle+position pairs via `remaining_accounts`. Verify the loop cannot be supplied with duplicate accounts, fake oracle PDAs, or accounts owned by a different program to inflate collateral value.
+### 7. Position PDA uniqueness / no increase-position path
+`Position` is `init`-only per `(trader, market, sub_id)` with no increase/add-to-position instruction. This is a product-completeness question for auditors to flag, not a security bug per se: confirm the deliberate one-position-per-tuple design doesn't create an unexpected way to bypass the maintenance-margin check by never being able to "top up" an underwater position instead of closing and reopening.
 
 ---
 
 ## Pre-audit checklist
 
 - [x] All programs compile cleanly (`cargo build-sbf`)
-- [x] Rust workspace dependency graph clean (no lending-integrator or external venue CPI)
+- [x] Rust workspace dependency graph clean (no lending-integrator or external venue CPI — `lending_integrator` deleted, Kamino/external lending retired from `nv-usdc-vault`)
 - [x] TypeScript SDK compiles cleanly (`tsc --noEmit`)
-- [x] Key e2e flows proven on devnet (deposit → sweep → open → close → re-sweep; liquidation bounty; sub-account isolation)
+- [x] Key e2e flows proven live on devnet, 2026-07-06: open/close + trading-fee NAV increase; peer-to-peer funding settled exact against a hand-computed expectation; liquidation 20/80 split + insurance-fund carve-out (both NAV and `insurance_fund_usdc` deltas verified exact)
+- [x] Live misconfiguration found and fixed (ETH market risk parameters) — see Known risk area #4
 - [ ] Independent audit firm engaged
 - [ ] Audit fieldwork complete
 - [ ] Findings remediated or accepted with documented mitigations

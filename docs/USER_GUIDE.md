@@ -1,20 +1,20 @@
 # Noviscia User Guide
 
-**Audience:** Traders and liquidity users  
-**Network:** Solana devnet (mainnet guide ships with TGE — Q3 2026)  
-**Last updated:** July 2026
+**Audience:** Traders
+**Network:** Solana devnet (mainnet guide ships with TGE — Q3 2026)
+**Last updated:** July 7, 2026
 
 ---
 
 ## What is Noviscia?
 
-Noviscia is a perpetual futures exchange where your **margin earns yield while you are not trading**. You post collateral once, trade SOL/BTC/ETH perps, and let idle USDC compound in the **Sovereign Omni-Pool** — recalled atomically when you open a position. Every dollar of idle margin also earns a share of protocol trading fees, claimable anytime.
+Noviscia is a perpetual futures exchange where **the margin backing your leveraged position never stops earning**. You post nvscUSDC — a share of the protocol's USDC vault — as margin. Opening a position locks those shares, but never redeems them, so they keep compounding the vault's NAV the entire time they're backing your trade.
 
 **You need:** Any Solana wallet (Phantom recommended) on **devnet**, plus devnet SOL for fees.
 
 ---
 
-## Quick start (10 minutes)
+## Quick start
 
 ### Step 1 — Connect your wallet
 
@@ -24,31 +24,34 @@ Noviscia is a perpetual futures exchange where your **margin earns yield while y
 
 ### Step 2 — Get devnet tokens
 
-- **SOL:** Use `solana airdrop 2 <YOUR_WALLET> --url devnet` in terminal, or the Solana faucet.
-- **USDC:** The in-app faucet or the devnet USDC mint (`Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5`).
+- **SOL:** `solana airdrop 2 <YOUR_WALLET> --url devnet`, or a Solana faucet.
+- **USDC:** The devnet USDC mint (`Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5`).
 
-### Step 3 — Deposit USDC to your escrow
+### Step 3 — Fund your margin
 
-1. Go to **Trade → Perps** (`/trade/perps`).
-2. In the right account panel, enter a deposit amount and click **Deposit USDC**.
-3. Approve the transaction. Your balance appears under **Balance**.
+Go to **Trade → Perps** (`/trade/perps`). In the account panel below the order form:
 
-> Alternatively, go to **Earn → Vault** → **Deposit USDC** to mint nvscUSDC shares (yield-bearing). You can then use those shares as perp margin.
+1. Make sure **Deposit** is selected (toggle at the top of the panel).
+2. Pick an asset: **USDC** (straight deposit), or **SOL** / the current market's base asset / **Other** (any SPL mint — swapped to USDC via Jupiter, then minted into nvscUSDC in one flow).
+3. Enter an amount, click **Deposit**, approve in your wallet.
+
+> Non-USDC deposits require live Jupiter routing and currently only settle on mainnet — devnet has no Jupiter liquidity, so test with USDC directly.
 
 ### Step 4 — Open a position
 
-1. Select a **Live** market (SOL, BTC, or ETH — badge: Live).
-2. Choose **Long** or **Short**.
-3. Set your collateral amount and leverage using the radial slider.
-4. Optionally set TP/SL prices.
-5. Click the **Intent-Settle** button — the UI shows "Routing Intent → Atomically Settled ✅".
-6. Your position appears in the **Positions** tab below.
+1. Select a tradeable market (SOL, BTC, or ETH — others show "Coming soon").
+2. Choose **Long** or **Short**, and **Market** or **Limit**.
+3. In the **Margin** field, either use your existing nvscUSDC/USDC balance, or pick SOL/another asset directly here too — the same swap-then-deposit flow can chain straight into opening the position behind one submit click.
+4. Set leverage with the slider or preset buttons.
+5. Optionally expand **TP / SL** to set a take-profit/stop-loss at open — this is a separate wallet approval right after the position opens (bundling it into the same transaction would exceed Solana's size limit).
+6. Click the submit button (**Long/Short {asset}**, or **Swap & Long/Short {asset}** if using non-USDC margin). The button shows "Verifying live price…" while it fetches and verifies a fresh on-chain price — if that races the strict 3-second freshness window, it retries automatically with one new approval.
+7. Your position appears in the **Positions** tab below.
 
-### Step 5 — Claim yield
+### Step 5 — Manage or close
 
-- Pending yield from your idle margin appears in the account panel under **Yield available**.
-- Click **Claim** to receive USDC directly into your escrow.
-- Or open the **Yield Tracker** tab at the bottom for detailed yield history.
+- The **Positions** tab shows your open positions, live PnL, and a Close button.
+- Set or change TP/SL from the same tab.
+- Closing re-verifies a fresh price the same way opening does.
 
 ---
 
@@ -56,73 +59,45 @@ Noviscia is a perpetual futures exchange where your **margin earns yield while y
 
 ### `/trade/perps` — Perps Terminal
 
-The main trading interface, organized in four zones:
-
 | Zone | Description |
 |------|-------------|
-| **Chart** | TradingView-style candles/bars/line/area · 1m–1d timeframes · entry & liquidation price lines |
-| **Order book / Depth** | Live book · recent trades · funding rate chart · liquidity depth chart |
-| **Order panel** | Long/Short tabs · Market/Limit/TWAP · radial leverage slider · TP/SL · intent-settle button |
-| **Account panel** | USDC & SOL balance · Collateral Basket (multi-asset weights, margin power gauge) · auto-lend toggle |
+| **Chart** | TradingView-based candles, your open positions' entry/liquidation lines overlaid |
+| **Order form** | Long/Short, Market/Limit, margin asset picker, leverage slider, TP/SL, order summary (size, entry, liquidation price), submit |
+| **Account panel** | Wallet nvscUSDC balance, locked-in-positions total, unrealized PnL, Deposit/Withdraw |
 
 **Bottom panel tabs:**
 
 | Tab | Description |
 |-----|-------------|
-| Positions | Open positions with grace-window countdown, inline margin adjust, TP/SL, partial close |
-| Open Orders | Active limit orders and TWAP slices |
-| Trade History | Settled fills and closed positions |
-| Pending Intents | TWAP and limit orders being routed |
-| Yield Tracker | Idle capital, live yield odometer, claimable amount |
+| Positions | Open positions — live PnL, health, close, set TP/SL |
+| Open Orders | Resting limit orders — cancel anytime |
+| Activity | Recent opens/closes/liquidations this session |
+| Portfolio | Aggregate margin, locked amount, average leverage, worst-case liquidation distance, unrealized/realized PnL across all open positions |
+| FAQ | In-page help |
+
+---
+
+### `/trade/triggers` — Triggers board
+
+Shows resting limit orders across markets and lets any wallet permissionlessly fill one at its trigger price, or lets the order's owner cancel it.
 
 ---
 
 ### `/trade/collateral` — Collateral Console
 
-Dedicated capital management dashboard. Use this to:
-
-- **Monitor your global risk** — NAV, effective margin power (after haircuts), utilization gauge, available to withdraw.
-- **Manage all asset types** — USDC and SOL shown live with oracle prices, haircut factors, effective collateral values, and Deposit/Withdraw inline actions.
-- **Stress-test your portfolio** — drag the volatility slider to simulate a SOL price crash and see exactly how your utilization gauge changes before it happens.
-- **Check pool capacity** — circular cap rings show how much of the protocol's SOL and USDC pool limits are used.
-- **Track idle yield** — live yield odometer, claimable counter, all-time earned, 7/30/90d sparkline.
-
-**Collateral asset LTV table:**
-
-| Asset | LTV (haircut) | Devnet |
-|-------|---------------|--------|
-| USDC | 100% | Live |
-| SOL | 80% | Live |
-| mSOL | 82% | Coming (mainnet mint) |
-| jitoSOL | 82% | Coming (mainnet mint) |
-
-**Depositing SOL as collateral:**
-1. Go to `/trade/collateral`.
-2. Select **SOL** in the asset selector.
-3. Enter amount → **Deposit SOL**.
-4. SOL is wrapped and stored in your `CollateralPosition` PDA.
-5. When you next open a position, SOL is counted at 80% LTV alongside your USDC margin.
+Capital management view — balances, positions, and utilization at a glance. (Not re-verified against current code this cycle; treat specifics as approximate until checked against the live UI.)
 
 ---
 
 ### `/analytics` — Analytics Dashboard
 
-Protocol transparency engine with four zones:
-
-| Zone | Data |
-|------|------|
-| **Macro Activity** | 24h / cumulative volume area charts, revenue donut (fees / liq. penalties / funding), per-market OI table (live from oracle PDAs) |
-| **Solvency Terminal** | Insurance fund balance, bad debt counter ($0.00), MEV leaked ($0.00), three-tier safety status |
-| **Oracle Matrix** | Pyth vs Switchboard live divergence chart, per-market confidence bps, settlement lag |
-| **Inventory Matrix** | Vault TVL composition wheel, asset safety cap progress bars, global yield index compounding curve |
+Protocol transparency dashboard — volume, open interest, and solvency metrics. The oracle section reflects the current single-feed JIT Pyth design, not a Pyth-vs-Switchboard comparison (Switchboard has been fully removed from the perps engine). Full zone-by-zone specifics not re-verified this cycle.
 
 ---
 
 ### `/earn/vault` — nvscUSDC Vault
 
-Deposit USDC → mint nvscUSDC shares at current NAV. The vault deploys idle USDC into the Sovereign Omni-Pool. NAV compounds as the pool accrues protocol yield.
-
-**To use as perp margin:** After minting nvscUSDC, deposit into your escrow from the **Margin** tab, or deposit USDC directly to escrow and enable **Auto-lend** (which automatically deploys idle USDC into the Omni-Pool).
+Deposit USDC → mint nvscUSDC shares at current NAV. NAV compounds from real protocol trading-fee and liquidation revenue — the same mechanism backing perps margin. You can deposit here and use the resulting nvscUSDC as margin on the perps page, or deposit/withdraw directly from the perps page's own account panel.
 
 ---
 
@@ -137,51 +112,32 @@ Stake NVSC tokens to earn trading fee share and governance rights.
 | Gold | 10,000 | 50% |
 | Platinum | 100,000 | 100% (free trading) |
 
----
-
-## Sub-accounts
-
-Sub-accounts let you run isolated strategies under the same wallet — different margin, positions, and risk for each.
-
-**Creating a sub-account:**
-1. In the perps terminal, use the sub-account switcher (top of account panel).
-2. Click **New Sub-account** → enter a label (e.g. "Scalping", "Swing").
-3. Deposit margin into the sub-account's dedicated escrow.
-4. Positions opened in sub-account N are completely isolated from sub-account 0.
-
-> One sub-account being liquidated cannot touch margin in another sub-account.
+(Fee-discount percentages not re-verified against current `staking-manager` code this cycle.)
 
 ---
 
-## Auto-lend (idle yield)
+## How margin compounding works ("Simultaneous Double-Yield")
 
-With **Auto-lend** enabled (default ON), idle USDC in your escrow is automatically deployed to the Sovereign Omni-Pool. Yield accrues continuously via the protocol's `fee_index` mechanism.
-
-- **Idle USDC** = `escrow.usdc_balance - reserved_margin` (the slice not backing active positions).
-- Yield appears as **pending** in the UI and the Yield Tracker tab.
-- Click **Claim** to collect pending yield into your escrow balance.
-- No lock-up: you can claim at any time, even with open positions.
-
-The **Collateral Console** (`/trade/collateral`) shows a live yield odometer ticking up in real time.
+Your nvscUSDC shares aren't redeemed when you use them as margin — they're transferred into a per-position vault and held as shares. A share's redeemable value is `total_assets / total_shares` on the vault, and `total_assets` grows continuously from every trader's fees and every liquidation's retained penalty. That means your locked margin keeps earning at exactly the rate an un-locked deposit would, for as long as your position stays open — you don't have to choose between trading and earning.
 
 ---
 
 ## Understanding liquidation
 
-A position is eligible for liquidation when:
+A position becomes eligible for liquidation the instant its equity (locked margin value + unrealized PnL, including funding) drops below the market's maintenance-margin requirement:
 
 ```
-effective_collateral < maintenance_margin_requirement
+equity < size_usdc * maintenance_margin_bps / 10_000
 ```
 
-where `effective_collateral` = USDC balance + Σ (asset_balance × oracle_price × weight_bps / 10_000).
-
-**Grace window:** On breach, the position enters a ~150-slot (~60 second) grace window before permissionless liquidation is unlocked. The **Grace** column in the Positions tab shows a countdown. Use this time to add margin or close the position.
+There is no grace-window countdown — liquidation is checked directly against current equity whenever someone (anyone) calls it. On liquidation, your entire remaining collateral is forfeit: 20% to whoever called it, 80% retained by the protocol (10% of that funds the market's insurance reserve, the rest boosts vault NAV for everyone else).
 
 **Three-tier safety:**
-1. Your collateral absorbs the loss first.
-2. If there's residual bad debt, the per-asset insurance fund absorbs it.
-3. If the insurance fund is depleted (never happened on devnet), a socialized haircut on LPs is the last resort.
+1. Your own locked collateral absorbs the loss first.
+2. The market's own insurance fund (`insurance_fund_usdc`) covers any shortfall.
+3. Vault NAV absorbs any further remainder.
+
+**To avoid it:** keep an eye on the Positions tab's health/liquidation-price display, and add margin or close before price gets close to your liquidation price.
 
 ---
 
@@ -189,11 +145,8 @@ where `effective_collateral` = USDC balance + Σ (asset_balance × oracle_price 
 
 | Type | Description |
 |------|-------------|
-| **Market** | Executes immediately at oracle consensus price |
-| **Limit** | Queued on-chain; fills when market crosses limit price |
-| **TWAP** | Splits order into N slices at T-second intervals; minimizes price impact |
-
-Limit and TWAP orders appear in the **Open Orders** and **Pending Intents** tabs.
+| **Market** | Verifies a fresh on-chain price and fills immediately |
+| **Limit** | Rests on-chain until a keeper (or you, from the Triggers board) fills it at your trigger price — cancel anytime from Open Orders |
 
 ---
 
@@ -201,25 +154,22 @@ Limit and TWAP orders appear in the **Open Orders** and **Pending Intents** tabs
 
 | Fee type | Rate |
 |----------|------|
-| Open / close (market) | 0.08% of notional |
-| Limit order fill | 0.04% maker / 0.08% taker |
-| Funding rate | Variable; displayed in toolbar; settles 8-hourly |
-| NVSC Gold tier | 50% discount on all fees |
-| NVSC Platinum tier | 100% — free trading |
+| Open / close (perps) | 0.05% of notional (devnet SOL/BTC/ETH markets — admin-adjustable per market, capped at 5%) |
+| Funding | Variable, peer-to-peer between longs and shorts — not a protocol fee |
+
+NVSC staking-tier fee discounts exist but weren't re-verified against current code this cycle — see [`docs/USER_GUIDE.md`](#earnstake--nvsc-staking) staking section above and `staking-manager`'s source for the authoritative numbers.
 
 ---
 
 ## Common issues
 
-**"Escrow not initialized"** — First deposit triggers escrow creation. Approve the initialization transaction.
+**"Position already open"** — Each (wallet, market) pair can only have one open position at a time; there's no add-to-position instruction yet. Close the existing one first.
 
-**"Insufficient margin"** — Your effective collateral (including SOL haircut) is below the required maintenance margin. Add USDC or SOL, or reduce position size.
+**"Live nvscUSDC collateral value is insufficient for the requested position size"** — Your margin doesn't meet the minimum for the size/leverage you entered. Increase margin or lower leverage. This fails immediately (one approval) rather than retrying — it's a deterministic check, not a price-timing issue.
 
-**"Stale oracle"** — The oracle hasn't been updated within the staleness window. Usually resolves within a few seconds as the permissionless crank refreshes it.
+**"Verifying live price…" retries** — Only happens for a genuine oracle-staleness race (the on-chain price must be ≤3 seconds old); every other error surfaces immediately without retrying.
 
-**Position won't close** — If the oracle is stale, closing is blocked. Wait for the oracle to refresh, then retry.
-
-**"Auto-lend recall failed"** — Rare: the Sovereign Omni-Pool's cash buffer is temporarily fully utilised. Retry after a few seconds; the pool rebalances automatically.
+**Non-USDC deposit/open fails with "no swap route"** — Expected on devnet; Jupiter has no devnet liquidity. Use USDC/nvscUSDC directly for devnet testing.
 
 ---
 

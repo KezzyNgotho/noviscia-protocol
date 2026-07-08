@@ -1,102 +1,81 @@
 # Noviscia System Diagram
 
+**Last updated:** July 7, 2026 — diagrams 1–4 rewritten to match the current JIT-oracle architecture (no Express/Postgres/Redis backend, no Kamino/Solend/Marginfi lending, no Switchboard). Diagram 5 (AI layer) is unchanged/unverified this cycle.
+
 ## 1) System Structure
 
 ```mermaid
 graph TD
-  U[User / Wallet] --> W[Web App\nNext.js]
-  W --> A[API Gateway\nExpress.js]
-  W --> S[WebSocket Gateway]
-  A --> L[Service Layer]
-  S --> W
+  U[User / Wallet] --> W[Web App\nNext.js — Vercel]
+  W -->|RPC, wallet-signed txs| C[Solana Programs]
 
-  L --> P[Price Service]
-  L --> POS[Position Service]
-  L --> Y[Yield Service]
-  L --> ST[Staking Service]
-  L --> B[Burn Service]
+  C --> PT[position-tracker\nJIT oracle, funding, liquidation]
+  C --> NV[nv-usdc-vault\nshare-based NAV]
+  C --> PLV[protocol-lp-vault]
+  C --> SM[staking-manager]
+  C --> BE[burn-engine]
+  C --> TN[token-nvsc]
+  C --> PM[prediction_market]
 
-  P --> O1[Pyth Oracle]
-  P --> O2[Switchboard Oracle]
-  Y --> K[Kamino / Solend / Marginfi]
-  B --> CRANK[Permissionless crank\nno required operator]
+  PT -->|verify_jit_price, per-instruction| PYTH[Pyth Hermes\nguardian-signed VAA]
+  PT -->|CPI: redeem/accumulate_fees/lock_margin| NV
 
-  A --> DB[(PostgreSQL + Prisma)]
-  L --> DB
-  S --> R[(Redis Cache)]
-
-  A --> O[Off-chain Services]
-  O --> I[Indexer]
-  O --> PF[Price Feed]
-  O --> WS[WebSocket Broadcaster]
-
-  O --> C[Solana Programs]
-  C --> E[Escrow]
-  C --> LI[Lending Integrator]
-  C --> SM[Staking Manager]
-  C --> BE[Burn Engine]
-  C --> TN[Token NVSC]
-  C --> YD[Yield Distributor]
+  W -.->|optional, not required to trade| SVC[services/*\nindexer, price-feed, websocket, ai-*]
 ```
 
-## 2) Trade Flow
+## 2) Trade Flow (open_position_jit)
 
 ```mermaid
 sequenceDiagram
   participant U as User Wallet
   participant W as Web App
-  participant A as API
-  participant S as Services
-  participant D as Database
-  participant C as Solana Programs
-  participant WS as WebSocket
+  participant H as Pyth Hermes
+  participant PT as position-tracker
+  participant NV as nv-usdc-vault
 
-  U->>W: Connect wallet
-  U->>W: Submit trade
-  W->>A: POST /api/trade
-  A->>S: Validate price, margin, risk
-  S->>D: Save trade draft / audit log
-  S->>C: Recall funds / execute CPI
-  C-->>D: Persist execution state
-  C-->>WS: Broadcast position update
-  WS-->>W: Push real-time update
-  W-->>U: Show filled order / PnL
+  U->>W: Submit trade (side, size, leverage, margin)
+  W->>H: Fetch latest guardian-signed price VAA
+  W->>U: Request signature for open_position_jit tx
+  U->>PT: Signed tx (VAA + merkle proof bundled)
+  PT->>PT: verify_jit_price — reject if VAA >3s old
+  PT->>NV: CPI redeem_nvusdc (trading fee) + lock margin
+  PT-->>W: Position opened (on-chain confirmation)
+  W-->>U: Show filled position
 ```
 
-## 3) Yield Flow
+A retry (fresh VAA + new signature) happens automatically if the 3-second freshness window races network latency — this is expected, not an error.
+
+## 3) Yield Flow (perps)
 
 ```mermaid
 flowchart TD
-  A[Idle User Margin] --> B[Escrow PDA]
-  B --> C[Lending Integrator]
-  C --> D[Kamino / Solend / Marginfi]
-  D --> E[Accrued Yield]
-  E --> F[Yield Distributor]
-  F --> G[85% to Users]
-  F --> H[15% Platform Fee]
-  H --> I[Auto-buy NVSC]
-  I --> J[Burn Engine / Burn Address]
+  A[Trading fees: open + close] --> D[nv-usdc-vault.total_assets]
+  B[Liquidation: 80% retained share] --> E{10% / 90% split}
+  E -->|10%| F[Market.insurance_fund_usdc]
+  E -->|90%| D
+  D --> G[NAV per share increases]
+  G --> H[Every locked position's collateral_shares\nappreciate — Simultaneous Double-Yield]
 ```
+
+No external lending venue (Kamino/Solend/Marginfi) sits in this path — those integrations were fully retired from `nv-usdc-vault`.
 
 ## 4) Deployment Flow
 
 ```mermaid
 flowchart LR
-  K[Code + Config] --> B1[anchor build]
-  B1 --> B2[Deploy Solana Programs]
-  B2 --> B3[Update Program IDs]
-  B3 --> B4[Deploy API + Services]
-  B4 --> B5[Deploy Web App]
-  B5 --> B6[Health Check + Monitoring]
+  K[Code] --> B1[anchor build]
+  B1 --> B2[solana program deploy\nsame program ID, upgrade in place]
+  B2 --> B3[Copy fresh IDL to app/web/app/idl/]
+  B3 --> B4[Vercel deploy\ngit-integration, root=app/web]
+  B4 --> B5[Run e2e proof script\nscripts/e2e-*-devnet.ts]
 ```
 
-## Target Shape
+## Target shape (current)
 
-- **Frontend:** wallet-connected trading UI
-- **API:** validates requests and exposes market/user endpoints
-- **Services:** keep prices, logs, and automation live
-- **Programs:** own custody, staking, yield, and burn logic
-- **Data:** PostgreSQL for persistence, Redis for fast live state
+- **Frontend:** wallet-connected trading UI, deployed to Vercel — no separate API server for core trading
+- **Programs:** own all custody, margin, oracle verification, funding, liquidation, staking, and burn logic
+- **Optional services:** indexer/price-feed/websocket/AI layer, each dockerized separately, not on the critical trading path
+- **No database:** on-chain accounts are the only persistence layer for perps state
 
 ## 5) AI Orchestration Layer (devnet — local Ollama)
 

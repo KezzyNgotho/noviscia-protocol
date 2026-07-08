@@ -1,5 +1,9 @@
 # Security Best Practices & Audit Guide
 
+## Findings log
+
+**2026-07-06 — ETH market risk-parameter misconfiguration (found and fixed).** `position-tracker`'s ETH market was registered with `max_leverage_bps=10,000,000` (1000x) against `maintenance_margin_bps=99` (0.99%) — since required initial margin at max leverage is `10_000/max_leverage_bps`, this meant a position opened at max leverage started **already below** the maintenance threshold, liquidatable with zero price movement. Found via live devnet testing, not audit. Fixed by: (1) a new admin instruction, `set_market_risk_params`, to correct an already-registered market; (2) a hard on-chain invariant added to both that instruction and `register_market` — `maintenance_margin_bps * max_leverage_bps < 10_000²` — rejecting this exact class of misconfiguration going forward, verified by attempting to re-set the broken values and confirming rejection (`UnsafeLeverageConfig`).
+
 ## Smart Contract Security
 
 ### Non-Custodial Architecture
@@ -19,34 +23,28 @@ seeds = [b"escrow", user.key().as_ref()]
 
 ### Oracle Security
 
-**Dual Oracle Strategy:**
-- Primary: Pyth Oracle (real-time, decentralized)
-- Fallback: Switchboard Oracle
-- Median price with 5% deviation threshold
-- Circuit breaker on extreme movements
+**JIT (just-in-time) Pyth pull-oracle** — as of the 2026-07-05/06 `position-tracker` rewrite, there is no dual-oracle consensus and no Switchboard integration (fully removed; zero references remain in the program source). Every price-sensitive instruction instead verifies its own fresh, guardian-signed Pyth Hermes price update on-chain, in the same transaction:
 
-```typescript
-const pythPrice = await pyth.getLatestPrice(symbol);
-const sbPrice = await switchboard.getPrice(symbol);
-
-// Validate 5% deviation
-const deviation = Math.abs(pythPrice - sbPrice) / sbPrice;
-require!(deviation < 0.05, "Oracle deviation too high");
-
-// Use median
-const medianPrice = (pythPrice + sbPrice) / 2;
+```rust
+// Inside open_position_jit / close_position / liquidate / execute_tp_sl:
+let price = verify_jit_price(
+    /* ... */ signed_price_payload, merkle_price_update_bytes, treasury_id, &clock,
+)?;
+// Verified via Pyth Receiver's post_update_atomic, then checked against
+// a strict ≤3-second freshness ceiling — reverts with OracleStale (6006)
+// if the VAA is older than that, rather than trusting a stale price.
 ```
+
+There is no continuously-updated on-chain price account to compromise or starve of updates — each instruction proves its own price is fresh, every time.
 
 ### CPI Safety (Cross-Program Invocation)
 
-All external program calls validated:
+External lending-venue CPIs (Kamino and others) have been fully retired from `nv-usdc-vault` — `lend_mode` is hardcoded to 0, and the vault holds USDC directly rather than routing it through any external protocol. The only CPI targets in the current perps path are `position-tracker` → `nv-usdc-vault` (deposit/redeem/fee-accumulation/margin-lock) and `position-tracker` → the Pyth Receiver program (price verification), both address-checked:
 
 ```rust
-// Verify Kamino program address
-require_eq!(lending_program.key(), KAMINO_PROGRAM_ID);
-
-// Validate account ownership
-require_eq!(lending_pool.owner, KAMINO_PROGRAM_ID);
+// Inside position-tracker's account structs:
+#[account(address = nv_usdc_vault::ID)]
+pub nv_usdc_vault_program: UncheckedAccount<'info>,
 ```
 
 ### Account Validation Checklist
@@ -180,7 +178,7 @@ const badKey = "3LkR9m2bV8x9nLm0pO1qR2sTu3vW4xY5z";
 
 ### Crank automation keys (optional)
 
-All cranks (lend_idle_venue, mark/funding updates, liquidations, burn triggers) are permissionless on-chain instructions — no required operator key, anyone's wallet can call them. If you choose to run your own automation to call them on a schedule:
+All perps cranks (`settle_funding`, `liquidate`, `execute_limit_order`, `execute_tp_sl`, `execute_twap_slice`, plus `burn-engine`'s trigger) are permissionless on-chain instructions — no required operator key, anyone's wallet can call them. If you choose to run your own automation to call them on a schedule:
 
 - Use a wallet with no special on-chain privileges (the instructions themselves are permissionless, so the caller needs no elevated role)
 - Keep it separate from admin/governance keys

@@ -1,18 +1,17 @@
 # API Documentation
 
+**Last updated:** July 7, 2026
+
+> ⚠️ **Not re-verified against actual routes this cycle.** This document predates the 2026-07-05/06 `position-tracker` rewrite and describes a JWT-authenticated backend with an on-chain orderbook — neither exists in the current architecture. There is no order-matching engine (perps fill via JIT-verified Pyth price, not a book) and no JWT auth layer (the actual `app/web/app/api/*/route.ts` handlers are plain Next.js route handlers; trading itself is wallet-signed transactions sent directly to Solana, not authenticated REST calls). Treat every endpoint below as illustrative/aspirational unless independently checked against `app/web/app/api/`.
+
 ## Base URL
 
-**Production:** `https://noviscia.com/api` (Next.js route handlers)  
-**Staging:** Vercel preview URL or `https://staging.noviscia.com/api` (optional)  
-**Development:** `http://localhost:3001`
+**Production:** `https://noviscia.com/api` (Next.js route handlers)
+**Development:** `http://localhost:3000/api`
 
 ## Authentication
 
-All endpoints require JWT token in Authorization header:
-
-```bash
-Authorization: Bearer <jwt_token>
-```
+There is no JWT/session-token layer. On-chain actions (open/close/deposit/withdraw) are signed transactions sent directly from the wallet to Solana — the frontend talks to `position-tracker`/`nv-usdc-vault` via RPC, not through an authenticated backend API. The Next.js API routes under `app/web/app/api/` are largely read-only/proxy endpoints (price relay, activity feed, etc.) — check each route's own source for whether it expects any request signing.
 
 ## Rate Limits
 

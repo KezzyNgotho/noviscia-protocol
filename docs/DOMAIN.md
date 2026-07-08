@@ -29,7 +29,7 @@ NOVISCIA_WEB_URL=https://noviscia.com
 
 ## Email (optional)
 
-Support currently uses `keziengotho18@gmail.com` until `support@noviscia.com` is configured.
+Support currently uses `ngothokezz18@gmail.com` until `support@noviscia.com` is configured.
 
 For `support@noviscia.com` and `security@noviscia.com` (future):
 

@@ -3155,6 +3155,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "burn-engine",
  "nv-usdc-vault",
  "pyth-solana-receiver-sdk",
  "pythnet-sdk",
@@ -3163,6 +3164,7 @@ dependencies = [
  "solana-sdk",
  "spl-associated-token-account",
  "spl-token",
+ "staking-manager",
  "tokio",
 ]
 

@@ -1,6 +1,6 @@
 # Noviscia Protocol — Compliance Overview (Devnet Beta)
 
-**Last updated:** June 2026
+**Last updated:** July 7, 2026 (reviewed — substance unchanged; see `docs/SECURITY.md` for the current technical posture this document references)
 **Scope:** Noviscia perpetuals, margin vault, insurance vault, and NVSC/nvscUSDC on **Solana devnet**. This document describes the protocol's current regulatory posture and what changes before mainnet. It is informational, not legal advice — see [LEGAL.md](./LEGAL.md) for terms of use and risk disclosure.
 
 ## Non-custodial posture

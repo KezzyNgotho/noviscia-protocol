@@ -46,7 +46,7 @@ The interface integrates with:
 
 | Service | Purpose | Data sent |
 |---------|---------|-----------|
-| **Helius / Alchemy RPC** | Solana RPC provider | Unsigned transaction data, account addresses |
+| **Helius / Ankr RPC** | Solana RPC provider | Unsigned transaction data, account addresses |
 | **Pyth Network (Hermes)** | Oracle price feeds | No personal data |
 | **Jupiter** | Token swap routing | Token amounts, wallet address (for swap quote) |
 | **Vercel** | Frontend hosting | Standard HTTP request logs (IP, user-agent); subject to Vercel's privacy policy |
@@ -87,7 +87,7 @@ Material changes will be announced via the project Discord. The "Last updated" d
 
 ## 10. Contact
 
-Privacy questions: keziengotho18@gmail.com  
+Privacy questions: ngothokezz18@gmail.com  
 Security disclosures: see [`SECURITY.md`](SECURITY.md)
 
 ---
