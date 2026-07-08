@@ -1,6 +1,6 @@
 # Noviscia Protocol
 
-**Zero-waste perpetuals on Solana** — multi-asset cross-collateral margin, idle yield on every dollar between trades, atomic recall when you open a position.
+**Perpetuals on Solana where margin never sits idle** — the same nvscUSDC shares that back your leveraged position keep earning protocol yield the entire time they're locked as collateral.
 
 | | |
 |---|---|
@@ -15,15 +15,13 @@
 
 ## Executive summary
 
-Noviscia is a non-custodial perpetual DEX on Solana built around one insight: **traders leave billions in margin idle** while perp venues capture none of the yield that money could earn. Noviscia deploys idle USDC into its **Sovereign Omni-Pool**, accrues yield per-user via a compounding `fee_index` ledger, and **recalls margin atomically** when a trade opens — no manual steps, no external dependency.
+Noviscia is a non-custodial perpetual DEX on Solana. Margin is posted as **nvscUSDC** — a share of a single protocol-owned vault (`nv-usdc-vault`) whose NAV-per-share compounds continuously from trading fees and liquidation penalties. Opening a position **locks those shares, it never redeems them** — so the same capital is simultaneously backing your leverage and earning yield ("Simultaneous Double-Yield"), for as long as the position stays open.
 
-The protocol is built around **multi-asset cross-collateral margin**: traders can post USDC (100% LTV), SOL (80% LTV), mSOL / jitoSOL (82% LTV, coming) as collateral, weighted and summed at position open and liquidation via a `remaining_accounts` pattern that scales to every catalog market without growing instruction size.
+Prices are verified on-chain per-instruction via a **JIT (just-in-time) Pyth pull-oracle**: every open/close/liquidate/TP-SL call carries a fresh guardian-signed Hermes price update, verified against a strict 3-second freshness ceiling in the same transaction — there is no continuously-updated on-chain price feed or off-chain keeper network to trust.
 
 **Dual-token model:**
-- **nvscUSDC** — yield-bearing vault share; earns NAV from the Sovereign Omni-Pool; used as perp margin.
-- **NVSC** — fixed 1B governance token; fee tiers, fee share, pool-parameter votes.
-
-Trading fees and protocol yield feed a **deflationary flywheel**: 40% of perp fees fund NVSC buyback & burn; 60% flow to stakers.
+- **nvscUSDC** — yield-bearing vault share; earns NAV from real trading-fee and liquidation revenue; used directly as perp margin.
+- **NVSC** — fixed 1B governance token; fee tiers, fee share, staking.
 
 ---
 
@@ -31,20 +29,19 @@ Trading fees and protocol yield feed a **deflationary flywheel**: 40% of perp fe
 
 | Feature | Status |
 |---------|--------|
-| USDC-settled perps (SOL, BTC, ETH + 13 preview markets) | **Live** |
-| Dual-oracle consensus (Pyth + Switchboard) | **Live** |
-| Multi-asset collateral (USDC + SOL; mSOL/jitoSOL wired, mainnet mints) | **Live** |
-| Sovereign Omni-Pool (sweep → protocol pool → recall round-trip) | **Live** |
-| Idle margin yield (`fee_index` ledger, `claim_idle_yield`) | **Live** |
-| Sub-accounts (sub_id 1–255; isolated escrow + positions per sub-account) | **Live** |
-| Permissionless liquidation crank | **Live** |
-| Limit orders + TWAP | **Live** |
-| AMM depth / JIT matching / asset-weight tiering | **Live** |
+| JIT Pyth pull-oracle perps (open / close / liquidate / TP-SL, all price-verified per-instruction) | **Live** |
+| Live-NAV margin — collateral is nvscUSDC shares, valued against the vault's real-time NAV, never redeemed while a position is open | **Live** |
+| Closed-loop liquidation — permissionless, no keeper network; 20% caller bounty / 80% protocol-retained, entirely within Noviscia's own programs | **Live** |
+| Insurance-fund backstop — 10% of every liquidation's protocol-retained share funds a real, physically-held per-market reserve | **Live** |
+| Peer-to-peer funding settlement — OI-skew-driven funding index, settled into realized PnL at close/liquidate/TP-SL | **Live** |
+| Trading fees on open + close, swept into vault NAV as a second real yield source | **Live** |
+| Take-profit / stop-loss at open, or set later; permissionless execution | **Live** |
+| Resting limit orders + Triggers board (`/trade/triggers`) | **Live** |
+| Any-collateral trading — deposit or open directly with SOL / any SPL token, swapped via Jupiter into margin in one flow | **Wired; mainnet-only** (devnet has no Jupiter liquidity to route through) |
+| nvscUSDC vault deposit / withdraw | **Live** |
 | Collateral Console UI (`/trade/collateral`) | **Live** |
 | Analytics dashboard UI (`/analytics`) | **Live** |
-| nvscUSDC vault deposit / redeem | **Live** |
 | NVSC staking tiers + governance | **Live** |
-| Per-asset insurance funds (per-mint liquidation-vault pools) | **Live (USDC pool)** |
 | Prediction markets | **Beta** |
 | NVSC TGE, mainnet launch | **Q3 2026** |
 
@@ -53,29 +50,41 @@ Trading fees and protocol yield feed a **deflationary flywheel**: 40% of perp fe
 ## Architecture overview
 
 ```
-USDC
-  → nv-usdc-vault (Sovereign Omni-Pool, protocol-native, NAV accrual)
-  → Escrow PDA [seeds: b"escrow", user]          ← idle margin earns fee_index yield
-  → CollateralPosition PDA [seeds: b"collateral", user, mint]   ← SOL / other assets
-  → Sub-account escrow [seeds: b"escrow", user, sub_id]         ← isolated sub-accounts
-  → position-tracker (dual oracle, liquidation, fee routing)
-  → Lending Integrator (venue weights, AI router optional)
-  → Burn Engine + Staking Manager (flywheel)
+Trader's wallet (USDC, or any SPL asset)
+  → [non-USDC only] Jupiter swap → USDC
+  → nv-usdc-vault: deposit_usdc → mints nvscUSDC shares (NAV = total_assets / total_shares)
+  → position-tracker: open_position_jit
+        - verifies a fresh Pyth Hermes price update on-chain (JIT, ≤3s old)
+        - locks nvscUSDC shares as collateral (shares stay live — never redeemed)
+        - charges a trading fee, swept into nv-usdc-vault (yield source #1)
+  → position open. Locked shares keep compounding NAV like any other holder's.
+  → close_position / liquidate / execute_tp_sl:
+        - re-verifies a fresh JIT price
+        - folds peer-to-peer funding (OI-skew-driven) into realized PnL
+        - on liquidation: 20% bounty to caller, 80% retained —
+          10% of that into a per-market insurance fund, the rest into vault NAV (yield source #2)
 ```
+
+No AMM, no order-matching engine, no off-chain keeper, no external lending venue sits in this loop — every step above is a direct instruction on `position-tracker` or a CPI into `nv-usdc-vault`.
 
 ### Programs & devnet IDs
 
 | Program | Devnet ID |
 |---------|-----------|
-| `escrow` | `CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D` |
 | `position_tracker` | `3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY` |
 | `nv_usdc_vault` | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` |
-| `lending_integrator` | `Ea5TXHxsVcnKwMAcAsQkpPN88xr8ndBRpNGDkREWrbSZ` |
+| `protocol_lp_vault` | `BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT` |
+| `escrow` | `CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D` (legacy lending/yield surface — not part of the perps margin path above) |
 | `burn_engine` | `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` |
 | `staking_manager` | `4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75` |
 | `yield_distributor` | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |
 | `liquidation_vault` | `C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1` |
 | `prediction_market` | `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` |
+| `token_nvsc` | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
+
+> `lending_integrator` has been removed from the codebase entirely (deleted, not just deprecated).
+
+**Devnet markets registered on `position_tracker`:** SOL, BTC, ETH (each 50x max leverage, 1% maintenance margin — corrected on ETH 2026-07-06, see [`docs/DEVNET.md`](noviscia-protocal/docs/DEVNET.md)). 13 additional catalog markets exist in the frontend's market list as previews, not yet registered on-chain.
 
 **Devnet mints:** USDC `Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5` · nvscUSDC `2TmaUey4Hh2om1kFR77Vw1RDh8H69qcW6UAACVidJeVk` · NVSC `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT`
 
@@ -85,34 +94,25 @@ USDC
 
 ## Key mechanisms
 
-### Idle margin yield
+### Simultaneous Double-Yield
 
-Every escrow account stores a `fee_index_snapshot` (u128). The vault accumulates a global `fee_index` as trading fees accrue. When a user calls `claim_idle_yield`, the escrow program computes:
+`Position.collateral_shares` are nvscUSDC shares transferred into a per-position `collateral_vault` token account at open time — they are **never redeemed** while the position is open. Since a share's redeemable value is `shares × (vault.total_assets / vault.total_shares)`, and `total_assets` grows continuously from every trader's fees and every liquidation's retained penalty, locked margin appreciates at exactly the same rate as an un-locked vault depositor's — the whole time it's backing your leverage.
 
-```
-delta = current_fee_index - snapshot
-yield = idle_usdc * delta / FEE_INDEX_SCALE  (FEE_INDEX_SCALE = 1e18)
-```
+### JIT Pyth pull-oracle
 
-This CPIs to `pay_trader_profit` on the vault and credits the user's escrow balance. The yield tracker in the UI shows live pending yield ticking in real time.
+There is no on-chain price account that updates itself. Every price-sensitive instruction (`open_position_jit`, `close_position`, `liquidate`, `execute_tp_sl`) takes a guardian-signed Wormhole VAA wrapping a Pyth Hermes price update, verifies it via the Pyth Receiver program's `post_update_atomic` in the same transaction, and enforces a strict ≤3-second freshness ceiling before trusting it. A retry (fresh price + a new wallet approval) is a normal occurrence when that window races real network latency, not a bug.
 
-### Multi-asset collateral
+### Peer-to-peer funding
 
-Each (user, mint) pair has a `CollateralPosition` PDA (`seeds = [b"collateral", user, mint]`). `Liquidate` and `AdjustMargin` accept `remaining_accounts` as `[oracle, collateral_position]` pairs. The handler loops and sums:
+`Market.funding_index` is a per-notional-dollar cumulative rate that moves only via the permissionless `settle_funding` instruction, as a pure function of `long_oi_usdc` vs `short_oi_usdc` — never dependent on an external price. Each position snapshots the index at entry (`entry_funding_index`) and settles the delta against it at close/liquidate/TP-SL time, folded directly into the same realized-PnL number that flows through `settlement_vault`. No separate funding pool, no keeper.
 
-```
-effective_margin += raw_balance * oracle_price * weight_bps / 10_000
-```
+### Closed-loop liquidation + insurance fund
 
-Only assets with a `CollateralWeightConfig` PDA contribute. Adding new assets to governance requires no instruction-schema change.
+Liquidation is permissionless — any signer (including the position's own owner) can call it once equity drops below the maintenance margin threshold. The entire remaining collateral is forfeit: 20% goes to whoever called it, paid directly in live nvscUSDC shares (no redemption, no slippage); of the remaining 80%, 10% is retained as a real, physically-held per-market insurance reserve (`Market.insurance_fund_usdc`) and the rest boosts vault NAV for every remaining holder.
 
-### Sub-accounts
+### Any-collateral trading
 
-Sub-accounts are isolated trading contexts with their own `UserState`, `Position`, and `Escrow` PDAs using a third `sub_id: u8` seed component. Sub-account 0 is implicit (existing PDAs). Sub-accounts 1–255 are created via `create_sub_account(sub_id, label)`. Margin and positions in one sub-account cannot be touched by another's liquidation.
-
-### Sovereign Omni-Pool
-
-`nv_usdc_vault` manages all idle USDC natively in the Sovereign Omni-Pool. A permissionless crank calls `sweep_to_pool` to deploy idle USDC. On trade open, `recall_for_trade(amount)` atomically pulls the required amount back — no external protocol involved. Full round-trip proven on devnet.
+Depositing or opening a position with SOL, another market's base asset, or any pasted SPL mint runs a Jupiter swap into USDC, mints nvscUSDC shares, and (when opening) feeds the real swap output straight into `open_position_jit` as margin — chained behind a single UI action. This needs live Jupiter routing, so it only settles on mainnet; devnet testing is limited to USDC/nvscUSDC margin.
 
 ---
 
@@ -138,18 +138,15 @@ cd app/web && npm run dev
 
 > **Deploy note:** If the new binary exceeds allocated space, extend first: `solana program extend <PROGRAM_ID> 10240 --keypair ~/.config/solana/new-id.json`
 
-### Migration scripts
+### Devnet e2e proof scripts
 
-After redeploying escrow, run the permissionless account migration to expand on-chain EscrowAccounts to the latest SPACE:
+Every perps mechanic above has a corresponding live-devnet proof script under `scripts/` — each runs against the real deployed program with real (small) devnet funds, not a mock:
 
-```bash
-npx tsx scripts/migrate-escrow-account-v5-devnet.ts
-```
-
-Other scripts in `scripts/`:
-- `migrate-vault-config-omnipool-devnet.ts` — migrate vault config to omnipool layout
-- `migrate-vault-config-utilization-devnet.ts` — migrate vault config utilization fields
-- `migrate-user-state-clearing-cascade-devnet.ts` — migrate user state for clearing cascade
+- `e2e-jit-open-close-devnet.ts` — open/close + trading-fee NAV proof
+- `e2e-tp-sl-devnet.ts` — take-profit / stop-loss execution
+- `e2e-limit-order-devnet.ts` — resting limit order placement + fill
+- `e2e-funding-devnet.ts` — peer-to-peer funding settlement, verified exact against a hand-computed expectation
+- `e2e-liquidation-devnet.ts` / `e2e-liquidation-eth-devnet.ts` — liquidation split + insurance-fund carve-out
 
 ---
 
@@ -173,14 +170,15 @@ Other scripts in `scripts/`:
 | Team (4yr vest) | 15% |
 | Partners | 10% |
 
-### Fee & yield flows
+### Fee & yield flows (perps)
 
 | Source | Split |
 |--------|-------|
-| Perp trading fees | 40% burn engine · 60% staking pool |
-| Escrow lend yield | 85% user · 15% burn engine |
-| Vault NAV yield (Omni-Pool) | Accrues 100% to nvscUSDC NAV |
-| Idle margin yield (fee_index) | 100% user via `claim_idle_yield` |
+| Perp trading fees (open + close) | 100% → nv-usdc-vault NAV |
+| Liquidation penalty (100% of remaining collateral) | 20% liquidator bounty · 80% retained (10% of that → insurance fund, rest → vault NAV) |
+| Peer-to-peer funding | 100% redistributed between longs/shorts — not protocol revenue |
+
+See [`docs/TOKENOMICS.md`](noviscia-protocal/docs/TOKENOMICS.md) for the broader NVSC/burn-engine flow (not re-verified this cycle — perps-specific flows above are current as of 2026-07-06).
 
 ---
 
@@ -188,19 +186,20 @@ Other scripts in `scripts/`:
 
 | Phase | Milestones | Target |
 |-------|------------|--------|
-| **Now (devnet beta)** | All programs live, Sovereign Omni-Pool, multi-asset collateral, sub-accounts, idle yield, Collateral Console + Analytics UI | Live |
+| **Now (devnet beta)** | JIT-oracle perps engine, live-NAV margin, funding + insurance fund, any-collateral trading, Collateral Console + Analytics UI | Live |
 | **Q2–Q3 2026** | Security audit, mainnet program IDs locked, NVSC TGE, deposit caps | In progress |
-| **Q3 2026** | Mainnet soft launch, SOL/BTC/ETH perps, production Pyth feeds | Planned |
-| **Q4 2026+** | Expanded market catalog (18 markets), mSOL/jitoSOL collateral (mainnet mints), mobile PWA, session trading agents | Planned |
+| **Q3 2026** | Mainnet soft launch, SOL/BTC/ETH perps, production Pyth feeds, Jupiter-routed any-collateral trading | Planned |
+| **Q4 2026+** | Expanded market catalog (16 markets), mobile PWA | Planned |
 
 ---
 
 ## Security
 
 - Non-custodial PDAs — no pooled custodial wallet; users sign every action.
-- Dual-oracle consensus — Pyth + Switchboard; on-chain deviation checks; permissionless liquidation.
-- Three-tier safety: user collateral → insurance fund (per-asset pools) → socialized LP haircut.
-- Permissionless cranks — oracle marks, lending, liquidations, burns need no trusted operator.
+- JIT Pyth pull-oracle with a strict on-chain freshness ceiling — no stale-price attack surface from a lazily-updated feed.
+- Three-tier safety: user collateral → per-market insurance fund → vault NAV absorbs any remainder.
+- Permissionless liquidation and funding settlement — no trusted keeper required for core perps operation.
+- Market risk parameters (`max_leverage_bps`, `maintenance_margin_bps`) are validated on-chain against a hard invariant (initial margin at max leverage must exceed maintenance margin) as of 2026-07-06, after a live misconfiguration on the ETH market was found and fixed.
 - **Pre-mainnet audit required — not yet completed.**
 
 See [`docs/SECURITY.md`](noviscia-protocal/docs/SECURITY.md) and [`docs/LEGAL.md`](noviscia-protocal/docs/LEGAL.md).
@@ -212,24 +211,25 @@ See [`docs/SECURITY.md`](noviscia-protocal/docs/SECURITY.md) and [`docs/LEGAL.md
 ```
 noviscia-protocal/
 ├── programs/
-│   ├── escrow/               USDC margin, idle yield, multi-asset collateral, sub-accounts
-│   ├── nv-usdc-vault/        Sovereign Omni-Pool, fee_index accrual
-│   ├── position-tracker/     Perp engine, oracle, liquidation, AMM/JIT
-│   ├── lending-integrator/   Multi-venue pools
+│   ├── position-tracker/     Perp engine — JIT oracle, live-NAV margin, funding, liquidation
+│   ├── nv-usdc-vault/        Single share-based USDC vault (nvscUSDC), NAV accrual
+│   ├── protocol-lp-vault/    Trading-fee-backed LP vault
+│   ├── escrow/                Legacy lending/yield surface (not part of the perps margin path)
 │   ├── staking-manager/      NVSC tiers, governance
 │   ├── burn-engine/          Fee accumulation, NVSC buyback & burn
-│   ├── yield-distributor/    Lend yield 85/15 split
-│   ├── liquidation-vault/    Per-asset insurance funds
+│   ├── yield-distributor/    Lend yield split
+│   ├── liquidation-vault/    Per-asset insurance funds (legacy — perps now uses its own per-market fund)
 │   ├── token-nvsc/           Fixed-supply NVSC mint
-│   └── prediction-market/    On-chain prediction markets
+│   └── prediction_market/    On-chain prediction markets
 ├── app/web/                  Next.js 14 PWA frontend
 │   └── app/
 │       ├── trade/perps/      Perps trading terminal
-│       ├── trade/collateral/ Collateral Console (multi-asset capital management)
+│       ├── trade/triggers/   Limit-order Triggers board
+│       ├── trade/collateral/ Collateral Console
 │       ├── analytics/        Protocol Analytics dashboard
 │       ├── earn/vault/       nvscUSDC vault UI
 │       └── earn/stake/       NVSC staking UI
-├── scripts/                  Devnet migration + admin scripts
+├── scripts/                  Devnet migration, admin, and e2e proof scripts
 └── docs/                     Protocol documentation
 ```
 
