@@ -33,29 +33,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Legacy Express API — see app/api/DEPRECATED.md (Next.js app/web is the real API)
-  api:
-    profiles: [legacy-api]
-    build:
-      context: ./app/api
-      dockerfile: Dockerfile
-    container_name: novisca-api
-    environment:
-      DATABASE_URL: postgresql://novisca:novisca-dev-password@postgres:5432/novisca
-      REDIS_URL: redis://redis:6379
-      SOLANA_RPC_DEVNET: https://rpc.ankr.com/solana_devnet
-      SOLANA_RPC_MAINNET: https://api.mainnet-beta.solana.com
-      PORT: 3001
-      CORS_ORIGINS: http://localhost:3000
-    ports:
-      - "3001:3001"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
   # WebSocket Server
   websocket:
     build:
@@ -118,12 +95,10 @@ services:
     container_name: noviscia-ai-rebalancer
     environment:
       AI_ORCHESTRATOR_URL: http://ai-orchestrator:11435
-      NOVISCIA_API_URL: http://api:3001
       NOVISCIA_WEB_URL: http://web:3000
       AI_REBALANCE_INTERVAL_MS: 3600000
     depends_on:
       - ai-orchestrator
-      - api
     restart: unless-stopped
 
   # Web Frontend (optional, use npm run dev instead)
