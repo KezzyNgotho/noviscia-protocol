@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Upgrade devnet position-tracker (session delegation + keeper_trigger_burn).
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 export ANCHOR_WALLET="${ANCHOR_WALLET:-$HOME/.config/solana/new-id.json}"

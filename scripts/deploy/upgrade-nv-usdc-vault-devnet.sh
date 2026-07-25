@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Upgrade devnet nv-usdc-vault (bounded NAV-delta checks on update_total_assets/accrue_vault_yield).
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 export ANCHOR_WALLET="${ANCHOR_WALLET:-$HOME/.config/solana/new-id.json}"
