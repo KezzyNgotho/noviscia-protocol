@@ -30,16 +30,18 @@ liquidation_vault = "C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1"
 protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
 
 [programs.mainnet]
-burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
-escrow = "23ramxxc62tPL81ziVRcQRzk5MnPZdrkeYcn2P9USfhj"
-nv_usdc_vault = "CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC"
-position_tracker = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
-staking_manager = "2QSN7YVpLXsjKzABqP6HG3NfahgcVgynhCdSjviXWWiD"
-token_nvsc = "3RXGctRZX25dcVHAdgmVuVKnPUsB1NSeQppLSn8hfaNK"
-yield_distributor = "Bg7Es69512z86iXNBnA9nqQJDyuyf6DhQqTty1rdsW7"
-prediction_market = "3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv"
-liquidation_vault = "C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1"
-protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
+# TODO: Replace ALL placeholder IDs with real mainnet deployment addresses before mainnet launch.
+# Current values are localnet/devnet IDs — deploying with these will cause catastrophic key collisions.
+burn_engine = "TODO_MAINNET_BURN_ENGINE_ID"
+escrow = "TODO_MAINNET_ESCROW_ID"
+nv_usdc_vault = "TODO_MAINNET_NV_USDC_VAULT_ID"
+position_tracker = "TODO_MAINNET_POSITION_TRACKER_ID"
+staking_manager = "TODO_MAINNET_STAKING_MANAGER_ID"
+token_nvsc = "TODO_MAINNET_TOKEN_NVSC_ID"
+yield_distributor = "TODO_MAINNET_YIELD_DISTRIBUTOR_ID"
+prediction_market = "TODO_MAINNET_PREDICTION_MARKET_ID"
+liquidation_vault = "TODO_MAINNET_LIQUIDATION_VAULT_ID"
+protocol_lp_vault = "TODO_MAINNET_PROTOCOL_LP_VAULT_ID"
 
 [provider]
 cluster = "devnet"
