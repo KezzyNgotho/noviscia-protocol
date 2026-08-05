@@ -32,5 +32,5 @@ solana program deploy target/deploy/nv_usdc_vault.so \
   --program-id CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC \
   --keypair "${ANCHOR_WALLET}"
 
-bash "$ROOT/scripts/sync-idls.sh"
-echo "Done — nv-usdc-vault upgraded (bounded NAV-delta checks active)."
+bash "$ROOT/scripts/deploy/sync-idls.sh"
+echo "Done — nv-usdc-vault upgraded (compound is now a ledger-consistent snapshot reset; no phantom total_assets/shares)."

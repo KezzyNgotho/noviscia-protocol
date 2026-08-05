@@ -39,5 +39,5 @@ solana program deploy target/deploy/yield_distributor.so \
   --program-id CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw \
   --keypair "${ANCHOR_WALLET}"
 
-bash "$ROOT/scripts/sync-idls.sh"
+bash "$ROOT/scripts/deploy/sync-idls.sh"
 echo "Done — yield-distributor upgraded (compensate_yield destination-binding + earned-cap active)."

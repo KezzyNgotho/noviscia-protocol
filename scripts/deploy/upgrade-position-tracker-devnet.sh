@@ -32,5 +32,5 @@ solana program deploy target/deploy/position_tracker.so \
   --program-id 3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY \
   --keypair "${ANCHOR_WALLET}"
 
-bash "$ROOT/scripts/sync-idls.sh"
+bash "$ROOT/scripts/deploy/sync-idls.sh"
 echo "Done. Run: npm run verify:burn-authority && npm run verify:kamino-devnet"

@@ -34,5 +34,5 @@ solana program deploy target/deploy/liquidation_vault.so \
   --program-id C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1 \
   --keypair "${ANCHOR_WALLET}"
 
-bash "$ROOT/scripts/sync-idls.sh"
+bash "$ROOT/scripts/deploy/sync-idls.sh"
 echo "Done — liquidation-vault upgraded (profit/share/shares_to_usdc helpers extracted)."

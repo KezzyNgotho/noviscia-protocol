@@ -34,5 +34,5 @@ solana program deploy target/deploy/staking_manager.so \
   --program-id 4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75 \
   --keypair "${ANCHOR_WALLET}"
 
-bash "$ROOT/scripts/sync-idls.sh"
+bash "$ROOT/scripts/deploy/sync-idls.sh"
 echo "Done — staking-manager upgraded (tier_discount_pct/compute_rewards_rate/compute_quorum_min extracted)."

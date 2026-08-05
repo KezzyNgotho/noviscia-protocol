@@ -99,6 +99,11 @@ Protocol transparency dashboard — volume, open interest, and solvency metrics.
 
 Deposit USDC → mint nvscUSDC shares at current NAV. NAV compounds from real protocol trading-fee and liquidation revenue — the same mechanism backing perps margin. You can deposit here and use the resulting nvscUSDC as margin on the perps page, or deposit/withdraw directly from the perps page's own account panel.
 
+**Yield is auto-compounding — no reinvest step exists, and none is needed.** Every fee/liquidation event is booked into the vault's `fee_index` (a 1e18-scaled cumulative yield index) and into `total_assets`. Because a share's value is `total_assets / total_shares`, that yield is already embedded in your shares: your position grows on its own, there is no keeper to run and no "compound" button to press.
+
+- **Claim as USDC:** the vault's `claim_yield` realizes yield accrued since your last snapshot — it burns a few shares worth the claim and sends you real USDC. The *Earn → Vault → Your yield* card shows the claimable amount. Remaining shares keep compounding from where the snapshot advanced.
+- **No ledger inflation:** the on-chain `compound` instruction only advances your snapshot for reporting; it does **not** mint shares or add phantom `total_assets`. Earlier versions re-added already-booked yield to `total_assets`, which let one user's compound+redeem sequence leave the vault under-collateralized — that path was removed.
+
 ---
 
 ### `/earn/stake` — NVSC Staking

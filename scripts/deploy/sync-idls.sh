@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Copy Anchor IDLs into the Next.js app after `anchor build`.
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# This script lives at scripts/deploy/, so the repo root is two levels up.
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # Prefer freshly built target/idl (anchor idl build / deploy scripts).
 if [[ -d "$ROOT/target/idl" ]]; then
   IDL="$ROOT/target/idl"
