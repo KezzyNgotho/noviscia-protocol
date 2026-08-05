@@ -7,9 +7,9 @@ skip-lint = false
 
 [programs.devnet]
 burn_engine = "nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id"
-escrow = "CKsvBM7faArbiCK2bLPBDjD1R2ieKxWLn2LTHqxxAc7F"
-nv_usdc_vault = "3syPU2EU6iCqPcDq3DgaT96M4SbwtFaT3cLpfsnxHLqj"
-position_tracker = "545164gFjb1mSRe8oBD5gtR3eQRAeJEThvJgEBwss9gz"
+escrow = "CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D"
+nv_usdc_vault = "CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC"
+position_tracker = "3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY"
 staking_manager = "4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75"
 token_nvsc = "HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT"
 yield_distributor = "CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw"

@@ -22,4 +22,6 @@ build/
 .anchor/
 test-ledger/
 solana.tar.bz2/
+# Local candle persistence written by lib/ticks/candles.ts (dev fallback)
+.data/
 
