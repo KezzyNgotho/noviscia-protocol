@@ -3,7 +3,7 @@
 # compute_user_share_bps, compute_user_profit, shares_to_usdc as pure helpers;
 # behavior-preserving DRY refactors backing new unit tests in src/tests.rs).
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 export ANCHOR_WALLET="${ANCHOR_WALLET:-$HOME/.config/solana/new-id.json}"
@@ -35,4 +35,5 @@ solana program deploy target/deploy/liquidation_vault.so \
   --keypair "${ANCHOR_WALLET}"
 
 bash "$ROOT/scripts/deploy/sync-idls.sh"
+bash "$ROOT/scripts/deploy/upload-one-idl-devnet.sh" liquidation_vault
 echo "Done — liquidation-vault upgraded (profit/share/shares_to_usdc helpers extracted)."

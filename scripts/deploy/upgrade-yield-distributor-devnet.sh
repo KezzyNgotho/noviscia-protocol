@@ -8,7 +8,7 @@
 #    total_earned (MAX_COMPENSATION_VS_EARNED_BPS)
 # Backed by new unit tests in src/tests.rs.
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 export ANCHOR_WALLET="${ANCHOR_WALLET:-$HOME/.config/solana/new-id.json}"
@@ -40,4 +40,5 @@ solana program deploy target/deploy/yield_distributor.so \
   --keypair "${ANCHOR_WALLET}"
 
 bash "$ROOT/scripts/deploy/sync-idls.sh"
+bash "$ROOT/scripts/deploy/upload-one-idl-devnet.sh" yield_distributor
 echo "Done — yield-distributor upgraded (compensate_yield destination-binding + earned-cap active)."

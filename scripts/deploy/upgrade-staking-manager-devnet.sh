@@ -3,7 +3,7 @@
 # compute_rewards_rate, compute_quorum_min as pure helpers; behavior-preserving
 # DRY refactors backing new unit tests in src/tests.rs).
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 export ANCHOR_WALLET="${ANCHOR_WALLET:-$HOME/.config/solana/new-id.json}"
@@ -35,4 +35,5 @@ solana program deploy target/deploy/staking_manager.so \
   --keypair "${ANCHOR_WALLET}"
 
 bash "$ROOT/scripts/deploy/sync-idls.sh"
+bash "$ROOT/scripts/deploy/upload-one-idl-devnet.sh" staking_manager
 echo "Done — staking-manager upgraded (tier_discount_pct/compute_rewards_rate/compute_quorum_min extracted)."

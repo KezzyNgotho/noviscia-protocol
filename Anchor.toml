@@ -16,6 +16,7 @@ yield_distributor = "CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw"
 prediction_market = "3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv"
 liquidation_vault = "C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1"
 protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
+bug_bounty = "A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK"
 
 [programs.localnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
@@ -28,6 +29,7 @@ yield_distributor = "Bg7Es69512z86iXNBnA9nqQJDyuyf6DhQqTty1rdsW7"
 prediction_market = "3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv"
 liquidation_vault = "C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1"
 protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
+bug_bounty = "A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK"
 
 [programs.mainnet]
 # Replace ALL placeholder IDs with real mainnet deployment addresses before mainnet launch.
@@ -42,6 +44,7 @@ yield_distributor = "11111111111111111111111111111111"
 prediction_market = "11111111111111111111111111111111"
 liquidation_vault = "11111111111111111111111111111111"
 protocol_lp_vault = "11111111111111111111111111111111"
+bug_bounty = "11111111111111111111111111111111"
 
 [provider]
 cluster = "devnet"

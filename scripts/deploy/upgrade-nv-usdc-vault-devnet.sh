@@ -33,4 +33,5 @@ solana program deploy target/deploy/nv_usdc_vault.so \
   --keypair "${ANCHOR_WALLET}"
 
 bash "$ROOT/scripts/deploy/sync-idls.sh"
+bash "$ROOT/scripts/deploy/upload-one-idl-devnet.sh" nv_usdc_vault
 echo "Done — nv-usdc-vault upgraded (compound is now a ledger-consistent snapshot reset; no phantom total_assets/shares)."

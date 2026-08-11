@@ -10,6 +10,7 @@ members = [
     "programs/protocol-lp-vault",
     "programs/position-tracker",
     "programs/prediction-market",
+    "programs/bug-bounty",
 ]
 resolver = "2"
 
