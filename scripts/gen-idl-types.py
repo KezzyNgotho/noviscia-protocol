@@ -19,6 +19,7 @@ PROGRAMS = {
     "token_nvsc": "TokenNvsc",
     "liquidation_vault": "LiquidationVault",
     "prediction_market": "PredictionMarket",
+    "noviscia_clearing": "NovisciaClearing",
     "protocol_lp_vault": "ProtocolLpVault",
     "yield_distributor": "YieldDistributor",
 }

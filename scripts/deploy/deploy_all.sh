@@ -17,7 +17,7 @@ PROGRAMS=(
   "yield-distributor"
   "position-tracker"
   "liquidation-vault"
-  "prediction_market"
+  "noviscia-clearing"
 )
 
 echo "🚀 Deploying Novisca Protocol to $NETWORK"

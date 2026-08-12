@@ -1,8 +1,14 @@
 # Noviscia Protocol
 
-**Perpetuals on Solana where margin never sits idle.**
+**A yield-native clearing house on Solana. Perpetuals, event markets, and future products settle on one spine — and margin never sits idle.**
 
 The same nvscUSDC shares backing your leveraged position earn protocol yield the entire time they're locked as collateral.
+
+Noviscia is a clearing house (CCP), not a single dapp: an **Exchange Layer** of
+trading products (perps, event markets, and later options/spot/fixed-income)
+sits on top of a **Clearing Infrastructure** — one yield-bearing vault, one
+settlement engine, one liquidation backstop. See
+[`docs/CLEARING_HOUSE_VISION.md`](./docs/CLEARING_HOUSE_VISION.md).
 
 | | |
 |---|---|
@@ -19,8 +25,8 @@ The same nvscUSDC shares backing your leveraged position earn protocol yield the
 
 ```
 Trader deposits USDC (or any SPL asset → Jupiter swaps to USDC)
-  → nv-usdc-vault mints nvscUSDC shares at live NAV
-  → position-tracker.open_position_jit
+  → nv-usdc-vault mints nvscUSDC shares at live NAV   [Clearing Infrastructure]
+  → position-tracker.open_position_jit                [Exchange Layer: perps]
         · verifies a fresh Pyth Hermes VAA on-chain (JIT, ≤3s old)
         · locks nvscUSDC shares as collateral (never redeemed)
         · charges trading fee → swept into vault NAV
@@ -30,6 +36,12 @@ Trader deposits USDC (or any SPL asset → Jupiter swaps to USDC)
         · settles peer-to-peer funding into realized PnL
         · on liquidation: 20% caller bounty, 80% retained
           (10% → per-market insurance fund, rest → vault NAV)
+
+Event markets route through the same spine:
+  → noviscia-clearing.place_bet [Exchange Layer: event markets]
+        · locks USDC, JIT-verified Pyth oracle on resolution
+        · fees swept into vault NAV via the same accumulate_protocol_fees CPI
+        · winner claims via permissionless payout from the market PDA vault
 ```
 
 No AMM. No order-matching engine. No off-chain keeper. No external lending venue.
@@ -53,14 +65,14 @@ No AMM. No order-matching engine. No off-chain keeper. No external lending venue
 ```
 noviscia-protocal/
 ├── programs/                    # Solana Anchor programs
-│   ├── position-tracker/        # Core perps engine — JIT oracle, margin, funding, liquidation
-│   ├── nv-usdc-vault/           # Share-based USDC vault (nvscUSDC), NAV accrual
-│   ├── burn-engine/             # Fee accumulation, NVSC buyback & burn
+│   ├── position-tracker/        # Exchange Layer: perps engine — JIT oracle, margin, funding, liquidation
+│   ├── nv-usdc-vault/           # Clearing Infrastructure: share-based USDC vault (nvscUSDC), NAV accrual
+│   ├── burn-engine/             # Clearing Infrastructure: fee accumulation, NVSC buyback & burn
 │   ├── escrow/                  # Legacy lending/yield (not in perps path)
 │   ├── staking-manager/         # NVSC staking tiers, governance
 │   ├── yield-distributor/       # Lend yield distribution
 │   ├── token-nvsc/              # Fixed-supply NVSC mint
-│   ├── prediction-market/       # On-chain prediction markets
+│   ├── noviscia-clearing/       # Clearing Infrastructure: settlement engine + event/outcome contracts
 │   ├── liquidation-vault/       # Legacy per-asset insurance (perps uses its own per-market fund)
 │   └── protocol-lp-vault/       # Trading-fee-backed LP vault
 │
@@ -157,7 +169,7 @@ Every perps mechanic has a corresponding live-devnet proof script under `scripts
 | `staking-manager` | `4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75` |
 | `yield-distributor` | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |
 | `liquidation-vault` | `C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1` |
-| `prediction-market` | `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` |
+| `noviscia-clearing` | `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` (in-place upgrade of `prediction-market`) |
 | `token-nvsc` | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
 
 **Devnet markets:** SOL, BTC, ETH (50x max, 1% maintenance margin). 13 additional catalog markets in frontend as previews.
@@ -222,6 +234,7 @@ Every perps mechanic has a corresponding live-devnet proof script under `scripts
 
 | Document | Path |
 |----------|------|
+| Clearing house vision | [`docs/CLEARING_HOUSE_VISION.md`](./docs/CLEARING_HOUSE_VISION.md) |
 | Architecture | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) |
 | Devnet runbook | [`docs/DEVNET.md`](./docs/DEVNET.md) |
 | Tokenomics | [`docs/TOKENOMICS.md`](./docs/TOKENOMICS.md) |

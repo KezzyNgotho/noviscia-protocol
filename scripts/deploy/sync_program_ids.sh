@@ -19,7 +19,7 @@ PROGRAMS=(
   "yield-distributor"
   "position-tracker"
   "liquidation-vault"
-  "prediction_market"
+  "noviscia_clearing"
 )
 
 declare -A PROGRAM_KEYS
@@ -77,7 +77,7 @@ programs = [
     ("yield-distributor", "YIELD_PROGRAM_ID"),
     ("position-tracker", "POSITION_TRACKER_PROGRAM_ID"),
     ("liquidation-vault", "LIQUIDATION_VAULT_PROGRAM_ID"),
-  ("prediction_market", "PREDICTION_MARKET_PROGRAM_ID"),
+  ("noviscia_clearing", "PREDICTION_MARKET_PROGRAM_ID"),
 ]
 
 program_keys = {}
@@ -106,7 +106,7 @@ env_updates = {
     "YIELD_PROGRAM_ID": program_keys["yield-distributor"],
     "POSITION_TRACKER_PROGRAM_ID": program_keys["position-tracker"],
     "LIQUIDATION_VAULT_PROGRAM_ID": program_keys["liquidation-vault"],
-  "PREDICTION_MARKET_PROGRAM_ID": program_keys["prediction_market"],
+  "PREDICTION_MARKET_PROGRAM_ID": program_keys["noviscia_clearing"],
 }
 for key, value in env_updates.items():
     env_text = re.sub(rf'^{re.escape(key)}=.*$', f'{key}={value}', env_text, flags=re.M)
@@ -122,7 +122,7 @@ lib_map = {
     "yield-distributor": "programs/yield-distributor/src/lib.rs",
   "position-tracker": "programs/position-tracker/src/lib.rs",
   "liquidation-vault": "programs/liquidation-vault/src/lib.rs",
-  "prediction_market": "programs/prediction_market/src/lib.rs",
+  "noviscia_clearing": "programs/noviscia-clearing/src/lib.rs",
 }
 
 for program, relative_path in lib_map.items():
