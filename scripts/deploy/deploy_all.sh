@@ -18,6 +18,7 @@ PROGRAMS=(
   "position-tracker"
   "liquidation-vault"
   "noviscia-clearing"
+  "netting-engine"
 )
 
 echo "🚀 Deploying Novisca Protocol to $NETWORK"

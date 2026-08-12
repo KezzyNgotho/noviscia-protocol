@@ -2706,6 +2706,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "netting-engine"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "solana-program",
+]
+
+[[package]]
 name = "nix"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2752,6 +2760,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "netting-engine",
  "nv-usdc-vault",
  "pyth-solana-receiver-sdk",
  "pythnet-sdk",
@@ -3180,6 +3189,7 @@ dependencies = [
  "anchor-spl",
  "burn-engine",
  "bytemuck",
+ "netting-engine",
  "nv-usdc-vault",
  "pyth-solana-receiver-sdk",
  "pythnet-sdk",

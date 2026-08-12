@@ -41,8 +41,11 @@ case "${1:?usage: upload-one-idl-devnet.sh <program-name>}" in
   token_nvsc)         IDL_PKG=token_nvsc;         IDL_FILE=token_nvsc.json;         PROGRAM_ID=HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT ;;
   yield_distributor)  IDL_PKG=yield_distributor;  IDL_FILE=yield_distributor.json;  PROGRAM_ID=CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw ;;
   prediction_market)  IDL_PKG=prediction_market;  IDL_FILE=prediction_market.json;  PROGRAM_ID=3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv ;;
+  noviscia_clearing)  IDL_PKG=noviscia_clearing;  IDL_FILE=noviscia_clearing.json;  PROGRAM_ID=3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv ;;
   liquidation_vault)  IDL_PKG=liquidation_vault;  IDL_FILE=liquidation_vault.json;  PROGRAM_ID=C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1 ;;
   bug_bounty)         IDL_PKG=bug_bounty;         IDL_FILE=bug_bounty.json;         PROGRAM_ID=A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK ;;
+  protocol_lp_vault)  IDL_PKG=protocol_lp_vault;  IDL_FILE=protocol_lp_vault.json;  PROGRAM_ID=BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT ;;
+  netting_engine)     IDL_PKG=netting_engine;     IDL_FILE=netting_engine.json;     PROGRAM_ID=68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56 ;;
   *) echo "Unknown program name: $1" >&2; exit 1 ;;
 esac
 

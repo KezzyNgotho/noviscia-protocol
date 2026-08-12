@@ -11,6 +11,7 @@ members = [
     "programs/position-tracker",
     "programs/noviscia-clearing",
     "programs/bug-bounty",
+    "programs/netting-engine",
 ]
 resolver = "2"
 

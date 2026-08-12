@@ -22,6 +22,7 @@ PROGRAMS = {
     "noviscia_clearing": "NovisciaClearing",
     "protocol_lp_vault": "ProtocolLpVault",
     "yield_distributor": "YieldDistributor",
+    "netting_engine": "NettingEngine",
 }
 
 IDL_TYPE_MAP = {

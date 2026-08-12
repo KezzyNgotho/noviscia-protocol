@@ -73,6 +73,7 @@ noviscia-protocal/
 │   ├── yield-distributor/       # Lend yield distribution
 │   ├── token-nvsc/              # Fixed-supply NVSC mint
 │   ├── noviscia-clearing/       # Clearing Infrastructure: settlement engine + event/outcome contracts
+│   ├── netting-engine/          # Clearing Infrastructure: multilateral netting & novation ledger (CCP book)
 │   ├── liquidation-vault/       # Legacy per-asset insurance (perps uses its own per-market fund)
 │   └── protocol-lp-vault/       # Trading-fee-backed LP vault
 │
@@ -170,6 +171,7 @@ Every perps mechanic has a corresponding live-devnet proof script under `scripts
 | `yield-distributor` | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |
 | `liquidation-vault` | `C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1` |
 | `noviscia-clearing` | `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` (in-place upgrade of `prediction-market`) |
+| `netting-engine` | `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56` |
 | `token-nvsc` | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
 
 **Devnet markets:** SOL, BTC, ETH (50x max, 1% maintenance margin). 13 additional catalog markets in frontend as previews.
