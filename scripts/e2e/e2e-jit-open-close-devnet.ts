@@ -39,6 +39,7 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 import type { PositionTracker } from '../target/types/position_tracker';
+import { nettingRemainingAccounts } from '../utils/lib/netting-remaining';
 
 const ROOT = path.resolve(__dirname, '..');
 const RPC = process.env.SOLANA_RPC_DEVNET || 'https://api.devnet.solana.com';
@@ -198,6 +199,7 @@ async function main() {
   const [stakeAccount] = PublicKey.findProgramAddressSync([Buffer.from('stake'), trader.publicKey.toBuffer()], STAKING_MANAGER_PROGRAM_ID);
   const [vaultAuthority] = PublicKey.findProgramAddressSync([Buffer.from('nv-vault-authority'), USDC_MINT.toBuffer()], NV_VAULT_PROGRAM);
   const [settlementVault] = PublicKey.findProgramAddressSync([Buffer.from('settlement-vault')], pt.programId);
+  const [insuranceVault] = PublicKey.findProgramAddressSync([Buffer.from('insurance-vault')], pt.programId);
   const vaultCfg: any = await (nvProgram.account as any).vaultConfig.fetch(vaultConfig);
   const vaultUsdc: PublicKey = vaultCfg.vaultUsdc;
 
@@ -240,6 +242,8 @@ async function main() {
     jit1.config,
     jit1.treasury,
     DEFAULT_RECEIVER_PROGRAM_ID,
+    // Netting-engine accounts (remaining_accounts[11..16])
+    ...nettingRemainingAccounts(trader.publicKey).map((a) => a.pubkey),
   ];
   const altAddress = await getOrCreateAlt(connection, trader, constantAccounts);
 
@@ -294,6 +298,8 @@ async function main() {
         { pubkey: jitOpen.config, isSigner: false, isWritable: false },
         { pubkey: jitOpen.treasury, isSigner: false, isWritable: true },
         { pubkey: DEFAULT_RECEIVER_PROGRAM_ID, isSigner: false, isWritable: false },
+        // [11..15] netting-engine accounts
+        ...nettingRemainingAccounts(trader.publicKey),
       ])
       .instruction();
 
@@ -331,6 +337,7 @@ async function main() {
         nvusdcMint: NVUSDC_MINT,
         nvUsdcVaultProgram: NV_VAULT_PROGRAM,
         settlementVault,
+        insuranceVault,
         priceUpdateAccount: priceUpdateAccount2.publicKey,
         guardianSet: jit2.guardianSet,
         pythConfig: jit2.config,
@@ -346,6 +353,7 @@ async function main() {
         stakingFeeVault,
         stakeAccount,
       } as any)
+      .remainingAccounts(nettingRemainingAccounts(trader.publicKey))
       .instruction();
 
     const closeSig = await sendV0(connection, trader, [priceUpdateAccount2], [ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 }), closeIx], altAddress);

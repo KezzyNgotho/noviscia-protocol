@@ -36,12 +36,16 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 import type { PositionTracker } from '../target/types/position_tracker';
+import { nettingRemainingAccounts } from '../utils/lib/netting-remaining';
 
 const ROOT = path.resolve(__dirname, '..');
 const RPC = process.env.SOLANA_RPC_DEVNET || 'https://api.devnet.solana.com';
 const USDC_MINT = new PublicKey('Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5');
 const NVUSDC_MINT = new PublicKey('2TmaUey4Hh2om1kFR77Vw1RDh8H69qcW6UAACVidJeVk');
 const NV_VAULT_PROGRAM = new PublicKey('CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC');
+const BURN_ENGINE = new PublicKey('nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id');
+const STAKING_MANAGER = new PublicKey('4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75');
+const BURN_VAULT_USDC = new PublicKey('5gXoi3aqnomJiCZkE6ta5T7tJKNvW9GfNrfHEncsLnna');
 const SOL_FEED_HEX = 'ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d';
 const TREASURY_ID = 0;
 const SUB_ID = 1; // distinct from the earlier trading-fee test's sub_id 0
@@ -142,6 +146,11 @@ async function main() {
   const [vaultConfig] = PublicKey.findProgramAddressSync([Buffer.from('nv-vault-config'), USDC_MINT.toBuffer()], NV_VAULT_PROGRAM);
   const [vaultAuthority] = PublicKey.findProgramAddressSync([Buffer.from('nv-vault-authority'), USDC_MINT.toBuffer()], NV_VAULT_PROGRAM);
   const [settlementVault] = PublicKey.findProgramAddressSync([Buffer.from('settlement-vault')], pt.programId);
+  const [insuranceVault] = PublicKey.findProgramAddressSync([Buffer.from('insurance-vault')], pt.programId);
+  const [burnState] = PublicKey.findProgramAddressSync([Buffer.from('burn_state')], BURN_ENGINE);
+  const [stakingFeePool] = PublicKey.findProgramAddressSync([Buffer.from('staking-fee-pool')], STAKING_MANAGER);
+  const [stakingFeeVault] = PublicKey.findProgramAddressSync([Buffer.from('staking-fee-pool'), Buffer.from('vault')], STAKING_MANAGER);
+  const [stakeAccount] = PublicKey.findProgramAddressSync([Buffer.from('stake'), trader.publicKey.toBuffer()], STAKING_MANAGER);
   const nvProgram = new Program(JSON.parse(fs.readFileSync(path.join(ROOT, 'target/idl/nv_usdc_vault.json'), 'utf-8')), provider);
   const vaultCfg: any = await (nvProgram.account as any).vaultConfig.fetch(vaultConfig);
   const vaultUsdc: PublicKey = vaultCfg.vaultUsdc;
@@ -166,9 +175,11 @@ async function main() {
   console.log('\nFetching live Pyth Hermes VAA + building/reusing ALT...');
   const jit0 = await fetchJitPriceArgs();
   const constantAccounts = [
-    ptConfig, market, vaultConfig, NV_VAULT_PROGRAM, NVUSDC_MINT, vaultAuthority, vaultUsdc, settlementVault,
+    ptConfig, market, vaultConfig, NV_VAULT_PROGRAM, NVUSDC_MINT, vaultAuthority, vaultUsdc, settlementVault, insuranceVault,
     jit0.config, jit0.guardianSet, jit0.treasury, DEFAULT_RECEIVER_PROGRAM_ID, TOKEN_PROGRAM_ID, SystemProgram.programId,
     position, collateralVault, traderNvusdc.address, traderUsdc.address,
+    BURN_ENGINE, burnState, BURN_VAULT_USDC, STAKING_MANAGER, stakingFeePool, stakingFeeVault, stakeAccount,
+    ...nettingRemainingAccounts(trader.publicKey).map((a) => a.pubkey),
   ];
   const alt = await getOrCreateAlt(connection, trader, constantAccounts);
 
@@ -179,15 +190,31 @@ async function main() {
   const collateralShares = new BN(2_000_000); // 2 nvscUSDC
 
   const openIx = await pt.methods
-    .openPositionJit(SUB_ID, true, sizeUsdc, collateralShares, jitOpen.signedPricePayload, jitOpen.merklePriceUpdateBytes, TREASURY_ID)
+    .openPositionJit(SUB_ID, true, sizeUsdc, collateralShares, 0, null, null, jitOpen.signedPricePayload, jitOpen.merklePriceUpdateBytes, TREASURY_ID)
     .accounts({
       trader: trader.publicKey, ptConfig, market, vaultConfig, vaultAuthority, vaultUsdc,
       nvUsdcVaultProgram: NV_VAULT_PROGRAM, nvusdcMint: NVUSDC_MINT, settlementVault,
       position, collateralVault, traderNvusdc: traderNvusdc.address,
-      priceUpdateAccount: priceUpdateAccount1.publicKey, guardianSet: jitOpen.guardianSet,
-      pythConfig: jitOpen.config, treasury: jitOpen.treasury,
-      pythReceiverProgram: DEFAULT_RECEIVER_PROGRAM_ID, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
+      priceUpdateAccount: priceUpdateAccount1.publicKey,
+      tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
     } as any)
+    .remainingAccounts([
+      // Fee split [0..6]
+      { pubkey: BURN_ENGINE, isSigner: false, isWritable: false },
+      { pubkey: burnState, isSigner: false, isWritable: true },
+      { pubkey: BURN_VAULT_USDC, isSigner: false, isWritable: true },
+      { pubkey: STAKING_MANAGER, isSigner: false, isWritable: false },
+      { pubkey: stakingFeePool, isSigner: false, isWritable: true },
+      { pubkey: stakingFeeVault, isSigner: false, isWritable: true },
+      { pubkey: stakeAccount, isSigner: false, isWritable: true },
+      // Pyth JIT [7..10]
+      { pubkey: jitOpen.guardianSet, isSigner: false, isWritable: true },
+      { pubkey: jitOpen.config, isSigner: false, isWritable: true },
+      { pubkey: jitOpen.treasury, isSigner: false, isWritable: true },
+      { pubkey: DEFAULT_RECEIVER_PROGRAM_ID, isSigner: false, isWritable: false },
+      // Netting-engine accounts [11..15]
+      ...nettingRemainingAccounts(trader.publicKey),
+    ])
     .instruction();
   const openSig = await sendV0(connection, trader, [priceUpdateAccount1], [ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }), openIx], alt);
   console.log('open_position_jit() tx:', openSig, '@ entry price', jitOpen.displayPrice.toString());
@@ -222,10 +249,13 @@ async function main() {
       trader: trader.publicKey, ptConfig, market, position, collateralVault,
       traderNvusdc: traderNvusdc.address, traderUsdc: traderUsdc.address,
       vaultConfig, vaultAuthority, vaultUsdc, nvusdcMint: NVUSDC_MINT, nvUsdcVaultProgram: NV_VAULT_PROGRAM,
-      settlementVault, priceUpdateAccount: priceUpdateAccount2.publicKey, guardianSet: jit2.guardianSet,
+      settlementVault, insuranceVault, priceUpdateAccount: priceUpdateAccount2.publicKey, guardianSet: jit2.guardianSet,
       pythConfig: jit2.config, treasury: jit2.treasury, pythReceiverProgram: DEFAULT_RECEIVER_PROGRAM_ID,
+      burnEngineProgram: BURN_ENGINE, burnState, burnVaultUsdc: BURN_VAULT_USDC,
+      stakingManagerProgram: STAKING_MANAGER, stakingFeePool, stakingFeeVault, stakeAccount,
       tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
     } as any)
+    .remainingAccounts(nettingRemainingAccounts(trader.publicKey))
     .instruction();
   const closeSig = await sendV0(connection, trader, [priceUpdateAccount2], [ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }), closeIx], alt);
   console.log('close_position() tx:', closeSig, '@ exit price', jit2.displayPrice.toString());
