@@ -130,6 +130,39 @@ services:
       - indexer
     restart: unless-stopped
 
+  # Liquidation Keeper — HF position watch, JIT pricing, atomic-recall liquidations
+  liquidation-keeper:
+    build:
+      context: ./services/liquidation-keeper
+      dockerfile: Dockerfile
+    container_name: novisca-liquidation-keeper
+    environment:
+      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://devnet.helius-rpc.com/?api-key=af189ab2-19dd-43e7-b6c3-6afcfa932cb2}
+      WS_INGEST_URL: http://websocket:8080
+      WS_INGEST_SECRET: ${WS_INGEST_SECRET:-}
+      KEEPER_ENABLE_ATOMIC_RECALL: "true"
+      KEEPER_ENABLE_FUNDING: "true"
+    depends_on:
+      - websocket
+    restart: unless-stopped
+
+  # Risk Engine — VaR / Expected-Shortfall analytics over the netting house book
+  risk-engine:
+    build:
+      context: ./services/risk-engine
+      dockerfile: Dockerfile
+    container_name: novisca-risk-engine
+    environment:
+      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://devnet.helius-rpc.com/?api-key=af189ab2-19dd-43e7-b6c3-6afcfa932cb2}
+      WS_INGEST_URL: http://websocket:8080
+      WS_INGEST_SECRET: ${WS_INGEST_SECRET:-}
+      RISK_PORT: 8095
+    ports:
+      - "8095:8095"
+    depends_on:
+      - websocket
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:

@@ -18,6 +18,7 @@ liquidation_vault = "C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1"
 protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
 bug_bounty = "A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK"
 netting_engine = "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56"
+yield_router = "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4"
 
 [programs.localnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
@@ -31,6 +32,8 @@ noviscia_clearing = "3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv"
 liquidation_vault = "C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1"
 protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
 bug_bounty = "A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK"
+netting_engine = "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56"
+yield_router = "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4"
 
 [programs.mainnet]
 # Replace ALL placeholder IDs with real mainnet deployment addresses before mainnet launch.

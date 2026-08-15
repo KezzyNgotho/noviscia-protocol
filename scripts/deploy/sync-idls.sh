@@ -15,7 +15,7 @@ fi
 WEB="$ROOT/app/web/app/idl"
 
 mkdir -p "$WEB"
-for f in escrow position_tracker noviscia_lending burn_engine staking_manager nv_usdc_vault yield_distributor liquidation_vault bug_bounty noviscia_clearing token_nvsc protocol_lp_vault netting_engine; do
+for f in escrow position_tracker noviscia_lending burn_engine staking_manager nv_usdc_vault yield_distributor liquidation_vault bug_bounty noviscia_clearing token_nvsc protocol_lp_vault netting_engine yield_router; do
   if [[ -f "$IDL/${f}.json" ]]; then
     cp "$IDL/${f}.json" "$WEB/"
     echo "Copied ${f}.json"

@@ -125,6 +125,39 @@ graph TB
 ## 7. Gaps (documented, not yet built)
 
 - Claim expiry + residual-sweep waterfall in `noviscia-clearing` (Phase 2 edits).
-- Cross-margin correlation matrix (netting engine). **Deployed 2026-08-12** — `netting-engine` live at `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56`, config + house book initialized, venue #0 = perps (position-tracker), venue #1 = event (noviscia-clearing) registered. Venue *reporting* is not yet active: the modified `noviscia-clearing` (fill/close → netting CPI) is still uncommitted and its `ClaimUserFunds` accounts struct exceeds the 4096B stack limit (`Stack offset of 4104 … exceed max offset by 8 bytes`); deploy after shrinking that frame.
+- Cross-margin correlation matrix (netting engine). **Deployed 2026-08-12** — `netting-engine` live at `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56`, config + house book initialized, venue #0 = perps (position-tracker), venue #1 = event (noviscia-clearing) registered. **Venue reporting deployed 2026-08-14** — `noviscia-clearing` upgraded at `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` to the netting-CPI build (fill/close → `report_fill` / `report_position_close` via the `clr-config` PDA; slot 483898757, code verified byte-identical, IDL `2YBsh87nPFPDCat4EovxfuGYrfGXeVjW2QEvArGCLQr8`). The earlier `ClaimUserFunds` 4104B stack-frame overflow was resolved in commit `df87e113` and the program builds clean. Cross-tenant CCP book now consolidates fills/closes into the engine.
 - Third-party tenant onboarding flows (contract hooks exist, no tenant live).
 - Mainnet deploy (devnet only; `[programs.mainnet]` still placeholders).
+
+## 8. CCP Topology Gap Closure (2026-08-14)
+
+The four topology gaps are now closed in code (compiling, unit-tested, and deployed to devnet):
+
+### Gap 4 — Atomic Recall on margin trigger (ON-CHAIN, DEPLOYED)
+- New program `programs/yield-router` (ID `FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4` — matches the ID hardcoded as `YIELD_ROUTER_PROGRAM_ID` in `nv-usdc-vault`). Keypair `.keys/yield-router-devnet.json` already derives to this address. Instructions: `initialize`, `set_admin`, `allocate_idle` (permissionless), `recall_for_margin` (callable by `pt-config` PDA, `clr-config` PDA, or router admin). Vault gate: `yr-config` PDA is the sole `allocate_to_yield`/`recall_from_yield` authority the omni-pool accepts.
+- `position-tracker` now composes the recall **in the same transaction** as liquidation: `helpers::AtomicRecallAccounts` + `parse_recall_accounts` (offset 5, after the 5 netting accounts) + `recall_margin_if_short` are wired into both `liquidate` and `liquidate_dutch_auction`, *before* the protocol-shares redemption. Recall is best-effort/backward compatible: it only runs when the 7 accounts are present, the venue pot exists, and on-hand LP-owned USDC (`vault_usdc.amount − non_lp_reserves`) is short of the redemption amount. Shortfall = `needed − lp_on_hand`, capped at `outstanding_yield_receivable`.
+- Verified: `cargo check -p position-tracker -p yield-router` (warnings only), `cargo test -p yield-router` 3/3 pass, full `cargo check --workspace` clean.
+- **Deployed 2026-08-14:**
+  - `yield_router` live at `FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4` (sig `sLrYjXEFNHvNhkih1Lf3jHq9gkHL6AFwzPo4uBbHrypLE9nRnw5ejVXCeJ1Zor2k75nqHDWGdhsNQ1CcYdCQYtN`); `yr-config` initialized at `36NVE7fjNFD1SnVZMDJenLBZV7A653enNc9dj85UtCrE`, venue USDC ATA `GmJ6CFBoMu24T8JRsK2JK5Szq93gSStUjLxZtpucgaGP`; IDL uploaded (account `9d3vYZ22mPNRJzx2LLF94nos8JAPBYwjyhv5qf8A78kQ`).
+  - `position-tracker` upgraded to the atomic-recall build at `3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY` (new ProgramData, slot 483894136, data 2,534,480 B); new IDL uploaded (account `BLBgAY2evLxvE6PsttDBLrs3mGEfK8jkuf5pdTbQ3L7Z`).
+- Deploy: `scripts/deploy/upgrade-yield-router-devnet.sh`; init: `scripts/init/init-yield-router-devnet.ts` (creates `yr-config` + venue USDC ATA). Added to `Anchor.toml` `[programs.devnet]` + `[programs.localnet]`.
+- E2E liquidation scripts (`e2e-liquidate-devnet.ts`, `e2e-liquidation-devnet.ts`, `e2e-liquidation-eth-devnet.ts`, `e2e-liquidation-bonk-devnet.ts`) now pass `[...nettingRemainingAccounts, ...recallRemainingAccounts]` on every `liquidate` (typecheck clean).
+
+### Gap 3 — Off-chain liquidation keeper (SERVICE, DONE)
+- New `services/liquidation-keeper` — polls every open position (raw 174-byte decode), batch-fetches JIT Pyth prices from Hermes in one call, executes TP/SL, liquidations, and funding settlement. Every liquidation passes the 5 netting-engine accounts **and** the 7 yield-router accounts (atomic recall). It is also the first *producer* for the websocket `POST /internal/broadcast` alert ingest (`alerts:global` + `alerts:{wallet}`). Dockerized + registered in `docker-compose.yml`. Smoke-tested against live devnet (boots, scans cleanly, atomic-recall + funding enabled). `docker-compose.yml` devnet RPC switched to Helius (`SOLANA_RPC_DEVNET`, overridable) — ankr's devnet endpoint now requires an API key, and Alchemy's Free tier blocks `getProgramAccounts`.
+
+### Gap 2 — VaR / Expected-Shortfall analytics (SERVICE, DONE)
+- New `services/risk-engine` — reads the netting ledger (`NettingConfig`/`Venue[]`/`HouseBook`/`NettingSet[]` via the IDL coder) + open perps (symbol exposure, trader concentration), maintains a rolling log-return series per feed (warm start from Hermes history), and computes **VaR₉₅/VaR₉₉ + Expected Shortfall** two ways: historical simulation and parametric (full covariance). Reports `default-fund utilization = VaR₉₉ / HouseBook.default_fund_target_usdc` with `ok/elevated/critical` status and pushes breach alerts to the websocket. `GET /risk`, `GET /health`. Dockerized + registered in `docker-compose.yml`.
+
+### Gap 1 — Universal Developer SDK (PACKAGE, DONE)
+- New top-level `sdk/` (`@noviscia/sdk`, framework-agnostic, runs in Node + browser):
+  - `ids.ts` — every program id + mint, env-overridable.
+  - `addresses.ts` — PDA derivation for position-tracker, netting-engine, yield-router, nv-usdc-vault, burn/staking fee routing.
+  - `client.ts` — `NovisciaClient` wrapping all six anchor programs (IDLs from `target/idl`).
+  - `collateral.ts` — **Unified Collateral Gateway**: `deposit` / `withdraw` (omni-pool), `openPosition`, `liquidate` (netting + atomic-recall composed), `recallForMargin` (yield-router).
+  - `payloads.ts` — payload translators: execution, clearing, netting-report, liquidation, recall + content digest.
+  - `sandbox.ts` — simulate-first: `simulate` (dry-run versioned tx), `assertAccountsExist` (state-isolation pre-check), `fetchJitPrice` (Hermes).
+  - `npm run build` emits `dist/` with type declarations.
+
+### Not yet deployed / remaining
+- E2E atomic-recall liquidation proof (open underwater position → liquidate with netting+recall accounts → assert `outstanding_yield_receivable` dropped) to be exercised when a healthy devnet market exists.

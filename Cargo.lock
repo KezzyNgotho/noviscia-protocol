@@ -2645,6 +2645,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mock-pyth-receiver"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "pyth-solana-receiver-sdk",
+ "pythnet-sdk",
+]
+
+[[package]]
 name = "mockall"
 version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3187,8 +3196,10 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "borsh 0.10.4",
  "burn-engine",
  "bytemuck",
+ "mock-pyth-receiver",
  "netting-engine",
  "nv-usdc-vault",
  "pyth-solana-receiver-sdk",
@@ -3200,6 +3211,7 @@ dependencies = [
  "spl-token",
  "staking-manager",
  "tokio",
+ "yield-router",
 ]
 
 [[package]]
@@ -8771,6 +8783,17 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "burn-engine",
+ "solana-program",
+ "spl-token",
+]
+
+[[package]]
+name = "yield-router"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "nv-usdc-vault",
  "solana-program",
  "spl-token",
 ]

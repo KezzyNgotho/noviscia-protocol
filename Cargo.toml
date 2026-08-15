@@ -12,6 +12,8 @@ members = [
     "programs/noviscia-clearing",
     "programs/bug-bounty",
     "programs/netting-engine",
+    "programs/yield-router",
+    "mocks/mock-pyth-receiver",
 ]
 resolver = "2"
 

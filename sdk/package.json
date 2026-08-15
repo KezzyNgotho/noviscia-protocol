@@ -1,0 +1,21 @@
+{
+  "name": "@noviscia/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Universal Noviscia developer SDK — program IDs + address derivation for every program, anchor program wrappers, the Unified Collateral Gateway, payload translators, and a simulate-first sandbox. Framework-agnostic (works from Node services, bots and the web app).",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/spl-token": "^0.4.0",
+    "@solana/web3.js": "^1.95.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0"
+  }
+}
