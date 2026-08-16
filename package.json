@@ -52,10 +52,12 @@
     "@pythnetwork/pyth-solana-receiver": "^0.8.2",
     "@solana/buffer-layout": "^4.0.1",
     "@solana/spl-token": "^0.4.0",
-    "@solana/web3.js": "^1.95.0",
+    "@solana/web3.js": "1.95.0",
     "axios": "^1.6.0",
     "dotenv": "^16.3.0",
-    "redis": "^4.6.0"
+    "redis": "^4.6.0",
+    "rpc-websockets": "7.5.1",
+    "ws": "8.21.3"
   },
   "devDependencies": {
     "@types/jest": "^29.0.0",

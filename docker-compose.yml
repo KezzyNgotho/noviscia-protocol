@@ -163,6 +163,22 @@ services:
       - websocket
     restart: unless-stopped
 
+  # Netting Relayer — permissionless consolidate crank: keeps every trader's
+  # NettingSet.margin_required_usdc and the house-book default-fund target live
+  # so the netting-engine risk policy actually gates position-tracker opens.
+  netting-relayer:
+    build:
+      context: ./services/netting-relayer
+      dockerfile: Dockerfile
+    container_name: novisca-netting-relayer
+    environment:
+      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://devnet.helius-rpc.com/?api-key=af189ab2-19dd-43e7-b6c3-6afcfa932cb2}
+      RELAYER_KEYPAIR_PATH: ${RELAYER_KEYPAIR_PATH:-/keys/relayer.json}
+      POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-15000}
+    volumes:
+      - ${KEYPAIR_DIR:-~/.config/solana}:/keys
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:

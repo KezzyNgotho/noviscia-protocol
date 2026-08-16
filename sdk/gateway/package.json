@@ -1,0 +1,25 @@
+{
+  "name": "noviscia-sdk-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "e2e": "tsx --test test/e2e-local.test.ts",
+    "pack": "npm pack",
+    "prepare-publish": "npm run build && npm run pack",
+    "start": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@solana/spl-token": "^0.4.0",
+    "@solana/web3.js": "1.95.0",
+    "@coral-xyz/anchor": "^0.31.1"
+  },
+  "devDependencies": {
+    "tsx": "^3.14.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.9.3"
+  }
+}

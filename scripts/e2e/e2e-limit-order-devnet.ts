@@ -33,6 +33,7 @@ import {
   DEFAULT_RECEIVER_PROGRAM_ID,
   DEFAULT_WORMHOLE_PROGRAM_ID,
 } from '@pythnetwork/pyth-solana-receiver/lib/address';
+import { nettingRemainingAccounts } from '../utils/lib/netting-remaining';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { PositionTracker } from '../target/types/position_tracker';
@@ -205,6 +206,7 @@ async function main() {
             pythConfig: execJit.config, treasury: execJit.treasury, pythReceiverProgram: DEFAULT_RECEIVER_PROGRAM_ID,
             tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
           } as any)
+          .remainingAccounts([...nettingRemainingAccounts(trader.publicKey)])
           .instruction();
       },
       altInfo, 'execute_limit_order'

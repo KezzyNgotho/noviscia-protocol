@@ -14,6 +14,7 @@ import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount, createApproveInstr
 import { parseAccumulatorUpdateData } from '@pythnetwork/price-service-sdk';
 import { getGuardianSetIndex, trimSignatures } from '@pythnetwork/pyth-solana-receiver/lib/vaa';
 import { getConfigPda, getTreasuryPda, getGuardianSetPda, DEFAULT_RECEIVER_PROGRAM_ID, DEFAULT_WORMHOLE_PROGRAM_ID } from '@pythnetwork/pyth-solana-receiver/lib/address';
+import { nettingRemainingAccounts } from '../utils/lib/netting-remaining';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { PositionTracker } from '../target/types/position_tracker';
@@ -208,7 +209,9 @@ async function main() {
           stakingManagerProgram: STAKING_MANAGER_PROGRAM, stakingFeePool, stakingFeeVault, stakeAccount,
           priceUpdateAccount: priceUpdateAccount.publicKey, guardianSet: jit.guardianSet, pythConfig: jit.config, treasury: jit.treasury,
           pythReceiverProgram: DEFAULT_RECEIVER_PROGRAM_ID, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
-        } as any).instruction();
+        } as any)
+        .remainingAccounts([...nettingRemainingAccounts(trader.publicKey)])
+        .instruction();
     }, altInfo, 'execute_twap_slice');
     console.log('execute_twap_slice tx:', sig, '- slice position created:', !!(await connection.getAccountInfo(slicePos)));
   } else {

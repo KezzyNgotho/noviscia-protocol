@@ -1,9 +1,15 @@
-# Noviscia — As It Is Today (devnet, 2026-08-12)
+# Noviscia — As It Is Today (devnet, 2026-08-15)
 
 **Status snapshot:** all 12 programs rebuilt from current `main` source, upgraded
 in place on devnet (slots 483247186–483249477; netting-engine deploys at
 483273207), IDLs synced to
 `app/web/app/idl/` and live on-chain.
+
+**Update (2026-08-15):** Ran `scripts/deploy/sync-idls.sh` to copy freshly built
+IDLs into `app/web/app/idl/`. Uploaded (on-chain) IDLs for `position-tracker`
+and `nv-usdc-vault` to Devnet via `anchor idl upgrade` (IDL accounts updated:
+`position-tracker` → `BLBgAY2evLxvE6PsttDBLrs3mGEfK8jkuf5pdTbQ3L7Z`,
+`nv-usdc-vault` → `9fJ76mtJg4PQPNFMsFvHzvWtf4rymHUCVvDrLxRfcHVc`).
 
 ---
 
