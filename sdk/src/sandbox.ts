@@ -112,3 +112,109 @@ export async function fetchJitPrice(feedId: string): Promise<{ price1e6: number;
     : Number(BigInt(p.price) / BigInt(10 ** (-delta)));
   return { price1e6, publishTime: json.parsed[0].publishTime };
 }
+
+// ════════════════════════════════════════════════════════════════════
+// ═══ Simulated Market State for Sandbox Dry-Runs ════════════════════
+// ════════════════════════════════════════════════════════════════════
+
+export interface SimulatedPosition {
+  owner: string;
+  market: string;
+  isLong: boolean;
+  sizeUsdc: number;
+  entryPrice: number;
+  collateralShares: number;
+  maintenanceMarginBps: number;
+}
+
+export interface SimulatedMarketData {
+  price: number;
+  fundingIndex: number;
+  maxLeverageBps: number;
+  maintenanceMarginBps: number;
+}
+
+export interface MarginCheckResult {
+  ok: boolean;
+  liveMarginUsdc: number;
+  requiredMarginUsdc: number;
+  shortfall: number;
+}
+
+/**
+ * In-memory simulator for dry-run order fills and margin checks.
+ * Tracks simulated positions, market prices, and computes PnL/margin
+ * without touching on-chain state. Useful for the sandbox's "simulate
+ * before you submit" pattern.
+ */
+export class SandboxSimulator {
+  private markets = new Map<string, SimulatedMarketData>();
+  private positions: SimulatedPosition[] = [];
+
+  setMarket(market: string, data: SimulatedMarketData) {
+    this.markets.set(market, data);
+  }
+
+  getMarket(market: string): SimulatedMarketData | undefined {
+    return this.markets.get(market);
+  }
+
+  addPosition(pos: SimulatedPosition) {
+    this.positions.push(pos);
+  }
+
+  getPositions(): SimulatedPosition[] {
+    return this.positions.slice();
+  }
+
+  clearPositions() {
+    this.positions = [];
+  }
+
+  /** Compute unrealized PnL for a position at a given reference price. */
+  computePnl(pos: SimulatedPosition, referencePrice: number): number {
+    if (referencePrice <= 0) return 0;
+    const direction = pos.isLong ? 1 : -1;
+    return (referencePrice - pos.entryPrice) * direction * (pos.sizeUsdc / pos.entryPrice);
+  }
+
+  /** Compute live margin (collateral + unrealized PnL) for a position. */
+  computeLiveMargin(pos: SimulatedPosition, referencePrice: number): number {
+    const redeemUsdc = pos.collateralShares; // simplified: 1:1 for sandbox
+    const pnl = this.computePnl(pos, referencePrice);
+    return redeemUsdc + pnl;
+  }
+
+  /** Compute required margin for a position. */
+  computeRequiredMargin(pos: SimulatedPosition): number {
+    return (pos.sizeUsdc * pos.maintenanceMarginBps) / 10_000;
+  }
+
+  /** Check if a single position is healthy. */
+  checkPositionHealth(pos: SimulatedPosition, currentPrice: number): MarginCheckResult {
+    const liveMargin = this.computeLiveMargin(pos, currentPrice);
+    const required = this.computeRequiredMargin(pos);
+    const shortfall = Math.max(0, required - liveMargin);
+    return { ok: liveMargin >= required, liveMarginUsdc: liveMargin, requiredMarginUsdc: required, shortfall };
+  }
+
+  /** Simulate an order fill and return the updated position. */
+  simulateFill(
+    market: string,
+    isLong: boolean,
+    sizeUsdc: number,
+    fillPrice: number,
+    existingCollateralShares: number,
+    maintenanceMarginBps: number,
+  ): SimulatedPosition {
+    return {
+      owner: 'simulated',
+      market,
+      isLong,
+      sizeUsdc,
+      entryPrice: fillPrice,
+      collateralShares: existingCollateralShares,
+      maintenanceMarginBps,
+    };
+  }
+}

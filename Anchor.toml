@@ -19,6 +19,8 @@ protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
 bug_bounty = "A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK"
 netting_engine = "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56"
 yield_router = "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4"
+clearing_registry = "Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo"
+spot_dex = "8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN"
 
 [programs.localnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
@@ -34,6 +36,8 @@ protocol_lp_vault = "BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT"
 bug_bounty = "A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK"
 netting_engine = "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56"
 yield_router = "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4"
+clearing_registry = "Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo"
+spot_dex = "8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN"
 
 [programs.mainnet]
 # Replace ALL placeholder IDs with real mainnet deployment addresses before mainnet launch.
@@ -49,6 +53,8 @@ noviscia_clearing = "11111111111111111111111111111111"
 liquidation_vault = "11111111111111111111111111111111"
 protocol_lp_vault = "11111111111111111111111111111111"
 bug_bounty = "11111111111111111111111111111111"
+clearing_registry = "11111111111111111111111111111111"
+spot_dex = "11111111111111111111111111111111"
 
 [provider]
 cluster = "devnet"

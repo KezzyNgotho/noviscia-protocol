@@ -25,3 +25,5 @@ solana.tar.bz2/
 # Local candle persistence written by lib/ticks/candles.ts (dev fallback)
 .data/
 
+programs/clearing-registry/clearing-registry-keypair.json
+programs/spot-dex/spot-dex-keypair.json

@@ -24,5 +24,27 @@ export {
 } from './payloads';
 export {
   simulate, assertAccountsExist, toAccountMetas, fetchJitPrice,
-  type SimulationReport,
+  SandboxSimulator,
+  type SimulationReport, type SimulatedPosition, type SimulatedMarketData, type MarginCheckResult,
 } from './sandbox';
+export {
+  TenantOnboarding,
+  CLEARING_REGISTRY_PROGRAM_ID as REGISTRY_PROGRAM_ID,
+  type TenantRegistrationParams,
+  type ExistingTenantParams,
+  type NewTenantParams,
+  type TenantAccounts,
+} from './tenantOnboarding';
+export {
+  CrossBorderPayments,
+  STABLECOIN_RAILS,
+  deriveFxRatePda,
+  deriveSettlementPda,
+  calculateDestAmount,
+  verifyFxRateSignature,
+  type StablecoinRail,
+  type FxRate,
+  type CrossBorderIntent,
+  type SettlementRecord,
+  type SettlementStatus,
+} from './crossBorder';

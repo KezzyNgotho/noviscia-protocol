@@ -13,6 +13,8 @@ members = [
     "programs/bug-bounty",
     "programs/netting-engine",
     "programs/yield-router",
+    "programs/clearing-registry",
+    "programs/spot-dex",
     "mocks/mock-pyth-receiver",
 ]
 resolver = "2"

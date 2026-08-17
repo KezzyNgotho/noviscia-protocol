@@ -27,12 +27,59 @@ export type WalletAdapterLike = {
   signAllTransactions?: (txs: Transaction[]) => Promise<Transaction[]> | Transaction[];
 };
 
+// Re-export tenant auth utilities for on-chain PDA verification.
+export {
+  CLEARING_REGISTRY_PROGRAM_ID,
+  deriveRegistryPda,
+  deriveTenantPda,
+  fetchTenant,
+  fetchRegistryConfig,
+  verifyTenant,
+  checkTenantAuthority,
+  type TenantAccount,
+} from './tenantAuth';
+
 export class Sandbox {
   // lightweight in-memory isolation metadata for PoC
   private stateStore = new Map<string, any>();
+  private snapshots: Array<{ ts: number; state: Map<string, any> }> = [];
   constructor(public readonly id: string) {}
   read(key: string) { return this.stateStore.get(key); }
   write(key: string, val: any) { this.stateStore.set(key, val); }
+
+  /** Capture a point-in-time snapshot for replayable traces. */
+  snapshot(): number {
+    const ts = Date.now();
+    const clone = new Map(this.stateStore);
+    this.snapshots.push({ ts, state: clone });
+    return this.snapshots.length - 1;
+  }
+
+  /** Restore sandbox state to a previous snapshot index. */
+  restore(index: number) {
+    if (index < 0 || index >= this.snapshots.length) throw new Error('invalid-snapshot-index');
+    this.stateStore = new Map(this.snapshots[index].state);
+  }
+
+  /** List available snapshot timestamps. */
+  listSnapshots(): Array<{ index: number; ts: number }> {
+    return this.snapshots.map((s, i) => ({ index: i, ts: s.ts }));
+  }
+
+  /** Export full state as a serializable object for persistence/replay. */
+  exportState(): Record<string, any> {
+    const out: Record<string, any> = {};
+    this.stateStore.forEach((v, k) => { out[k] = v; });
+    return out;
+  }
+
+  /** Import state from a serialized object (e.g., loaded from disk/DB). */
+  importState(data: Record<string, any>) {
+    this.stateStore.clear();
+    for (const [k, v] of Object.entries(data)) {
+      this.stateStore.set(k, v);
+    }
+  }
 }
 
 export class Gateway {
@@ -285,7 +332,7 @@ export class Gateway {
         } catch (e) {
           // non-fatal: preserve dry-run result but log to sandbox store
           const errors = sb.read('errors') || [];
-          errors.push({ ts: Date.now(), note: String(e?.message ?? e) });
+          errors.push({ ts: Date.now(), note: String((e as any)?.message ?? e) });
           sb.write('errors', errors);
         }
         return { success: true, note: 'sandbox-dryrun' };

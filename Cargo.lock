@@ -981,6 +981,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "clearing-registry"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "netting-engine",
+]
+
+[[package]]
 name = "combine"
 version = "3.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7461,6 +7469,15 @@ dependencies = [
  "spl-discriminator",
  "spl-pod",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "spot-dex"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "netting-engine",
 ]
 
 [[package]]
