@@ -64,45 +64,49 @@ export interface VaultAddresses {
   vaultAuthority: PublicKey;
   vaultUsdc: PublicKey;
   nvscusdcMint: PublicKey;
-  mintPool: PublicKey;
-  mintPoolAuthority: PublicKey;
-  mintPoolVault: PublicKey;
-  userMintVault: PublicKey;
+  mintPool?: PublicKey;
+  mintPoolAuthority?: PublicKey;
+  mintPoolVault?: PublicKey;
+  userMintVault?: PublicKey;
   insuranceBuffer: PublicKey;
-  assetRiskConfig: PublicKey;
-  assetExposure: PublicKey;
+  assetRiskConfig?: PublicKey;
+  assetExposure?: PublicKey;
   principalPartition: PublicKey;
   timelockedAdmin: PublicKey;
-  userVaultState: PublicKey;
+  userVaultState?: PublicKey;
   withdrawalTracker: PublicKey;
   protocolWithdrawal: PublicKey;
 }
-export function vaultAddresses(usdcMint: PublicKey, user?: PublicKey): VaultAddresses {
+export function vaultAddresses(usdcMint: PublicKey, user?: PublicKey, collateralMint?: PublicKey): VaultAddresses {
   const pid = PROGRAM_IDS.nvUsdcVault;
-  const mintPool = pda([B('mint-pool')], pid);
-  const mintPoolAuthority = pda([B('mint-pool-authority')], pid);
-  return {
-    vaultConfig: pda([B('nv-vault-config'), usdcMint.toBuffer()], pid),
+  const vaultConfig = pda([B('nv-vault-config'), usdcMint.toBuffer()], pid);
+  const result: VaultAddresses = {
+    vaultConfig,
     vaultAuthority: pda([B('nv-vault-authority'), usdcMint.toBuffer()], pid),
     vaultUsdc: pda([B('nv-vault-usdc'), usdcMint.toBuffer()], pid),
     nvscusdcMint: pda([B('nvscusdc-mint'), usdcMint.toBuffer()], pid),
-    mintPool,
-    mintPoolAuthority,
-    mintPoolVault: pda([B('mint-pool-vault')], pid),
-    userMintVault: user
-      ? pda([B('user-mint-vault'), mintPoolAuthority.toBuffer(), user.toBuffer()], pid)
-      : pda([B('user-mint-vault')], pid),
-    insuranceBuffer: pda([B('insurance-buffer'), usdcMint.toBuffer()], pid),
-    assetRiskConfig: pda([B('asset-risk'), usdcMint.toBuffer()], pid),
-    assetExposure: pda([B('asset-exposure'), usdcMint.toBuffer()], pid),
-    principalPartition: pda([B('principal-partition'), usdcMint.toBuffer()], pid),
-    timelockedAdmin: pda([B('timelocked-admin'), usdcMint.toBuffer()], pid),
-    userVaultState: user
-      ? pda([B('user-vault-state'), usdcMint.toBuffer(), user.toBuffer()], pid)
-      : pda([B('user-vault-state'), usdcMint.toBuffer()], pid),
+    insuranceBuffer: pda([B('insurance-buffer'), vaultConfig.toBuffer()], pid),
+    principalPartition: pda([B('principal-partition'), vaultConfig.toBuffer()], pid),
+    timelockedAdmin: pda([B('timelocked-admin')], pid),
     withdrawalTracker: pda([B('withdrawal-trk')], pid),
     protocolWithdrawal: pda([B('proto-withdrawal')], pid),
   };
+  if (user) {
+    result.userVaultState = pda([B('user-vault-state'), user.toBuffer(), vaultConfig.toBuffer()], pid);
+  }
+  if (collateralMint) {
+    const mintPool = pda([B('mint-pool'), vaultConfig.toBuffer(), collateralMint.toBuffer()], pid);
+    const mintPoolAuthority = pda([B('mint-pool-authority'), mintPool.toBuffer()], pid);
+    result.mintPool = mintPool;
+    result.mintPoolAuthority = mintPoolAuthority;
+    result.mintPoolVault = pda([B('mint-pool-vault'), mintPool.toBuffer()], pid);
+    result.assetRiskConfig = pda([B('asset-risk'), vaultConfig.toBuffer(), collateralMint.toBuffer()], pid);
+    result.assetExposure = pda([B('asset-exposure'), vaultConfig.toBuffer(), collateralMint.toBuffer()], pid);
+    if (user) {
+      result.userMintVault = pda([B('user-mint-vault'), user.toBuffer(), mintPool.toBuffer()], pid);
+    }
+  }
+  return result;
 }
 
 // ─── burn-engine + staking (fee routing) ───────────────────────────────────────

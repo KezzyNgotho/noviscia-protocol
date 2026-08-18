@@ -32,7 +32,7 @@ export class CollateralGateway {
 
   /** Deposit USDC into the omni-pool vault; mints nvscUSDC for the user. */
   async deposit(user: PublicKey, amountUsdc: number): Promise<TransactionInstruction> {
-    const vault = vaultAddresses(USDC_MINT, user);
+    const vault = vaultAddresses(USDC_MINT, user, USDC_MINT);
     const userUsdc = getAssociatedTokenAddressSync(USDC_MINT, user, false, TOKEN_PROGRAM_ID);
     const userNvusdc = getAssociatedTokenAddressSync(NVSCUSDC_MINT, user, false, TOKEN_PROGRAM_ID);
     return this.client.nvUsdcVault.methods
@@ -59,7 +59,7 @@ export class CollateralGateway {
 
   /** Withdraw USDC from the omni-pool vault (burns nvscUSDC). */
   async withdraw(user: PublicKey, amountUsdc: number): Promise<TransactionInstruction> {
-    const vault = vaultAddresses(USDC_MINT, user);
+    const vault = vaultAddresses(USDC_MINT, user, USDC_MINT);
     const userUsdc = getAssociatedTokenAddressSync(USDC_MINT, user, false, TOKEN_PROGRAM_ID);
     const userNvusdc = getAssociatedTokenAddressSync(NVSCUSDC_MINT, user, false, TOKEN_PROGRAM_ID);
     return this.client.nvUsdcVault.methods
