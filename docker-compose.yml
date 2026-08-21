@@ -124,11 +124,16 @@ services:
       dockerfile: Dockerfile
     container_name: novisca-liquidation-keeper
     environment:
-      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://devnet.helius-rpc.com/?api-key=af189ab2-19dd-43e7-b6c3-6afcfa932cb2}
+      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://api.devnet.solana.com}
       WS_INGEST_URL: http://websocket:8080
       WS_INGEST_SECRET: ${WS_INGEST_SECRET:-}
       KEEPER_ENABLE_ATOMIC_RECALL: "true"
       KEEPER_ENABLE_FUNDING: "true"
+      POLL_INTERVAL_MS: ${KEEPER_POLL_MS:-15000}
+      HEALTH_PORT: "8081"
+      CIRCUIT_BREAKER_THRESHOLD: ${KEEPER_CIRCUIT_BREAKER:-5}
+    ports:
+      - "8081:8081"
     depends_on:
       - websocket
     restart: unless-stopped
@@ -140,7 +145,7 @@ services:
       dockerfile: Dockerfile
     container_name: novisca-risk-engine
     environment:
-      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://devnet.helius-rpc.com/?api-key=af189ab2-19dd-43e7-b6c3-6afcfa932cb2}
+      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://api.devnet.solana.com}
       WS_INGEST_URL: http://websocket:8080
       WS_INGEST_SECRET: ${WS_INGEST_SECRET:-}
       RISK_PORT: 8095
@@ -159,7 +164,7 @@ services:
       dockerfile: Dockerfile
     container_name: novisca-netting-relayer
     environment:
-      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://devnet.helius-rpc.com/?api-key=af189ab2-19dd-43e7-b6c3-6afcfa932cb2}
+      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://api.devnet.solana.com}
       RELAYER_KEYPAIR_PATH: ${RELAYER_KEYPAIR_PATH:-/keys/relayer.json}
       POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-15000}
     volumes:
