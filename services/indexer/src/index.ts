@@ -6,7 +6,7 @@ import { startHttpServer } from './server';
 
 const RPC = process.env.SOLANA_RPC_DEVNET || process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
 const PT_PID = new PublicKey(
-  process.env.NEXT_PUBLIC_POSITION_TRACKER_PROGRAM_ID || 'Bgayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd'
+  process.env.NEXT_PUBLIC_POSITION_TRACKER_PROGRAM_ID || '6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws'
 );
 const PORT = parseInt(process.env.PORT || process.env.INDEXER_PORT || '8092', 10);
 
@@ -58,7 +58,7 @@ function parseFillFromTx(
 // Program IDs we want to scan — position-tracker plus all other protocol programs.
 const WATCHED_PIDS = new Set(
   (process.env.WATCHED_PROGRAM_IDS || [
-    'Bgayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd',
+    '6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws',
     process.env.NEXT_PUBLIC_ESCROW_PROGRAM_ID,
     process.env.NEXT_PUBLIC_STAKING_MANAGER_PROGRAM_ID,
     process.env.NEXT_PUBLIC_LIQUIDATION_VAULT_PROGRAM_ID,

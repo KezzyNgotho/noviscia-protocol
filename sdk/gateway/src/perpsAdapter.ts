@@ -5,7 +5,7 @@ import * as anchor from '@coral-xyz/anchor';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const POSITION_TRACKER_ID = new PublicKey('Bgayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd');
+const POSITION_TRACKER_ID = new PublicKey('6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws');
 const PYTH_RECEIVER = new PublicKey('rec5EKMGg6MxZYaMdyBfgwpByTKgpsR4EfnrYxBmR9w');
 const TOKEN_PROGRAM = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 

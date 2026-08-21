@@ -10,7 +10,7 @@ const pk = (envKey: string, fallback: string): PublicKey =>
  */
 export const PROGRAM_IDS = {
   escrow: pk('NEXT_PUBLIC_ESCROW_PROGRAM_ID', '2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ'),
-  positionTracker: pk('POSITION_TRACKER_PROGRAM_ID', 'Bgayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd'),
+  positionTracker: pk('POSITION_TRACKER_PROGRAM_ID', '6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws'),
   burnEngine: pk('NEXT_PUBLIC_BURN_PROGRAM_ID', 'nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id'),
   stakingManager: pk('NEXT_PUBLIC_STAKING_PROGRAM_ID', '4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75'),
   nvUsdcVault: pk('NEXT_PUBLIC_NV_USDC_VAULT_PROGRAM_ID', 'CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC'),
