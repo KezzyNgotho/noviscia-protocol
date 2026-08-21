@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -52,7 +50,9 @@ services:
       dockerfile: Dockerfile
     container_name: novisca-price-feed
     environment:
-      SOLANA_RPC_DEVNET: https://rpc.ankr.com/solana_devnet
+      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://api.devnet.solana.com}
+    ports:
+      - "8082:8082"
     depends_on:
       - websocket
     restart: unless-stopped
@@ -125,6 +125,7 @@ services:
     container_name: novisca-liquidation-keeper
     environment:
       SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://api.devnet.solana.com}
+      EXECUTOR_KEYPAIR_PATH: /keys/new-id.json
       WS_INGEST_URL: http://websocket:8080
       WS_INGEST_SECRET: ${WS_INGEST_SECRET:-}
       KEEPER_ENABLE_ATOMIC_RECALL: "true"
@@ -134,6 +135,9 @@ services:
       CIRCUIT_BREAKER_THRESHOLD: ${KEEPER_CIRCUIT_BREAKER:-5}
     ports:
       - "8081:8081"
+    volumes:
+      - ${KEYPAIR_DIR:-~/.config/solana}:/keys:ro
+      - ./target/idl:/target/idl:ro
     depends_on:
       - websocket
     restart: unless-stopped
@@ -151,6 +155,8 @@ services:
       RISK_PORT: 8095
     ports:
       - "8095:8095"
+    volumes:
+      - ./target/idl:/target/idl:ro
     depends_on:
       - websocket
     restart: unless-stopped
@@ -165,10 +171,13 @@ services:
     container_name: novisca-netting-relayer
     environment:
       SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://api.devnet.solana.com}
-      RELAYER_KEYPAIR_PATH: ${RELAYER_KEYPAIR_PATH:-/keys/relayer.json}
+      RELAYER_KEYPAIR_PATH: /keys/new-id.json
       POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-15000}
+    ports:
+      - "8085:8085"
     volumes:
-      - ${KEYPAIR_DIR:-~/.config/solana}:/keys
+      - ${KEYPAIR_DIR:-~/.config/solana}:/keys:ro
+      - ./target/idl:/target/idl:ro
     restart: unless-stopped
 
 volumes:

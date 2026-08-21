@@ -82,12 +82,12 @@ export class PriceFeedService {
       if (pythPrice && sbPrice) {
         const price = pythPrice.price * 0.6 + sbPrice.price * 0.4;
         const confidence = Math.min(pythPrice.confidence, sbPrice.confidence);
-        return { price, confidence, timestamp: Date.now() };
+        return { price, confidence, timestamp: pythPrice.timestamp ?? sbPrice.timestamp ?? Date.now() };
       }
 
       // Fallback to either if one fails
-      if (pythPrice) return pythPrice;
-      if (sbPrice) return sbPrice;
+      if (pythPrice) return { ...pythPrice, timestamp: Date.now() };
+      if (sbPrice) return { ...sbPrice, timestamp: Date.now() };
 
       return null;
     } catch (error) {
@@ -99,7 +99,7 @@ export class PriceFeedService {
   /**
    * Get price from Pyth
    */
-  private async getPythPrice(symbol: string): Promise<{ price: number; confidence: number } | null> {
+  private async getPythPrice(symbol: string): Promise<{ price: number; confidence: number; timestamp: number } | null> {
     const feedHex: Record<string, string> = {
       'SOL/USD': process.env.PYTH_SOL_FEED_HEX || 'ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d',
       'BTC/USD': 'e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
@@ -118,7 +118,7 @@ export class PriceFeedService {
       const scale = 10 ** Math.abs(p.expo);
       const price = Number(p.price) / scale;
       const confidence = Number(p.conf) / scale;
-      return { price, confidence };
+      return { price, confidence, timestamp: Date.now() };
     } catch (error) {
       console.error(`❌ Error getting Pyth price for ${symbol}:`, error);
       return null;
@@ -128,7 +128,7 @@ export class PriceFeedService {
   /**
    * Get price from Switchboard
    */
-  private async getSwitchboardPrice(symbol: string): Promise<{ price: number; confidence: number } | null> {
+  private async getSwitchboardPrice(symbol: string): Promise<{ price: number; confidence: number; timestamp: number } | null> {
     try {
       const account = this.switchboardAccounts[symbol];
       if (!account) return null;
@@ -143,7 +143,8 @@ export class PriceFeedService {
 
       return {
         price: this.getMockPrice(symbol),
-        confidence: 0.015, // 1.5% confidence
+        confidence: 0.015,
+        timestamp: Date.now(),
       };
     } catch (error) {
       console.error(`❌ Error getting Switchboard price for ${symbol}:`, error);
