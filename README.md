@@ -82,7 +82,7 @@ No off-chain keeper. No external lending venue. Every path settles through the s
 
 | Program | Devnet ID | Layer |
 |---------|-----------|-------|
-| `position-tracker` | `Bgayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd` | Exchange: perps engine — JIT oracle, margin, funding, liquidation |
+| `position-tracker` | `6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws` | Exchange: perps engine — JIT oracle, margin, funding, liquidation |
 | `noviscia-clearing` | `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` | Exchange: settlement engine + event/outcome contracts |
 | `spot-dex` | `8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN` | Exchange: constant-product AMM with LP tokens |
 | `cross-border` | `C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv` | Settlement: cross-border payments & FX |
