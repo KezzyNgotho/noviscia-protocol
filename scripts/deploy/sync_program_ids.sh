@@ -12,7 +12,6 @@ WEB3_JS="$ROOT_DIR/app/web/node_modules/@solana/web3.js"
 
 PROGRAMS=(
   "escrow"
-  "lending-integrator"
   "staking-manager"
   "burn-engine"
   "token-nvsc"
@@ -70,7 +69,6 @@ map_file = Path(sys.argv[4])
 
 programs = [
     ("escrow", "ESCROW_PROGRAM_ID"),
-    ("lending-integrator", "LENDING_PROGRAM_ID"),
     ("staking-manager", "STAKING_PROGRAM_ID"),
     ("burn-engine", "BURN_PROGRAM_ID"),
     ("token-nvsc", "TOKEN_NVSC_PROGRAM_ID"),
@@ -100,7 +98,6 @@ anchor_toml.write_text(anchor_text)
 env_text = env_example.read_text()
 env_updates = {
     "ESCROW_PROGRAM_ID": program_keys["escrow"],
-    "LENDING_PROGRAM_ID": program_keys["lending-integrator"],
     "STAKING_PROGRAM_ID": program_keys["staking-manager"],
     "BURN_PROGRAM_ID": program_keys["burn-engine"],
     "YIELD_PROGRAM_ID": program_keys["yield-distributor"],
@@ -115,7 +112,6 @@ env_example.write_text(env_text)
 
 lib_map = {
     "escrow": "programs/escrow/src/lib.rs",
-    "lending-integrator": "programs/lending-integrator/src/lib.rs",
     "staking-manager": "programs/staking-manager/src/lib.rs",
     "burn-engine": "programs/burn-engine/src/lib.rs",
     "token-nvsc": "programs/token-nvsc/src/lib.rs",

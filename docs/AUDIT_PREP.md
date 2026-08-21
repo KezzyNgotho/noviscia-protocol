@@ -22,7 +22,7 @@ Use this checklist when engaging a third-party auditor (target: pre-mainnet Q3 2
 - Margin is nvscUSDC shares only, locked (not redeemed) per position — no multi-asset weighted collateral in the current design
 - One `Position` per (trader, market, sub_id); no increase/add-to-position instruction by design — a second open on an already-open tuple fails on-chain
 - Liquidation is permissionless and self-liquidation-eligible (trader may liquidate their own position) — this is intentional, not a bypass
-- External lending-venue CPI (Kamino, etc.) has been fully retired from `nv-usdc-vault` — `lend_mode` is hardcoded to 0
+- External lending-venue CPI has been fully retired from `nv-usdc-vault` — `lend_mode` is hardcoded to 0
 
 ## Test artifacts
 

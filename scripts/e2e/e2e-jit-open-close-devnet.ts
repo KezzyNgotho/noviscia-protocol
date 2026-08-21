@@ -50,8 +50,13 @@ const BURN_ENGINE_PROGRAM = new PublicKey('nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQq
 const STAKING_MANAGER_PROGRAM_ID = new PublicKey('4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75');
 const SOL_FEED_HEX = process.env.JIT_FEED_HEX || 'ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d';
 const CYCLES = Number(process.env.JIT_CYCLES || '1');
+const SUB_ID = Number(process.env.JIT_SUB_ID || '0');
 const TREASURY_ID = 0;
 const ALT_CACHE_PATH = path.join(ROOT, '.cache/jit-alt-devnet.json');
+
+// The Pyth Receiver's post_update_atomic enforces a 3-signature floor
+// (InsufficientGuardianSignatures with fewer), so the VAA must carry 3.
+const JIT_GUARDIAN_SIGNATURES = 3;
 
 function loadKeypair(filePath: string): Keypair {
   return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(filePath, 'utf-8'))));
@@ -85,7 +90,8 @@ async function fetchJitPriceArgs() {
   const binary = json.binary.data[0] as string;
   const accumulatorUpdateData = parseAccumulatorUpdateData(Buffer.from(binary, 'base64'));
   const guardianSetIndex = getGuardianSetIndex(accumulatorUpdateData.vaa);
-  const trimmedVaa = trimSignatures(accumulatorUpdateData.vaa);
+  const vaaSigCount = accumulatorUpdateData.vaa[5];
+  const trimmedVaa = trimSignatures(accumulatorUpdateData.vaa, Math.min(JIT_GUARDIAN_SIGNATURES, vaaSigCount));
   const update = accumulatorUpdateData.updates[0];
 
   const merkleBytes = encodeMerklePriceUpdate(Buffer.from(update.message), update.proof);
@@ -179,7 +185,6 @@ async function main() {
   const [ptConfig] = PublicKey.findProgramAddressSync([Buffer.from('pt-config')], pt.programId);
   const feedId = Buffer.from(SOL_FEED_HEX, 'hex');
   const [market] = PublicKey.findProgramAddressSync([Buffer.from('market'), feedId], pt.programId);
-  const SUB_ID = 0;
   const [position] = PublicKey.findProgramAddressSync(
     [Buffer.from('position'), trader.publicKey.toBuffer(), market.toBuffer(), Buffer.from([SUB_ID])],
     pt.programId
@@ -281,6 +286,12 @@ async function main() {
         collateralVault,
         traderNvusdc: traderNvusdc.address,
         priceUpdateAccount: priceUpdateAccount1.publicKey,
+        // The trading-fee sweep redeems on behalf of pt_config (user = pt_config
+        // in the vault CPI), so user_vault_state must be derived from pt_config.
+        userVaultState: PublicKey.findProgramAddressSync(
+          [Buffer.from('user-vault-state'), ptConfig.toBuffer(), vaultConfig.toBuffer()],
+          NV_VAULT_PROGRAM
+        )[0],
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       } as any)
@@ -343,6 +354,10 @@ async function main() {
         pythConfig: jit2.config,
         treasury: jit2.treasury,
         pythReceiverProgram: DEFAULT_RECEIVER_PROGRAM_ID,
+        userVaultState: PublicKey.findProgramAddressSync(
+          [Buffer.from('user-vault-state'), ptConfig.toBuffer(), vaultConfig.toBuffer()],
+          NV_VAULT_PROGRAM
+        )[0],
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
         burnEngineProgram: BURN_ENGINE_PROGRAM,

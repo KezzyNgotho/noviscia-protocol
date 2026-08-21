@@ -11,7 +11,6 @@ SERVICES=(
   "services/price-feed:Price Feed:npm run dev"
   "services/indexer:Indexer:npm run dev"
   "services/websocket:WebSocket:npm run dev"
-  "services/ai-rebalancer:AI Rebalancer:npm run dev"
   "app/web:Web App:npm run dev"
 )
 

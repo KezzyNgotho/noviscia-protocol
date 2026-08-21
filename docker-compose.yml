@@ -88,19 +88,6 @@ services:
       - "11435:11435"
     restart: unless-stopped
 
-  ai-rebalancer:
-    build:
-      context: ./services/ai-rebalancer
-      dockerfile: Dockerfile
-    container_name: noviscia-ai-rebalancer
-    environment:
-      AI_ORCHESTRATOR_URL: http://ai-orchestrator:11435
-      NOVISCIA_WEB_URL: http://web:3000
-      AI_REBALANCE_INTERVAL_MS: 3600000
-    depends_on:
-      - ai-orchestrator
-    restart: unless-stopped
-
   # Web Frontend (optional, use npm run dev instead)
   web:
     build:

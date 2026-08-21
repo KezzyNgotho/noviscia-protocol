@@ -7,9 +7,9 @@ skip-lint = false
 
 [programs.devnet]
 burn_engine = "nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id"
-escrow = "CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D"
+escrow = "2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ"
 nv_usdc_vault = "CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC"
-position_tracker = "3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY"
+position_tracker = "Bgayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd"
 staking_manager = "4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75"
 token_nvsc = "HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT"
 yield_distributor = "CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw"
@@ -21,12 +21,13 @@ netting_engine = "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56"
 yield_router = "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4"
 clearing_registry = "Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo"
 spot_dex = "8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN"
+cross_border = "XbjPbbdja33Q4ro9cgBxDH5Q8BfwaV6HUoBSHyqvHSb"
 
 [programs.localnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
-escrow = "23ramxxc62tPL81ziVRcQRzk5MnPZdrkeYcn2P9USfhj"
+escrow = "2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ"
 nv_usdc_vault = "CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC"
-position_tracker = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
+position_tracker = "Bgayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd"
 staking_manager = "2QSN7YVpLXsjKzABqP6HG3NfahgcVgynhCdSjviXWWiD"
 token_nvsc = "3RXGctRZX25dcVHAdgmVuVKnPUsB1NSeQppLSn8hfaNK"
 yield_distributor = "Bg7Es69512z86iXNBnA9nqQJDyuyf6DhQqTty1rdsW7"
@@ -38,6 +39,7 @@ netting_engine = "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56"
 yield_router = "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4"
 clearing_registry = "Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo"
 spot_dex = "8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN"
+cross_border = "XbjPbbdja33Q4ro9cgBxDH5Q8BfwaV6HUoBSHyqvHSb"
 
 [programs.mainnet]
 # Replace ALL placeholder IDs with real mainnet deployment addresses before mainnet launch.
@@ -55,8 +57,7 @@ protocol_lp_vault = "11111111111111111111111111111111"
 bug_bounty = "11111111111111111111111111111111"
 clearing_registry = "11111111111111111111111111111111"
 spot_dex = "11111111111111111111111111111111"
-
-[provider]
+cross_border = "11111111111111111111111111111111"
 cluster = "devnet"
 wallet = "~/.config/solana/new-id.json"
 

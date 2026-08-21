@@ -15,6 +15,7 @@ members = [
     "programs/yield-router",
     "programs/clearing-registry",
     "programs/spot-dex",
+    "programs/cross-border",
     "mocks/mock-pyth-receiver",
 ]
 resolver = "2"

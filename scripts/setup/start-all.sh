@@ -29,8 +29,6 @@ start app/api "API"
 sleep 1
 start services/websocket "WebSocket"
 sleep 1
-start services/ai-rebalancer "AI-Rebalancer"
-sleep 1
 start app/web "Web"
 
 echo "Waiting for ports…"

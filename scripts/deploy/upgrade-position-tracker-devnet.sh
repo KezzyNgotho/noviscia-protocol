@@ -34,4 +34,4 @@ solana program deploy target/deploy/position_tracker.so \
 
 bash "$ROOT/scripts/deploy/sync-idls.sh"
 bash "$ROOT/scripts/deploy/upload-one-idl-devnet.sh" position_tracker
-echo "Done. Run: npm run verify:burn-authority && npm run verify:kamino-devnet"
+echo "Done. Run: npm run verify:burn-authority"

@@ -25,8 +25,11 @@ flowchart TB
 
     subgraph EXT["External"]
         Pyth["Pyth Oracle"]
-        Venues["Kamino · Solend · Marginfi"]
         Jup["Jupiter"]
+    end
+
+    subgraph INT["In-house yield"]
+        Venues["Yield reservoir"]
     end
 
     User --> Web
@@ -67,4 +70,5 @@ flowchart TB
     class Escrow,Lending,PT,Vault,Yield,Staking,Burn,Token,LiqVault,Pred onchain
     class Keeper,Indexer offchain
     class Web frontend
-    class Pyth,Venues,Jup external
+    class Pyth,Jup external
+    class Venues onchain

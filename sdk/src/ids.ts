@@ -9,9 +9,8 @@ const pk = (envKey: string, fallback: string): PublicKey =>
  * app/web/lib/programs.ts plus the programs added by the CCP topology work.
  */
 export const PROGRAM_IDS = {
-  escrow: pk('NEXT_PUBLIC_ESCROW_PROGRAM_ID', 'CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D'),
-  lending: pk('NEXT_PUBLIC_LENDING_PROGRAM_ID', 'Ea5TXHxsVcnKwMAcAsQkpPN88xr8ndBRpNGDkREWrbSZ'),
-  positionTracker: pk('POSITION_TRACKER_PROGRAM_ID', '3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY'),
+  escrow: pk('NEXT_PUBLIC_ESCROW_PROGRAM_ID', '2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ'),
+  positionTracker: pk('POSITION_TRACKER_PROGRAM_ID', 'Bgayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd'),
   burnEngine: pk('NEXT_PUBLIC_BURN_PROGRAM_ID', 'nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id'),
   stakingManager: pk('NEXT_PUBLIC_STAKING_PROGRAM_ID', '4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75'),
   nvUsdcVault: pk('NEXT_PUBLIC_NV_USDC_VAULT_PROGRAM_ID', 'CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC'),
@@ -24,6 +23,9 @@ export const PROGRAM_IDS = {
   // CCP topology additions
   nettingEngine: pk('NETTING_ENGINE_PROGRAM_ID', '68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56'),
   yieldRouter: pk('YIELD_ROUTER_PROGRAM_ID', 'FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4'),
+  crossBorder: pk('CROSS_BORDER_PROGRAM_ID', 'XbjPbbdja33Q4ro9cgBxDH5Q8BfwaV6HUoBSHyqvHSb'),
+  clearingRegistry: pk('CLEARING_REGISTRY_PROGRAM_ID', 'Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo'),
+  spotDex: pk('NEXT_PUBLIC_SPOT_DEX_PROGRAM_ID', '8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN'),
 };
 
 export const USDC_MINT = pk('NEXT_PUBLIC_USDC_MINT', 'Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5');

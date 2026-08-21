@@ -154,19 +154,14 @@ GET /api/user/{wallet}/yield
   "yieldEarned24h": 5.21,
   "yieldRate": 0.08,
   "yieldApy": 29.2,
-  "lendingProtocol": "kamino",
+  "lendingProtocol": "none",
   "lendingAmount": 5000.00,
   "lastUpdate": 1716864000000,
   "breakdownByProtocol": {
-    "kamino": {
-      "amount": 3500.00,
-      "yield": 87.50,
+    "inHouse": {
+      "amount": 5000.00,
+      "yield": 125.50,
       "apy": 29.2
-    },
-    "solend": {
-      "amount": 1500.00,
-      "yield": 38.00,
-      "apy": 28.5
     }
   }
 }

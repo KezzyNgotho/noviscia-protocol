@@ -22,7 +22,6 @@ const PROGRAMS: ProgramMeta[] = [
   { name: 'burn-engine',       programId: process.env.NEXT_PUBLIC_BURN_ENGINE_PROGRAM_ID       || 'BurnXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', idlName: 'burn_engine' },
   { name: 'nv-usdc-vault',     programId: process.env.NEXT_PUBLIC_NV_USDC_VAULT_PROGRAM_ID    || 'VaultXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', idlName: 'nv_usdc_vault' },
   { name: 'yield-distributor', programId: process.env.NEXT_PUBLIC_YIELD_DISTRIBUTOR_PROGRAM_ID || 'YieldXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', idlName: 'yield_distributor' },
-  { name: 'lending-integrator', programId: process.env.NEXT_PUBLIC_LENDING_INTEGRATOR_PROGRAM_ID || 'LendXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', idlName: 'lending_integrator' },
   { name: 'prediction-market', programId: process.env.NEXT_PUBLIC_PREDICTION_MARKET_PROGRAM_ID  || '3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv', idlName: 'prediction_market' },
   { name: 'token-nvsc',        programId: process.env.NEXT_PUBLIC_NVSC_MINT                     || 'HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT', idlName: 'token_nvsc' },
 ];

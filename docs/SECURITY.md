@@ -39,7 +39,7 @@ There is no continuously-updated on-chain price account to compromise or starve 
 
 ### CPI Safety (Cross-Program Invocation)
 
-External lending-venue CPIs (Kamino and others) have been fully retired from `nv-usdc-vault` — `lend_mode` is hardcoded to 0, and the vault holds USDC directly rather than routing it through any external protocol. The only CPI targets in the current perps path are `position-tracker` → `nv-usdc-vault` (deposit/redeem/fee-accumulation/margin-lock) and `position-tracker` → the Pyth Receiver program (price verification), both address-checked:
+External lending-venue CPIs have been fully retired from `nv-usdc-vault` — `lend_mode` is hardcoded to 0, and the vault holds USDC directly rather than routing it through any external protocol. The only CPI targets in the current perps path are `position-tracker` → `nv-usdc-vault` (deposit/redeem/fee-accumulation/margin-lock) and `position-tracker` → the Pyth Receiver program (price verification), both address-checked:
 
 ```rust
 // Inside position-tracker's account structs:

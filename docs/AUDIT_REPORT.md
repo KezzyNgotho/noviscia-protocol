@@ -59,7 +59,7 @@ A live misconfiguration was found and fixed 2026-07-06: ETH's `max_leverage_bps`
 ## Pre-audit checklist
 
 - [x] All programs compile cleanly (`cargo build-sbf`)
-- [x] Rust workspace dependency graph clean (no lending-integrator or external venue CPI — `lending_integrator` deleted, Kamino/external lending retired from `nv-usdc-vault`)
+- [x] Rust workspace dependency graph clean (no lending-integrator or external venue CPI — `lending_integrator` deleted, external lending retired from `nv-usdc-vault`)
 - [x] TypeScript SDK compiles cleanly (`tsc --noEmit`)
 - [x] Key e2e flows proven live on devnet, 2026-07-06: open/close + trading-fee NAV increase; peer-to-peer funding settled exact against a hand-computed expectation; liquidation 20/80 split + insurance-fund carve-out (both NAV and `insurance_fund_usdc` deltas verified exact)
 - [x] Live misconfiguration found and fixed (ETH market risk parameters) — see Known risk area #4

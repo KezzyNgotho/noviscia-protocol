@@ -1,6 +1,6 @@
 # Noviscia System Diagram
 
-**Last updated:** July 7, 2026 — diagrams 1–4 rewritten to match the current JIT-oracle architecture (no Express/Postgres/Redis backend, no Kamino/Solend/Marginfi lending, no Switchboard). Diagram 5 (AI layer) is unchanged/unverified this cycle.
+**Last updated:** July 7, 2026 — diagrams 1–4 rewritten to match the current JIT-oracle architecture (no Express/Postgres/Redis backend, no external lending venues, no Switchboard). Diagram 5 (AI layer) is unchanged/unverified this cycle.
 
 ## 1) System Structure
 
@@ -57,7 +57,7 @@ flowchart TD
   G --> H[Every locked position's collateral_shares\nappreciate — Simultaneous Double-Yield]
 ```
 
-No external lending venue (Kamino/Solend/Marginfi) sits in this path — those integrations were fully retired from `nv-usdc-vault`.
+No external lending venue sits in this path — those integrations were fully retired from `nv-usdc-vault`.
 
 ## 4) Deployment Flow
 
