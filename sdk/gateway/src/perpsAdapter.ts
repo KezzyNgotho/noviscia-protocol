@@ -1,5 +1,5 @@
 import { ProductAdapter } from './index';
-import { PublicKey, Keypair, Transaction, TransactionInstruction, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
+import { PublicKey, Keypair, Transaction, TransactionInstruction, SystemProgram, SYSVAR_RENT_PUBKEY, ComputeBudgetProgram } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import * as anchor from '@coral-xyz/anchor';
 import * as fs from 'fs';
@@ -10,6 +10,25 @@ const PYTH_RECEIVER = new PublicKey('rec5EKMGg6MxZYaMdyBfgwpByTKgpsR4EfnrYxBmR9w
 const TOKEN_PROGRAM = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 
 const PT_CONFIG_SEED = Buffer.from('pt-config');
+
+function classifyTxError(msg: string): 'transient' | 'permanent' {
+  if (msg.includes('Blockhash not found') || msg.includes('expired') ||
+      msg.includes('429') || msg.includes('503') || msg.includes('TransactionExpiredBlockheightExceededError')) {
+    return 'transient';
+  }
+  return 'permanent';
+}
+
+async function estimatePriorityFee(connection: any): Promise<number> {
+  try {
+    const fees = await connection.getRecentPrioritizationFees();
+    if (!fees || fees.length === 0) return 10_000;
+    const sorted = fees.map((f: any) => f.prioritizationFee).sort((a: number, b: number) => a - b);
+    return Math.max(sorted[Math.floor(sorted.length * 0.75)] ?? 10_000, 5_000);
+  } catch {
+    return 10_000;
+  }
+}
 
 export class PerpsAdapter implements ProductAdapter {
   name = 'perps';
@@ -195,5 +214,67 @@ export class PerpsAdapter implements ProductAdapter {
     }));
 
     return tx;
+  }
+
+  private async sendTransactionWithSimulation(
+    connection: any,
+    tx: any,
+    signer: Keypair,
+    label: string,
+  ): Promise<string> {
+    const maxAttempts = 3;
+    const computeUnits = 400_000;
+    let priorityFee = await estimatePriorityFee(connection);
+
+    tx.instructions.unshift(
+      ComputeBudgetProgram.setComputeUnitLimit({ units: computeUnits }),
+      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: priorityFee }),
+    );
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+        tx.recentBlockhash = blockhash;
+        tx.lastValidBlockHeight = lastValidBlockHeight;
+        tx.feePayer = tx.feePayer || signer.publicKey;
+
+        const simulation = await connection.simulateTransaction(tx, [signer]);
+        if (simulation.value.err) {
+          const errMsg = JSON.stringify(simulation.value.err);
+          if (attempt < maxAttempts && classifyTxError(errMsg) === 'transient') {
+            priorityFee = Math.min(priorityFee * 2, 500_000);
+            await new Promise(r => setTimeout(r, 1000 * attempt));
+            continue;
+          }
+          throw new Error(`[${label}] Simulation failed: ${errMsg}`);
+        }
+
+        const sig = await connection.sendRawTransaction(tx.serialize(), {
+          skipPreflight: true,
+          maxRetries: 0,
+        });
+
+        await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+        return sig;
+      } catch (e: any) {
+        const msg = e?.message ?? String(e);
+        if (attempt < maxAttempts && classifyTxError(msg) === 'transient') {
+          priorityFee = Math.min(priorityFee * 2, 500_000);
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+          continue;
+        }
+        throw e;
+      }
+    }
+    throw new Error(`[${label}] Failed after ${maxAttempts} attempts`);
+  }
+
+  async buildAndSendActionTx(
+    params: Parameters<PerpsAdapter['buildActionTx']>[0],
+    signer: Keypair,
+    connection: any,
+  ): Promise<string> {
+    const tx = await this.buildActionTx(params, signer);
+    return this.sendTransactionWithSimulation(connection, tx, signer, params.action);
   }
 }
