@@ -67,7 +67,8 @@ services:
       DATABASE_URL: postgresql://novisca:novisca-dev-password@postgres:5432/novisca
       SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://api.devnet.solana.com}
       INDEXER_PORT: 8092
-      INDEXER_INGEST_SECRET: ee7629e75c83d902059e3befe0f4f218f16a48353cef6e3faf3f72caaaad145a
+      # Pass via .env file or environment
+      INDEXER_INGEST_SECRET: ${INDEXER_INGEST_SECRET}
     ports:
       - "8092:8092"
     depends_on:

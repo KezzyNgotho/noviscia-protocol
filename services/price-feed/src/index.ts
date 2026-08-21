@@ -1,12 +1,11 @@
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection } from '@solana/web3.js';
 import * as http from 'http';
 
 /**
- * Price Feed Service - Aggregates prices from multiple oracles
+ * Price Feed Service - Fetches prices from Pyth
  * 
  * Supported oracles:
  * - Pyth Network (primary)
- * - Switchboard (fallback)
  * 
  * Pairs: SOL/USD, BTC/USD, ETH/USD, USDC/USD
  */
@@ -21,14 +20,6 @@ export class PriceFeedService {
     'BTC/USD': '99B2bTijsU6f1GCTVIYCcff5d6gKSrfo4E3q6f1215j',
     'ETH/USD': '5SSkm8NtrFQDonaunFeujPgMxrnAz8HS2roMkAtUvipJ',
     'USDC/USD': 'Gnt27xtC473ZT2Mw5u8wZ68Z3gULkSqsPJQ5Tz1Rr7Q',
-  };
-
-  // Switchboard price accounts (devnet)
-  private switchboardAccounts: Record<string, string> = {
-    'SOL/USD': 'GvDMxPzN1sCj7L26YDK5q362C97eWEw5bUGKgmwBNJS',
-    'BTC/USD': 'DkuCVjLXdV4jFQ8uXmBN46oTK2ixjGb7H2CHz9Rqf7MJ',
-    'ETH/USD': '8EZwF8pW2ZFLhZbfbFvL3HfxK8yWCDPwCYHcLgXbD74y',
-    'USDC/USD': 'EnqJEjTwmdXMEw5RpXN6uU7v6PvKxiNGpgKXzBaUfsp',
   };
 
   constructor(rpcUrl: string = process.env.SOLANA_RPC_DEVNET || '') {
@@ -69,28 +60,11 @@ export class PriceFeedService {
   }
 
   /**
-   * Get aggregated price from multiple oracles
+   * Get aggregated price (Pyth)
    */
   async getAggregatedPrice(symbol: string): Promise<{ price: number; confidence: number; timestamp: number } | null> {
     try {
-      // Fetch from Pyth
-      const pythPrice = await this.getPythPrice(symbol);
-
-      // Fetch from Switchboard
-      const sbPrice = await this.getSwitchboardPrice(symbol);
-
-      // Return weighted average (60% Pyth, 40% Switchboard)
-      if (pythPrice && sbPrice) {
-        const price = pythPrice.price * 0.6 + sbPrice.price * 0.4;
-        const confidence = Math.min(pythPrice.confidence, sbPrice.confidence);
-        return { price, confidence, timestamp: pythPrice.timestamp ?? sbPrice.timestamp ?? Date.now() };
-      }
-
-      // Fallback to either if one fails
-      if (pythPrice) return { ...pythPrice, timestamp: Date.now() };
-      if (sbPrice) return { ...sbPrice, timestamp: Date.now() };
-
-      return null;
+      return await this.getPythPrice(symbol);
     } catch (error) {
       console.error(`❌ Error getting aggregated price for ${symbol}:`, error);
       return null;
@@ -122,33 +96,6 @@ export class PriceFeedService {
       return { price, confidence, timestamp: Date.now() };
     } catch (error) {
       console.error(`❌ Error getting Pyth price for ${symbol}:`, error);
-      return null;
-    }
-  }
-
-  /**
-   * Get price from Switchboard
-   */
-  private async getSwitchboardPrice(symbol: string): Promise<{ price: number; confidence: number; timestamp: number } | null> {
-    try {
-      const account = this.switchboardAccounts[symbol];
-      if (!account) return null;
-
-      // TODO: Decode Switchboard account data
-      // Similar to Pyth but different format
-      
-      // In production:
-      // const accountInfo = await this.connection.getAccountInfo(new PublicKey(account));
-      // const priceData = decodeSwitchboardPrice(accountInfo?.data);
-      // return { price: priceData.price, confidence: priceData.confidence };
-
-      return {
-        price: this.getMockPrice(symbol),
-        confidence: 0.015,
-        timestamp: Date.now(),
-      };
-    } catch (error) {
-      console.error(`❌ Error getting Switchboard price for ${symbol}:`, error);
       return null;
     }
   }
@@ -218,23 +165,6 @@ export class PriceFeedService {
 
     const pnlPercentage = (pnl / (entryPrice * size)) * 100;
     return { pnl, pnlPercentage };
-  }
-
-  /**
-   * Mock prices for development (replace with real oracle data)
-   */
-  private getMockPrice(symbol: string): number {
-    const basePrices: Record<string, number> = {
-      'SOL/USD': 120.5,
-      'BTC/USD': 42500.25,
-      'ETH/USD': 2250.75,
-      'USDC/USD': 1.0,
-    };
-
-    // Add small random fluctuation (±1%)
-    const base = basePrices[symbol] || 0;
-    const fluctuation = (Math.random() - 0.5) * 0.02 * base;
-    return base + fluctuation;
   }
 
   /**

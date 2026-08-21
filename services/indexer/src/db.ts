@@ -1,110 +1,100 @@
 import { createHash, randomBytes } from 'crypto';
 import { Pool } from 'pg';
 
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required');
+}
+
 const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL ||
-    'postgresql://noviscia:noviscia-dev-password@localhost:5432/novisca',
+  connectionString: DATABASE_URL,
 });
 
 export async function initDb(): Promise<void> {
+  // Ensure the migrations table exists, then apply any pending .sql files.
+  // The actual schema lives in migrations/*.sql — this keeps a single source of truth.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS _migrations (
+      id INT PRIMARY KEY,
+      name TEXT NOT NULL,
+      applied_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  // If _migrations is empty, this is a fresh DB — run all migration SQL files
+  // via the migrate.ts runner.  For existing DBs that were already initialised
+  // with the old inline DDL, the runner will only apply new migrations.
+  const { execSync } = require('child_process');
+  const path = require('path');
+  const migrateScript = path.join(__dirname, '..', 'migrations', 'migrate.ts');
+  try {
+    execSync(`npx tsx "${migrateScript}"`, {
+      stdio: 'inherit',
+      env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL! },
+      timeout: 30_000,
+    });
+  } catch {
+    // migrate.ts may fail if run from within the container without tsx —
+    // fall back to the inline baseline (idempotent CREATE TABLE IF NOT EXISTS)
+    console.warn('[db] migrate.ts failed, falling back to inline schema baseline');
+    await inlineBaseline();
+  }
+}
+
+/** Fallback: idempotent schema creation for environments without tsx. */
+async function inlineBaseline(): Promise<void> {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS perps_fills (
-      id SERIAL PRIMARY KEY,
-      signature TEXT NOT NULL UNIQUE,
-      wallet TEXT NOT NULL,
-      market TEXT NOT NULL,
-      side TEXT NOT NULL,
-      event_type TEXT NOT NULL,
-      notional_usdc BIGINT DEFAULT 0,
-      pnl_usdc BIGINT DEFAULT 0,
-      fee_usdc BIGINT DEFAULT 0,
-      slot BIGINT,
-      created_at TIMESTAMPTZ DEFAULT NOW()
+      id SERIAL PRIMARY KEY, signature TEXT NOT NULL UNIQUE,
+      wallet TEXT NOT NULL, market TEXT NOT NULL, side TEXT NOT NULL,
+      event_type TEXT NOT NULL, notional_usdc BIGINT DEFAULT 0,
+      pnl_usdc BIGINT DEFAULT 0, fee_usdc BIGINT DEFAULT 0,
+      slot BIGINT, created_at TIMESTAMPTZ DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_perps_fills_wallet ON perps_fills(wallet);
     CREATE INDEX IF NOT EXISTS idx_perps_fills_market ON perps_fills(market);
 
     CREATE TABLE IF NOT EXISTS perps_orders (
-      id TEXT PRIMARY KEY,
-      wallet TEXT NOT NULL,
-      market TEXT NOT NULL,
-      side TEXT NOT NULL,
-      order_type TEXT NOT NULL DEFAULT 'limit',
-      limit_price BIGINT NOT NULL,
-      collateral_usdc BIGINT NOT NULL,
-      leverage INT NOT NULL DEFAULT 1,
-      reduce_only BOOLEAN NOT NULL DEFAULT FALSE,
-      close_bps INT,
-      status TEXT NOT NULL DEFAULT 'pending',
-      trigger_price BIGINT,
-      filled_signature TEXT,
-      expires_at TIMESTAMPTZ,
-      twap_slices INT,
-      twap_slices_filled INT DEFAULT 0,
-      twap_interval_secs INT,
-      created_at TIMESTAMPTZ DEFAULT NOW(),
-      updated_at TIMESTAMPTZ DEFAULT NOW()
+      id TEXT PRIMARY KEY, wallet TEXT NOT NULL, market TEXT NOT NULL,
+      side TEXT NOT NULL, order_type TEXT NOT NULL DEFAULT 'limit',
+      limit_price BIGINT NOT NULL, collateral_usdc BIGINT NOT NULL,
+      leverage INT NOT NULL DEFAULT 1, reduce_only BOOLEAN NOT NULL DEFAULT FALSE,
+      close_bps INT, status TEXT NOT NULL DEFAULT 'pending',
+      trigger_price BIGINT, filled_signature TEXT, expires_at TIMESTAMPTZ,
+      twap_slices INT, twap_slices_filled INT DEFAULT 0, twap_interval_secs INT,
+      created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_perps_orders_wallet ON perps_orders(wallet);
     CREATE INDEX IF NOT EXISTS idx_perps_orders_status ON perps_orders(status);
 
     CREATE TABLE IF NOT EXISTS perps_oracle_ticks (
-      id SERIAL PRIMARY KEY,
-      market TEXT NOT NULL,
-      mark_price BIGINT NOT NULL,
-      index_price BIGINT NOT NULL,
-      funding_rate_bps INT DEFAULT 0,
-      open_interest_usdc BIGINT DEFAULT 0,
-      slot BIGINT,
-      created_at TIMESTAMPTZ DEFAULT NOW()
+      id SERIAL PRIMARY KEY, market TEXT NOT NULL,
+      mark_price BIGINT NOT NULL, index_price BIGINT NOT NULL,
+      funding_rate_bps INT DEFAULT 0, open_interest_usdc BIGINT DEFAULT 0,
+      slot BIGINT, created_at TIMESTAMPTZ DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_oracle_ticks_market_ts ON perps_oracle_ticks(market, created_at DESC);
 
     CREATE TABLE IF NOT EXISTS copy_followers (
-      id SERIAL PRIMARY KEY,
-      follower_wallet TEXT NOT NULL,
-      leader_wallet TEXT NOT NULL,
-      copy_ratio_bps INT NOT NULL DEFAULT 10000,
-      max_notional_usdc BIGINT,
-      active BOOLEAN NOT NULL DEFAULT TRUE,
-      created_at TIMESTAMPTZ DEFAULT NOW(),
+      id SERIAL PRIMARY KEY, follower_wallet TEXT NOT NULL, leader_wallet TEXT NOT NULL,
+      copy_ratio_bps INT NOT NULL DEFAULT 10000, max_notional_usdc BIGINT,
+      active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ DEFAULT NOW(),
       UNIQUE(follower_wallet, leader_wallet)
     );
     CREATE INDEX IF NOT EXISTS idx_copy_leader ON copy_followers(leader_wallet) WHERE active;
 
     CREATE TABLE IF NOT EXISTS api_keys (
-      id SERIAL PRIMARY KEY,
-      wallet TEXT NOT NULL,
-      key_hash TEXT NOT NULL UNIQUE,
-      label TEXT,
-      rate_limit_per_min INT NOT NULL DEFAULT 120,
-      revoked BOOLEAN NOT NULL DEFAULT FALSE,
-      created_at TIMESTAMPTZ DEFAULT NOW()
+      id SERIAL PRIMARY KEY, wallet TEXT NOT NULL, key_hash TEXT NOT NULL UNIQUE,
+      label TEXT, rate_limit_per_min INT NOT NULL DEFAULT 120,
+      revoked BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_api_keys_wallet ON api_keys(wallet);
-  `);
 
-  await pool.query(`
-    ALTER TABLE perps_orders ADD COLUMN IF NOT EXISTS twap_slices INT;
-    ALTER TABLE perps_orders ADD COLUMN IF NOT EXISTS twap_slices_filled INT DEFAULT 0;
-    ALTER TABLE perps_orders ADD COLUMN IF NOT EXISTS twap_interval_secs INT;
-  `);
-
-  await pool.query(`
     CREATE TABLE IF NOT EXISTS user_activity (
-      id BIGSERIAL PRIMARY KEY,
-      signature TEXT NOT NULL,
-      wallet TEXT NOT NULL,
-      program TEXT NOT NULL,
-      event_type TEXT NOT NULL,
-      market TEXT,
-      amount_usdc BIGINT,
-      pnl_usdc BIGINT,
-      slot BIGINT,
-      metadata JSONB,
-      created_at TIMESTAMPTZ DEFAULT NOW(),
-      UNIQUE (signature, event_type)
+      id BIGSERIAL PRIMARY KEY, signature TEXT NOT NULL, wallet TEXT NOT NULL,
+      program TEXT NOT NULL, event_type TEXT NOT NULL, market TEXT,
+      amount_usdc BIGINT, pnl_usdc BIGINT, slot BIGINT, metadata JSONB,
+      created_at TIMESTAMPTZ DEFAULT NOW(), UNIQUE (signature, event_type)
     );
     CREATE INDEX IF NOT EXISTS idx_user_activity_wallet ON user_activity(wallet, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_user_activity_program ON user_activity(program, created_at DESC);
