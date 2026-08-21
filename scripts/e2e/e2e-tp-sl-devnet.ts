@@ -157,7 +157,7 @@ async function main() {
   const BURN_ENGINE_PROGRAM = new PublicKey('nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id');
   const [burnState] = PublicKey.findProgramAddressSync([Buffer.from('burn_state')], BURN_ENGINE_PROGRAM);
   const burnVaultUsdc = getAssociatedTokenAddressSync(USDC_MINT, burnState, true);
-  const STAKING_MANAGER_PROGRAM = new PublicKey('4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75');
+  const STAKING_MANAGER_PROGRAM = new PublicKey('HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb');
   const [stakingFeePool] = PublicKey.findProgramAddressSync([Buffer.from('staking-fee-pool')], STAKING_MANAGER_PROGRAM);
   const [stakingFeeVault] = PublicKey.findProgramAddressSync([Buffer.from('staking-fee-pool'), Buffer.from('vault')], STAKING_MANAGER_PROGRAM);
   const [stakeAccount] = PublicKey.findProgramAddressSync([Buffer.from('stake'), trader.publicKey.toBuffer()], STAKING_MANAGER_PROGRAM);

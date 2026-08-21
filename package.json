@@ -55,13 +55,16 @@
     "ws": "8.21.3"
   },
   "devDependencies": {
+    "@types/chai": "^5.2.3",
     "@types/jest": "^29.0.0",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "chai": "^6.2.2",
     "eslint": "^8.0.0",
     "jest": "^29.0.0",
     "ts-jest": "^29.0.0",
+    "ts-mocha": "^11.1.0",
     "tsx": "^3.14.0",
     "typescript": "^5.9.3"
   },

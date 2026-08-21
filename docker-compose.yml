@@ -79,12 +79,13 @@ services:
     build:
       context: ./services/ai-orchestrator
       dockerfile: Dockerfile
-    container_name: noviscia-ai-orchestrator
-    network_mode: host
+    container_name: novisca-ai-orchestrator
     environment:
-      OLLAMA_URL: http://127.0.0.1:11434
+      OLLAMA_URL: http://host.docker.internal:11434
       OLLAMA_MODEL: qwen2.5:7b
       AI_PORT: "11435"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   # Web Frontend (optional, use npm run dev instead)
@@ -103,13 +104,13 @@ services:
       NEXT_PUBLIC_USDC_MINT: Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5
       NEXT_PUBLIC_NVSCUSDC_MINT: 2TmaUey4Hh2om1kFR77Vw1RDh8H69qcW6UAACVidJeVk
       NEXT_PUBLIC_BURN_VAULT_USDC: 5gXoi3aqnomJiCZkE6ta5T7tJKNvW9GfNrfHEncsLnna
-      NEXT_PUBLIC_POSITION_TRACKER_PROGRAM_ID: 3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY
-      NEXT_PUBLIC_ESCROW_PROGRAM_ID: CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D
+      NEXT_PUBLIC_POSITION_TRACKER_PROGRAM_ID: 6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws
+      NEXT_PUBLIC_ESCROW_PROGRAM_ID: 2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ
       NEXT_PUBLIC_LENDING_PROGRAM_ID: Ea5TXHxsVcnKwMAcAsQkpPN88xr8ndBRpNGDkREWrbSZ
       NEXT_PUBLIC_BURN_PROGRAM_ID: nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id
-      NEXT_PUBLIC_STAKING_PROGRAM_ID: 4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75
+      NEXT_PUBLIC_STAKING_PROGRAM_ID: HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb
       NEXT_PUBLIC_NV_USDC_VAULT_PROGRAM_ID: CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC
-      NEXT_PUBLIC_LIQUIDATION_VAULT_PROGRAM_ID: C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1
+      NEXT_PUBLIC_LIQUIDATION_VAULT_PROGRAM_ID: Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz
     ports:
       - "3000:3000"
     depends_on:
@@ -170,7 +171,7 @@ services:
     container_name: novisca-netting-relayer
     environment:
       SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://api.devnet.solana.com}
-      RELAYER_KEYPAIR_PATH: /keys/new-id.json
+      RELAYER_KEYPAIR_PATH: /keys/relayer-keypair.json
       POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-15000}
     ports:
       - "8085:8085"

@@ -338,7 +338,7 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
 ---
 
 ### 3e. Staking Manager (NVSC Yield)
-**Program ID:** `4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75`
+**Program ID:** `HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb`
 **Lines:** ~1,054
 
 **Role:** Accepts NVSC stakes and distributes 25% of trading fees as staker rewards.
@@ -359,7 +359,7 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
 ---
 
 ### 3f. Liquidation Vault (Insurance Fund)
-**Program ID:** `C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1`
+**Program ID:** `Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz`
 **Lines:** ~1,221
 
 **Role:** Receives the insurance fund slice from liquidations and accumulates reserves.
@@ -367,7 +367,7 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
 ---
 
 ### 3g. Protocol LP Vault
-**Program ID:** `BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT`
+**Program ID:** `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd`
 
 **Role:** Accepts LP deposits into the protocol's trading pool. LPs earn a share of the trading fees beyond the vault share.
 
@@ -388,7 +388,7 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
 ---
 
 ### 3j. Prediction Market
-**Program ID:** `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv`
+**Program ID:** `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe`
 
 **Role:** Binary prediction markets on Solana. Separate from the perps engine.
 
@@ -841,12 +841,12 @@ Payment is settled into the position's PnL via funding_index delta:
 | NV-USDC Vault | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` |
 | Escrow | `CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D` |
 | Burn Engine | `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` |
-| Staking Manager | `4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75` |
+| Staking Manager | `HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb` |
 | Token NVSC | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
 | Yield Distributor | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |
-| Prediction Market | `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` |
-| Liquidation Vault | `C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1` |
-| Protocol LP Vault | `BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT` |
+| Prediction Market | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` |
+| Liquidation Vault | `Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz` |
+| Protocol LP Vault | `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd` |
 
 ### Current Devnet Market State
 

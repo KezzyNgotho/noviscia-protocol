@@ -22,7 +22,7 @@ import { ipv4Connection } from '../utils/ipv4-fetch';
 
 const ROOT = path.resolve(__dirname, '../..');
 const RPC = process.env.SOLANA_RPC_DEVNET || 'https://api.devnet.solana.com';
-const CLEARING_PID = new PublicKey('3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv');
+const CLEARING_PID = new PublicKey('GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe');
 const NETTING_PID = new PublicKey('68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56');
 const USDC_MINT = new PublicKey('Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5');
 const USDC_DECIMALS = 6;

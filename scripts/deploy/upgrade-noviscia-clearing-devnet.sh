@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Upgrade devnet noviscia_clearing — the hardened prediction-market engine
-# (in-place upgrade of the legacy program at 3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv).
+# (in-place upgrade of the legacy program at GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
@@ -28,9 +28,9 @@ if [[ ! -f target/deploy/noviscia_clearing.so ]]; then
   exit 1
 fi
 
-echo "Upgrading noviscia_clearing at 3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv ..."
+echo "Upgrading noviscia_clearing at GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe ..."
 solana program deploy target/deploy/noviscia_clearing.so \
-  --program-id 3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv \
+  --program-id GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe \
   --keypair "${ANCHOR_WALLET}"
 
 bash "$ROOT/scripts/deploy/sync-idls.sh"

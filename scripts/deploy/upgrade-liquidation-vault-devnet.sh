@@ -29,9 +29,9 @@ if [[ ! -f target/deploy/liquidation_vault.so ]]; then
   exit 1
 fi
 
-echo "Upgrading liquidation-vault at C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1 ..."
+echo "Upgrading liquidation-vault at Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz ..."
 solana program deploy target/deploy/liquidation_vault.so \
-  --program-id C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1 \
+  --program-id Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz \
   --keypair "${ANCHOR_WALLET}"
 
 bash "$ROOT/scripts/deploy/sync-idls.sh"

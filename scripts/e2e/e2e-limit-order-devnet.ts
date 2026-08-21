@@ -47,7 +47,7 @@ const BTC_FEED_HEX = 'e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a
 const TREASURY_ID = 0;
 const SUB_ID = 0;
 const BURN_ENGINE_PROGRAM = new PublicKey('nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id');
-const STAKING_MANAGER_PROGRAM = new PublicKey('4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75');
+const STAKING_MANAGER_PROGRAM = new PublicKey('HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb');
 const GUARANTEED_TRIGGER_PRICE = new BN(10_000_000_000_000); // $10,000,000 — always >= real BTC price
 
 function loadKeypair(filePath: string): Keypair {

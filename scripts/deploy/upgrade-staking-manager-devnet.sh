@@ -29,9 +29,9 @@ if [[ ! -f target/deploy/staking_manager.so ]]; then
   exit 1
 fi
 
-echo "Upgrading staking-manager at 4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75 ..."
+echo "Upgrading staking-manager at HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb ..."
 solana program deploy target/deploy/staking_manager.so \
-  --program-id 4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75 \
+  --program-id HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb \
   --keypair "${ANCHOR_WALLET}"
 
 bash "$ROOT/scripts/deploy/sync-idls.sh"

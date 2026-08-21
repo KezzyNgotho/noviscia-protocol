@@ -83,18 +83,18 @@ No off-chain keeper. No external lending venue. Every path settles through the s
 | Program | Devnet ID | Layer |
 |---------|-----------|-------|
 | `position-tracker` | `6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws` | Exchange: perps engine — JIT oracle, margin, funding, liquidation |
-| `noviscia-clearing` | `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` | Exchange: settlement engine + event/outcome contracts |
+| `noviscia-clearing` | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` | Exchange: settlement engine + event/outcome contracts |
 | `spot-dex` | `8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN` | Exchange: constant-product AMM with LP tokens |
 | `cross-border` | `C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv` | Settlement: cross-border payments & FX |
 | `nv-usdc-vault` | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` | Infrastructure: share-based USDC vault (nvscUSDC), NAV accrual |
 | `netting-engine` | `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56` | Infrastructure: multilateral netting & novation ledger (CCP book) |
-| `liquidation-vault` | `C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1` | Infrastructure: per-market insurance & auto-deleveraging |
-| `protocol-lp-vault` | `BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT` | Infrastructure: trading-fee-backed LP vault |
+| `liquidation-vault` | `Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz` | Infrastructure: per-market insurance & auto-deleveraging |
+| `protocol-lp-vault` | `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd` | Infrastructure: trading-fee-backed LP vault |
 | `yield-router` | `FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4` | Infrastructure: yield strategy routing |
 | `yield-distributor` | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` | Infrastructure: yield distribution |
 | `clearing-registry` | `Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo` | Infrastructure: tenant registration & metadata |
 | `burn-engine` | `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` | Tokenomics: fee accumulation, NVSC buyback & burn |
-| `staking-manager` | `4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75` | Tokenomics: NVSC staking tiers, governance |
+| `staking-manager` | `HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb` | Tokenomics: NVSC staking tiers, governance |
 | `token-nvsc` | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` | Tokenomics: fixed-supply NVSC mint |
 | `escrow` | `2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ` | Support: collateral escrow, idle yield hooks |
 | `bug-bounty` | `A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK` | Support: on-chain bug bounty vault |

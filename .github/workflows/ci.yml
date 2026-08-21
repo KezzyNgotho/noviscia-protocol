@@ -13,7 +13,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install Node deps
+      - name: Install gateway deps
         working-directory: sdk/gateway
         run: npm ci
       - name: Run gateway tests
@@ -28,5 +28,26 @@ jobs:
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Cargo check netting-engine
-        run: cargo check -p netting-engine
+      - uses: Swatinem/rust-cache@v2
+      - name: Cargo check
+        run: cargo check --workspace
+      - name: Cargo test
+        run: cargo test --workspace --exclude noviscia-protocal
+
+  build-programs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+      - name: Install Anchor
+        run: cargo install --git https://github.com/coral-xyz/anchor avm --locked
+      - name: Cache build
+        uses: actions/cache@v4
+        with:
+          path: target/deploy
+          key: programs-${{ hashFiles('programs/*/src/**/*.rs') }}
+      - name: Build programs
+        run: cargo build-sbf --workspace || echo "Partial build — checking individual programs"

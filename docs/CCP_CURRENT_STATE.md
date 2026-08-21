@@ -55,15 +55,15 @@ single yield-bearing omni-pool, and absorbs default losses through a funded
 | # | Program | Build | Anchor ID | What it does |
 |---|---------|-------|-----------|--------------|
 | 1 | `position-tracker` | `position_tracker` | `3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY` | Perps: markets, JIT oracle price verification, funding, liquidation, cross-margin hooks |
-| 2 | `noviscia-clearing` | `noviscia_clearing` | `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` | Event/outcome markets: create_market, place bet, resolve, claim via parimutuel pool |
+| 2 | `noviscia-clearing` | `noviscia_clearing` | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` | Event/outcome markets: create_market, place bet, resolve, claim via parimutuel pool |
 | 3 | `nv-usdc-vault` | `nv_usdc_vault` | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` | Omni-pool: deposit/withdraw nvscUSDC shares, NAV accrue, insurance carve-out, default-fund + CCP-equity reserve routing |
-| 4 | `protocol-lp-vault` | `protocol_lp_vault` | `BJVr4bWdNkaUNff3Se6Wob2edPoc64dAaW3Gkgtf4AgT` | Protocol LP layer: fee accumulation, LP NAV, profit share |
+| 4 | `protocol-lp-vault` | `protocol_lp_vault` | `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd` | Protocol LP layer: fee accumulation, LP NAV, profit share |
 | 5 | `yield-distributor` | `yield_distributor` | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` | Yield distribution: claim_yield, compensate_yield, earned-cap |
-| 6 | `staking-manager` | `staking_manager` | `4VDQjH73DiE3zYt66ukyWY7KMMJrxHUZfjkxRHTPDG75` | NVSC staking: tiers, rewards, cooldown |
+| 6 | `staking-manager` | `staking_manager` | `HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb` | NVSC staking: tiers, rewards, cooldown |
 | 7 | `burn-engine` | `burn_engine` | `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` | Buyback & burn: accumulates trading fees, trigger_burn, vault_fee_authority |
 | 8 | `token-nvsc` | `token_nvsc` | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` | NVSC governance token program |
 | 9 | `escrow` | `escrow` | `CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D` | Collateral pods (deposit caps, close_escrow, timelocked admin migration) |
-| 10 | `liquidation-vault` | `liquidation_vault` | `C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1` | Auto-deleveraging, withdraw requests, insurance funding |
+| 10 | `liquidation-vault` | `liquidation_vault` | `Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz` | Auto-deleveraging, withdraw requests, insurance funding |
 | 11 | `bug-bounty` | `bug_bounty` | `A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK` | On-chain security-report ledger: submit/triage/reward reports |
 | 12 | `netting-engine` | `netting_engine` | `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56` | Multilateral Netting & Novation ledger: venue registration, novated-fill reporting, correlation-matrix cross-margin, house book (default-fund sizing) |
 
@@ -131,7 +131,7 @@ graph TB
 ## 7. Gaps (documented, not yet built)
 
 - Claim expiry + residual-sweep waterfall in `noviscia-clearing` (Phase 2 edits).
-- Cross-margin correlation matrix (netting engine). **Deployed 2026-08-12** — `netting-engine` live at `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56`, config + house book initialized, venue #0 = perps (position-tracker), venue #1 = event (noviscia-clearing) registered. **Venue reporting deployed 2026-08-14** — `noviscia-clearing` upgraded at `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` to the netting-CPI build (fill/close → `report_fill` / `report_position_close` via the `clr-config` PDA; slot 483898757, code verified byte-identical, IDL `2YBsh87nPFPDCat4EovxfuGYrfGXeVjW2QEvArGCLQr8`). The earlier `ClaimUserFunds` 4104B stack-frame overflow was resolved in commit `df87e113` and the program builds clean. Cross-tenant CCP book now consolidates fills/closes into the engine.
+- Cross-margin correlation matrix (netting engine). **Deployed 2026-08-12** — `netting-engine` live at `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56`, config + house book initialized, venue #0 = perps (position-tracker), venue #1 = event (noviscia-clearing) registered. **Venue reporting deployed 2026-08-14** — `noviscia-clearing` upgraded at `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` to the netting-CPI build (fill/close → `report_fill` / `report_position_close` via the `clr-config` PDA; slot 483898757, code verified byte-identical, IDL `2YBsh87nPFPDCat4EovxfuGYrfGXeVjW2QEvArGCLQr8`). The earlier `ClaimUserFunds` 4104B stack-frame overflow was resolved in commit `df87e113` and the program builds clean. Cross-tenant CCP book now consolidates fills/closes into the engine.
 - Third-party tenant onboarding flows (contract hooks exist, no tenant live).
 - Mainnet deploy (devnet only; `[programs.mainnet]` still placeholders).
 

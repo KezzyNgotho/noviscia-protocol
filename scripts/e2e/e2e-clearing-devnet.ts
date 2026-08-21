@@ -31,7 +31,7 @@ import { createHash } from 'crypto';
 
 const ROOT = path.resolve(__dirname, '../..');
 const RPC = process.env.SOLANA_RPC_DEVNET || 'https://api.devnet.solana.com';
-const CLEARING_PROGRAM_ID = new PublicKey('3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv');
+const CLEARING_PROGRAM_ID = new PublicKey('GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe');
 const NV_USDC_VAULT_PROGRAM_ID = new PublicKey('CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC');
 const USDC_MINT = new PublicKey('Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5');
 const USDC_DECIMALS = 6;
