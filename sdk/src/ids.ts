@@ -23,7 +23,7 @@ export const PROGRAM_IDS = {
   // CCP topology additions
   nettingEngine: pk('NETTING_ENGINE_PROGRAM_ID', '68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56'),
   yieldRouter: pk('YIELD_ROUTER_PROGRAM_ID', 'FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4'),
-  crossBorder: pk('CROSS_BORDER_PROGRAM_ID', 'XbjPbbdja33Q4ro9cgBxDH5Q8BfwaV6HUoBSHyqvHSb'),
+  crossBorder: pk('CROSS_BORDER_PROGRAM_ID', 'C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv'),
   clearingRegistry: pk('CLEARING_REGISTRY_PROGRAM_ID', 'Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo'),
   spotDex: pk('NEXT_PUBLIC_SPOT_DEX_PROGRAM_ID', '8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN'),
 };

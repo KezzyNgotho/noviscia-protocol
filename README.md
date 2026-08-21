@@ -85,7 +85,7 @@ No off-chain keeper. No external lending venue. Every path settles through the s
 | `position-tracker` | `Bgayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd` | Exchange: perps engine — JIT oracle, margin, funding, liquidation |
 | `noviscia-clearing` | `3BTcArdsxKhzF2Msjm3JLy343v6ZvQjPusq3V2zRNbpv` | Exchange: settlement engine + event/outcome contracts |
 | `spot-dex` | `8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN` | Exchange: constant-product AMM with LP tokens |
-| `cross-border` | `XbjPbbdja33Q4ro9cgBxDH5Q8BfwaV6HUoBSHyqvHSb` | Settlement: cross-border payments & FX |
+| `cross-border` | `C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv` | Settlement: cross-border payments & FX |
 | `nv-usdc-vault` | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` | Infrastructure: share-based USDC vault (nvscUSDC), NAV accrual |
 | `netting-engine` | `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56` | Infrastructure: multilateral netting & novation ledger (CCP book) |
 | `liquidation-vault` | `C5mvuPTN7KHQ1NsXSUcD2tEae9fL1pLrNkZD67jRRuf1` | Infrastructure: per-market insurance & auto-deleveraging |
@@ -210,7 +210,7 @@ import { getAssociatedTokenAddress } from '@solana/spl-token';
 
 // All program IDs, env-overridable
 const spotDex = PROGRAM_IDS.spotDex;       // 8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN
-const crossBorder = PROGRAM_IDS.crossBorder; // XbjPbbdja33Q4ro9cgBxDH5Q8BfwaV6HUoBSHyqvHSb
+const crossBorder = PROGRAM_IDS.crossBorder; // C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv
 const positionTracker = PROGRAM_IDS.positionTracker; // BGayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd
 
 // SDK exports 25+ typed builders:

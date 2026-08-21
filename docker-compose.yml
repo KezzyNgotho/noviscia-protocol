@@ -60,12 +60,12 @@ services:
   # Indexer Service
   indexer:
     build:
-      context: .
-      dockerfile: services/indexer/Dockerfile
+      context: ./services/indexer
+      dockerfile: Dockerfile
     container_name: novisca-indexer
     environment:
       DATABASE_URL: postgresql://novisca:novisca-dev-password@postgres:5432/novisca
-      SOLANA_RPC_DEVNET: https://rpc.ankr.com/solana_devnet
+      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://api.devnet.solana.com}
       INDEXER_PORT: 8092
       INDEXER_INGEST_SECRET: ee7629e75c83d902059e3befe0f4f218f16a48353cef6e3faf3f72caaaad145a
     ports:
@@ -80,12 +80,11 @@ services:
       context: ./services/ai-orchestrator
       dockerfile: Dockerfile
     container_name: noviscia-ai-orchestrator
+    network_mode: host
     environment:
-      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_URL: http://127.0.0.1:11434
       OLLAMA_MODEL: qwen2.5:7b
-      AI_PORT: 11435
-    ports:
-      - "11435:11435"
+      AI_PORT: "11435"
     restart: unless-stopped
 
   # Web Frontend (optional, use npm run dev instead)
@@ -98,7 +97,7 @@ services:
       AI_ORCHESTRATOR_URL: http://ai-orchestrator:11435
       NEXT_PUBLIC_API_URL: http://localhost:3001
       NEXT_PUBLIC_WEBSOCKET_URL: ws://localhost:8080
-      NEXT_PUBLIC_SOLANA_RPC: https://rpc.ankr.com/solana_devnet
+      NEXT_PUBLIC_SOLANA_RPC: ${SOLANA_RPC_DEVNET:-https://api.devnet.solana.com}
       NEXT_PUBLIC_CLUSTER: devnet
       PERPS_INDEXER_URL: http://indexer:8092
       NEXT_PUBLIC_USDC_MINT: Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5

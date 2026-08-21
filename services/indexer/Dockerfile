@@ -1,15 +1,26 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
-WORKDIR /app/services/indexer
+WORKDIR /app
 
-COPY services/indexer/package.json services/indexer/package-lock.json ./
+COPY package.json package-lock.json ./
 RUN npm ci
 
-COPY services/indexer/tsconfig.json ./
-COPY services/indexer/src ./src
+COPY tsconfig.json ./
+COPY src ./src
 RUN npm run build
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY --from=builder /app/package.json /app/package-lock.json ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/dist ./dist
 
 ENV NODE_ENV=production
 EXPOSE 8092
 
-CMD ["npm", "start"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:8092/health || exit 1
+
+CMD ["node", "dist/index.js"]

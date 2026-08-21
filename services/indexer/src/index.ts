@@ -1,12 +1,12 @@
 import 'dotenv/config';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { insertActivity, insertFill, insertOracleTick } from './db';
+import { initDb, insertActivity, insertFill, insertOracleTick } from './db';
 import { parseActivityFromLogs } from './events';
 import { startHttpServer } from './server';
 
 const RPC = process.env.SOLANA_RPC_DEVNET || process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
 const PT_PID = new PublicKey(
-  process.env.NEXT_PUBLIC_POSITION_TRACKER_PROGRAM_ID || '3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY'
+  process.env.NEXT_PUBLIC_POSITION_TRACKER_PROGRAM_ID || 'Bgayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd'
 );
 const PORT = parseInt(process.env.PORT || process.env.INDEXER_PORT || '8092', 10);
 
@@ -58,7 +58,7 @@ function parseFillFromTx(
 // Program IDs we want to scan — position-tracker plus all other protocol programs.
 const WATCHED_PIDS = new Set(
   (process.env.WATCHED_PROGRAM_IDS || [
-    '3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY',
+    'Bgayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd',
     process.env.NEXT_PUBLIC_ESCROW_PROGRAM_ID,
     process.env.NEXT_PUBLIC_STAKING_MANAGER_PROGRAM_ID,
     process.env.NEXT_PUBLIC_LIQUIDATION_VAULT_PROGRAM_ID,
@@ -123,6 +123,7 @@ async function ingestSlot(conn: Connection, slot: number) {
 }
 
 async function main() {
+  await initDb();
   await startHttpServer(PORT);
   const conn = new Connection(RPC, 'confirmed');
   let last = await conn.getSlot('confirmed');

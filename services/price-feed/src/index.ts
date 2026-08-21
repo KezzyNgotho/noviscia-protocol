@@ -1,4 +1,5 @@
 import { Connection, PublicKey } from '@solana/web3.js';
+import * as http from 'http';
 
 /**
  * Price Feed Service - Aggregates prices from multiple oracles
@@ -257,6 +258,16 @@ export class PriceFeedService {
 // Start service
 const priceFeed = new PriceFeedService();
 priceFeed.start().catch(console.error);
+
+const HEALTH_PORT = parseInt(process.env.HEALTH_PORT || '8082', 10);
+const start = Date.now();
+const healthServer = http.createServer((_req, res) => {
+  const all = priceFeed.getAllPrices();
+  const body = JSON.stringify({ status: 'ok', uptime: Math.floor((Date.now() - start) / 1000), prices: all });
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(body);
+});
+healthServer.listen(HEALTH_PORT, () => console.log(`[health] listening on :${HEALTH_PORT}`));
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

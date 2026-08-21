@@ -5,6 +5,10 @@ anchor_version = "0.31.1"
 resolution = true
 skip-lint = false
 
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/new-id.json"
+
 [programs.devnet]
 burn_engine = "nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id"
 escrow = "2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ"
@@ -21,7 +25,7 @@ netting_engine = "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56"
 yield_router = "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4"
 clearing_registry = "Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo"
 spot_dex = "8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN"
-cross_border = "XbjPbbdja33Q4ro9cgBxDH5Q8BfwaV6HUoBSHyqvHSb"
+cross_border = "C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv"
 
 [programs.localnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
@@ -39,7 +43,7 @@ netting_engine = "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56"
 yield_router = "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4"
 clearing_registry = "Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo"
 spot_dex = "8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN"
-cross_border = "XbjPbbdja33Q4ro9cgBxDH5Q8BfwaV6HUoBSHyqvHSb"
+cross_border = "C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv"
 
 [programs.mainnet]
 # Replace ALL placeholder IDs with real mainnet deployment addresses before mainnet launch.
@@ -58,8 +62,6 @@ bug_bounty = "11111111111111111111111111111111"
 clearing_registry = "11111111111111111111111111111111"
 spot_dex = "11111111111111111111111111111111"
 cross_border = "11111111111111111111111111111111"
-cluster = "devnet"
-wallet = "~/.config/solana/new-id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json ./tests/**/*.ts"
