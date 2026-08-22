@@ -191,7 +191,6 @@ async function main() {
 
     const priceUpdateAccount = Keypair.generate();
     const settlementVault = PublicKey.findProgramAddressSync([Buffer.from('settlement-vault')], pt.programId)[0];
-    const vaultAuthority = PublicKey.findProgramAddressSync([Buffer.from('nv-vault-authority'), USDC_MINT.toBuffer()], NV_VAULT_PROGRAM)[0];
     const vaultUsdc = PublicKey.findProgramAddressSync([Buffer.from('vault'), USDC_MINT.toBuffer()], NV_VAULT_PROGRAM)[0];
     const burnState = PublicKey.findProgramAddressSync([Buffer.from('burn_state')], BURN_ENGINE_PROGRAM)[0];
     const burnVaultUsdc = getAssociatedTokenAddressSync(USDC_MINT, burnState, true);

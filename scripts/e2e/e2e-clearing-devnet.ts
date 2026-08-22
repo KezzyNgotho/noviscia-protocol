@@ -166,6 +166,22 @@ async function main() {
     return;
   }
 
+  // ── Bootstrap clearing_config if it doesn't exist on devnet ──
+  if (!(await connection.getAccountInfo(clearingConfig))) {
+    console.log('Initializing clearing_config on devnet...');
+    const sig = await program.methods
+      .initialize(admin.publicKey, new BN(3600))
+      .accounts({
+        deployer: admin.publicKey, clearingConfig, timelockedAdmin, feeStaging,
+        usdcMint: USDC_MINT, tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
+      } as any)
+      .rpc();
+    console.log('clearing_config initialized:', sig.slice(0, 8));
+  } else {
+    console.log('clearing_config already initialized from a prior run');
+  }
+
   // ─────────────────────────── Part A ───────────────────────────
   console.log('\n=== Part A — full settlement loop: create → bet → cancel → refund → fee sweep ===');
 

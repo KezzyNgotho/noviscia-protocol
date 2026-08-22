@@ -38,7 +38,7 @@ import * as path from 'path';
 const ROOT = path.resolve(__dirname, '..');
 const RPC = process.env.SOLANA_RPC_DEVNET || 'https://api.devnet.solana.com';
 const ESCROW_PROGRAM_ID = new PublicKey('CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D');
-const PT_PROGRAM_ID = new PublicKey('3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY');
+const PT_PROGRAM_ID = new PublicKey('6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws');
 const BURN_PROGRAM_ID = new PublicKey('nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id');
 const STAKING_PROGRAM_ID = new PublicKey('HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb');
 const LP_VAULT_PROGRAM_ID = new PublicKey('2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd');
@@ -49,7 +49,7 @@ const MARKET = 'SOL-PERP';
 function loadKp(p: string): Keypair {
   return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(p, 'utf-8'))));
 }
-const loadIdl = (n: string) => JSON.parse(fs.readFileSync(path.join(ROOT, 'app/web/app/idl', `${n}.json`), 'utf-8'));
+const loadIdl = (n: string) => JSON.parse(fs.readFileSync(path.join(ROOT, 'target/idl', `${n}.json`), 'utf-8'));
 
 function marketBytes(market: string): Buffer {
   const b = Buffer.alloc(16);

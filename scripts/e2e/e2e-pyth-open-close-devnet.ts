@@ -376,7 +376,7 @@ async function main() {
     ptConfig, market, priceFeed, vaultConfig, vaultAuthority, vaultUsdc,
     NV_VAULT_PROGRAM_ID, NVUSDC_MINT, USDC_MINT, settlementVault, insuranceVault,
     TOKEN_PROGRAM_ID, SystemProgram.programId, DEFAULT_RECEIVER_PROGRAM_ID,
-    position, collateralVault, traderNvusdc.address, traderUsdc.address,
+    position, collateralVault, traderNvusdc.address, traderUsdc.address, userVaultState,
     BURN_ENGINE_PROGRAM, burnState, BURN_VAULT_USDC, STAKING_MANAGER_PROGRAM,
     stakingFeePool, stakingFeeVault, stakeAccount,
     ...nettingRemainingAccounts(deployer.publicKey).map((a) => a.pubkey),
