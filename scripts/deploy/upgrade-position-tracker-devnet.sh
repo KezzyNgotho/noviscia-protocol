@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-# Upgrade devnet position-tracker (session delegation + keeper_trigger_burn).
+# Upgrade devnet position-tracker — removes Switchboard oracle (Pyth-only).
+# Binary is slightly smaller than on-chain (2.62MB vs 2.63MB), so the
+# upgrade cost is minimal (buffer rent + tx fee, old rent refunded).
+#
+# Requires ~18 SOL for buffer rent (refunded after finalize).
+# Current balance: check with `solana balance --url devnet`
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
@@ -9,11 +14,12 @@ export TMPDIR="${TMPDIR:-$ROOT/.cache/tmp}"
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$ROOT/.cache/cargo-target}"
 mkdir -p "$TMPDIR" "$CARGO_TARGET_DIR/deploy" target/deploy
 
+PROGRAM_ID="6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws"
+
 solana config set --url devnet
 
-echo "Building position_tracker (TMPDIR=$TMPDIR)..."
-cargo build-sbf --manifest-path programs/position-tracker/Cargo.toml --tools-version v1.52 -- --locked
-anchor idl build -p position_tracker -o target/idl/position_tracker.json
+echo "Building position_tracker (removing Switchboard)..."
+cargo build-sbf --manifest-path programs/position-tracker/Cargo.toml --tools-version v1.52
 
 for src in "$CARGO_TARGET_DIR/deploy/position_tracker.so" "$CARGO_TARGET_DIR/deploy/position-tracker.so"; do
   if [[ -f "$src" ]]; then
@@ -27,11 +33,14 @@ if [[ ! -f target/deploy/position_tracker.so ]]; then
   exit 1
 fi
 
-echo "Upgrading position-tracker at 3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY ..."
+SIZE=$(wc -c < target/deploy/position_tracker.so)
+echo "Binary size: $SIZE bytes"
+echo "Upgrading position-tracker at $PROGRAM_ID ..."
+
 solana program deploy target/deploy/position_tracker.so \
-  --program-id 3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY \
+  --program-id "$PROGRAM_ID" \
   --keypair "${ANCHOR_WALLET}"
 
-bash "$ROOT/scripts/deploy/sync-idls.sh"
+echo "Upload updated IDL..."
 bash "$ROOT/scripts/deploy/upload-one-idl-devnet.sh" position_tracker
-echo "Done. Run: npm run verify:burn-authority"
+echo "Done — position-tracker upgraded (Switchboard removed, Pyth-only)."
