@@ -36,7 +36,7 @@ case "${1:?usage: upload-one-idl-devnet.sh <program-name>}" in
   escrow)             IDL_PKG=escrow;             IDL_FILE=escrow.json;             PROGRAM_ID=CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D ;;
   lending_integrator) IDL_PKG=lending_integrator; IDL_FILE=noviscia_lending.json;   PROGRAM_ID=Ea5TXHxsVcnKwMAcAsQkpPN88xr8ndBRpNGDkREWrbSZ ;;
   nv_usdc_vault)      IDL_PKG=nv_usdc_vault;      IDL_FILE=nv_usdc_vault.json;      PROGRAM_ID=CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC ;;
-  position_tracker)   IDL_PKG=position_tracker;   IDL_FILE=position_tracker.json;   PROGRAM_ID=3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY ;;
+  position_tracker)   IDL_PKG=position_tracker;   IDL_FILE=position_tracker.json;   PROGRAM_ID=6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws ;;
   staking_manager)    IDL_PKG=staking_manager;    IDL_FILE=staking_manager.json;    PROGRAM_ID=HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb ;;
   token_nvsc)         IDL_PKG=token_nvsc;         IDL_FILE=token_nvsc.json;         PROGRAM_ID=HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT ;;
   yield_distributor)  IDL_PKG=yield_distributor;  IDL_FILE=yield_distributor.json;  PROGRAM_ID=CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw ;;
@@ -82,7 +82,8 @@ SPACE="$(node -e '
     let result = "";
     for (let attempt = 1; attempt <= 3; attempt++) {
       const ok = await new Promise((resolve) => {
-        const req = https.request("https://api.devnet.solana.com", { method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } }, (res) => {
+        const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com";
+        const req = https.request(rpcUrl, { method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } }, (res) => {
           let d = "";
           res.on("data", (c) => (d += c));
           res.on("end", () => {

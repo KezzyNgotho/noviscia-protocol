@@ -32,3 +32,8 @@ spl-token = "7"
 
 [profile.release]
 overflow-checks = true
+lto = true
+opt-level = 's'
+strip = true
+codegen-units = 1
+panic = 'abort'

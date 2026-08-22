@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # Upgrade devnet position-tracker — removes Switchboard oracle (Pyth-only).
-# Binary is slightly smaller than on-chain (2.62MB vs 2.63MB), so the
-# upgrade cost is minimal (buffer rent + tx fee, old rent refunded).
+# Built with LTO + opt-level=s + strip + codegen-units=1 for minimal binary.
 #
-# Requires ~18 SOL for buffer rent (refunded after finalize).
-# Current balance: check with `solana balance --url devnet`
+# Buffer rent: ~14.6 SOL for 2.1MB binary (refunded after finalize).
+# Total SOL needed: ~15 SOL (buffer rent + tx fee).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
@@ -18,15 +17,29 @@ PROGRAM_ID="6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws"
 
 solana config set --url devnet
 
-echo "Building position_tracker (removing Switchboard)..."
+BALANCE=$(solana balance --url devnet | awk '{print $1}')
+echo "Current balance: $BALANCE SOL"
+if (( $(echo "$BALANCE < 15" | bc -l) )); then
+  echo "ERROR: Need at least 15 SOL. Have $BALANCE SOL." >&2
+  exit 1
+fi
+
+echo "Building position_tracker (Switchboard removed, optimized)..."
 cargo build-sbf --manifest-path programs/position-tracker/Cargo.toml --tools-version v1.52
 
-for src in "$CARGO_TARGET_DIR/deploy/position_tracker.so" "$CARGO_TARGET_DIR/deploy/position-tracker.so"; do
-  if [[ -f "$src" ]]; then
-    cp "$src" target/deploy/position_tracker.so
-    break
-  fi
-done
+# Copy from SBF build output
+SBF_OUT="$ROOT/target/sbpf-solana-solana/release/position_tracker.so"
+if [[ -f "$SBF_OUT" ]]; then
+  cp "$SBF_OUT" target/deploy/position_tracker.so
+else
+  # Fallback to CARGO_TARGET_DIR
+  for src in "$CARGO_TARGET_DIR/deploy/position_tracker.so" "$CARGO_TARGET_DIR/deploy/position-tracker.so"; do
+    if [[ -f "$src" ]]; then
+      cp "$src" target/deploy/position_tracker.so
+      break
+    fi
+  done
+fi
 
 if [[ ! -f target/deploy/position_tracker.so ]]; then
   echo "Missing position_tracker.so — SBF build did not run." >&2
@@ -43,4 +56,4 @@ solana program deploy target/deploy/position_tracker.so \
 
 echo "Upload updated IDL..."
 bash "$ROOT/scripts/deploy/upload-one-idl-devnet.sh" position_tracker
-echo "Done — position-tracker upgraded (Switchboard removed, Pyth-only)."
+echo "Done — position-tracker upgraded (Switchboard removed, Pyth-only, optimized)."
