@@ -76,7 +76,7 @@ export class PerpsAdapter implements ProductAdapter {
           new anchor.Wallet(signer),
           { commitment: 'confirmed' },
         );
-        const program = new anchor.Program(idl as anchor.Idl, POSITION_TRACKER_ID, provider);
+        const program = new anchor.Program(idl as anchor.Idl, provider);
 
         if (params.action === 'openPosition' && (program as any).methods?.openPositionJit) {
           const m = (program as any).methods.openPositionJit(

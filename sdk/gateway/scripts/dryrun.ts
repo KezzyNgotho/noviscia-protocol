@@ -15,8 +15,7 @@ async function main(){
 
   gw.registerAdapter(new SpotAdapter());
   const idlPath = process.env.PT_IDL || '../../target/idl/position_tracker.json';
-  const ptProgramId = new anchor.web3.PublicKey(process.env.POSITION_TRACKER_PROGRAM || '3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY');
-  gw.registerAdapter(new PerpsAdapter(idlPath, ptProgramId));
+  gw.registerAdapter(new PerpsAdapter(idlPath));
 
   const sb = gw.createSandbox('demo-tenant');
   const risk = new RiskOrchestrator(gw);

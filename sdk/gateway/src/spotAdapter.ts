@@ -5,7 +5,7 @@ import * as anchor from '@coral-xyz/anchor';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const SPOT_DEX_PROGRAM_ID = new PublicKey('8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN');
+const SPOT_DEX_PROGRAM_ID = new PublicKey('8C4tr3b6JpEoqyh1tL9FwcS3S5E7uY9vLiN7tToWRfjf');
 const NETTING_ENGINE_ID = new PublicKey('68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56');
 
 const POOL_SEED = Buffer.from('amm-pool');
@@ -89,7 +89,7 @@ export class SpotAdapter implements ProductAdapter {
           new anchor.Wallet(signer),
           { commitment: 'confirmed' },
         );
-        const program = new anchor.Program(idl as anchor.Idl, SPOT_DEX_PROGRAM_ID, provider);
+        const program = new anchor.Program(idl as anchor.Idl, provider);
 
         if (params.action === 'swap' && (program as any).methods?.swap) {
           const m = (program as any).methods.swap(

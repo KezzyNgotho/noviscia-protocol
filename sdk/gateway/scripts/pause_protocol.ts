@@ -5,13 +5,13 @@ import { PublicKey, Keypair } from '@solana/web3.js';
 async function main(){
   const RPC = process.env.SOLANA_RPC_DEVNET || 'https://api.devnet.solana.com';
   const IDL = process.env.PT_IDL || '../../target/idl/position_tracker.json';
-  const PROGRAM_ID = process.env.POSITION_TRACKER_PROGRAM || '3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY';
+  const PROGRAM_ID = process.env.POSITION_TRACKER_PROGRAM || '6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws';
   const ADMIN_KEYPATH = process.env.ANCHOR_WALLET || process.env.HOME + '/.config/solana/new-id.json';
 
   const idl = JSON.parse(readFileSync(IDL,'utf-8'));
   const adminKp = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(ADMIN_KEYPATH,'utf-8'))));
   const provider = new anchor.AnchorProvider(new anchor.web3.Connection(RPC, 'confirmed'), new anchor.Wallet(adminKp), { commitment: 'confirmed' });
-  const program = new anchor.Program(idl as anchor.Idl, new PublicKey(PROGRAM_ID), provider);
+  const program = new anchor.Program(idl as anchor.Idl, provider);
 
   const pause_opens = process.env.PAUSE_OPENS === '1';
   const pause_deposits = process.env.PAUSE_DEPOSITS === '1';

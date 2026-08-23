@@ -218,16 +218,32 @@ async function getOrCreateAlt(
     })
   );
 
-  const msg = new TransactionMessage({
+  // Send create in its own transaction (avoids 1232-byte limit)
+  const createMsg = new TransactionMessage({
     payerKey: payer.publicKey,
     recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-    instructions: [createIx, ...extendIxs],
+    instructions: [createIx],
   }).compileToV0Message();
-  const tx = new VersionedTransaction(msg);
-  tx.sign([payer]);
-  const sig = await connection.sendTransaction(tx);
-  await connection.confirmTransaction(sig, 'confirmed');
-  console.log('Created ALT:', altAddress.toBase58(), sig);
+  const createTx = new VersionedTransaction(createMsg);
+  createTx.sign([payer]);
+  const createSig = await connection.sendTransaction(createTx);
+  await connection.confirmTransaction(createSig, 'confirmed');
+  console.log('Created ALT:', altAddress.toBase58(), createSig);
+
+  // Send extend instructions one per transaction (each extend with 20 addresses
+  // uses ~652 bytes of instruction data — multiple in one tx exceeds 1232 limit)
+  for (let i = 0; i < extendIxs.length; i++) {
+    const extMsg = new TransactionMessage({
+      payerKey: payer.publicKey,
+      recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+      instructions: [extendIxs[i]],
+    }).compileToV0Message();
+    const extTx = new VersionedTransaction(extMsg);
+    extTx.sign([payer]);
+    const extSig = await connection.sendTransaction(extTx);
+    await connection.confirmTransaction(extSig, 'confirmed');
+    console.log(`  Extended ALT ${i + 1}/${extendIxs.length}`);
+  }
 
   fs.mkdirSync(path.dirname(ALT_CACHE_PATH), { recursive: true });
   fs.writeFileSync(ALT_CACHE_PATH, JSON.stringify({ address: altAddress.toBase58() }));
@@ -432,22 +448,23 @@ async function main() {
           trader: deployer.publicKey,
           ptConfig,
           market,
-          vaultConfig,
-          vaultAuthority,
-          vaultUsdc,
-          nvUsdcVaultProgram: NV_VAULT_PROGRAM_ID,
           nvusdcMint: NVUSDC_MINT,
-          settlementVault,
           position,
           collateralVault,
-          traderNvusdc: traderNvusdc.address,
           priceFeed,
-          userVaultState,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         } as any)
         .remainingAccounts([
-          // [0..6] fee split
+          // [0..6] nv-vault infra
+          { pubkey: vaultConfig, isSigner: false, isWritable: true },
+          { pubkey: vaultAuthority, isSigner: false, isWritable: false },
+          { pubkey: vaultUsdc, isSigner: false, isWritable: true },
+          { pubkey: NV_VAULT_PROGRAM_ID, isSigner: false, isWritable: false },
+          { pubkey: settlementVault, isSigner: false, isWritable: true },
+          { pubkey: traderNvusdc.address, isSigner: false, isWritable: true },
+          { pubkey: userVaultState, isSigner: false, isWritable: true },
+          // [7..14] fee split
           { pubkey: BURN_ENGINE_PROGRAM, isSigner: false, isWritable: false },
           { pubkey: burnState, isSigner: false, isWritable: true },
           { pubkey: BURN_VAULT_USDC, isSigner: false, isWritable: true },
@@ -455,7 +472,7 @@ async function main() {
           { pubkey: stakingFeePool, isSigner: false, isWritable: true },
           { pubkey: stakingFeeVault, isSigner: false, isWritable: true },
           { pubkey: stakeAccount, isSigner: false, isWritable: false },
-          // [7..11] netting engine
+          // [14..19] netting engine
           ...nettingRemainingAccounts(deployer.publicKey),
         ])
         .instruction();
@@ -504,25 +521,33 @@ async function main() {
           collateralVault,
           traderNvusdc: traderNvusdc.address,
           traderUsdc: traderUsdc.address,
-          vaultConfig,
-          vaultAuthority,
-          vaultUsdc,
-          nvusdcMint: NVUSDC_MINT,
-          nvUsdcVaultProgram: NV_VAULT_PROGRAM_ID,
-          settlementVault,
-          insuranceVault,
-          burnEngineProgram: BURN_ENGINE_PROGRAM,
-          burnState,
-          burnVaultUsdc: BURN_VAULT_USDC,
-          stakingManagerProgram: STAKING_MANAGER_PROGRAM,
-          stakingFeePool,
-          stakingFeeVault,
-          stakeAccount,
           priceFeed,
-          userVaultState,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         } as any)
+        .remainingAccounts([
+          // [0..6] nv-vault infra (close-specific layout: trader_nvusdc stays
+          // a named account, so [5] is user_vault_state and [6] nvusdc_mint)
+          { pubkey: vaultConfig, isSigner: false, isWritable: true },
+          { pubkey: vaultAuthority, isSigner: false, isWritable: false },
+          { pubkey: vaultUsdc, isSigner: false, isWritable: true },
+          { pubkey: NV_VAULT_PROGRAM_ID, isSigner: false, isWritable: false },
+          { pubkey: settlementVault, isSigner: false, isWritable: true },
+          { pubkey: userVaultState, isSigner: false, isWritable: true },
+          { pubkey: NVUSDC_MINT, isSigner: false, isWritable: true },
+          // [7..14] fee split
+          { pubkey: BURN_ENGINE_PROGRAM, isSigner: false, isWritable: false },
+          { pubkey: burnState, isSigner: false, isWritable: true },
+          { pubkey: BURN_VAULT_USDC, isSigner: false, isWritable: true },
+          { pubkey: STAKING_MANAGER_PROGRAM, isSigner: false, isWritable: false },
+          { pubkey: stakingFeePool, isSigner: false, isWritable: true },
+          { pubkey: stakingFeeVault, isSigner: false, isWritable: true },
+          { pubkey: stakeAccount, isSigner: false, isWritable: false },
+          // [14..19] netting engine
+          ...nettingRemainingAccounts(deployer.publicKey),
+          // [19] insurance vault (CCP first-loss waterfall layer)
+          { pubkey: insuranceVault, isSigner: false, isWritable: true },
+        ])
         .instruction();
       return { updateIx, tradeIx, priceUpdateAccount };
     },
