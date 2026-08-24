@@ -17,7 +17,7 @@
 │   │ liq       │  │ loans    │  │          │  │          │  │          │   │
 │   └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
 │                                                                             │
-│   Next.js 15 App Router  ·  React 19  ·  Tailwind  ·  Solana wallet-std   │
+│   Next.js 14 App Router  ·  React 18  ·  Tailwind  ·  Solana wallet-std   │
 └───────────────────────────────┬─────────────────────────────────────────────┘
                                 │
                     ┌───────────┴───────────┐
@@ -44,8 +44,8 @@
 │  │  POSITION     │  │  NV-USDC     │  │  ESCROW      │  │  PREDICTION  │   │
 │  │  TRACKER      │  │  VAULT       │  │              │  │  MARKET      │   │
 │  │               │  │              │  │  (legacy)    │  │              │   │
-│  │  32 ix fn's   │  │  mint/burn   │  │              │  │  32-bit      │   │
-│  │  3zGRW...QgY  │  │  CN92h...AWC │  │  CTmCry...D  │  │  3BTcA...pv  │   │
+│  │  9 ix fn's    │  │  mint/burn   │  │              │  │  stubbed     │   │
+│  │  6uvr2...1ws  │  │  CN92h...AWC │  │  2WPb3...CZ  │  │  GtTJW...fe  │   │
 │  └───────┬──────┘  └──────┬───────┘  └──────────────┘  └──────────────┘   │
 │          │    CPI          │                                                │
 │  ┌───────┴─────────────────┴───────────────────────────────────────────┐   │
@@ -58,7 +58,7 @@
 │  │  │ nvUSDC→    │  │ Stake/     │  │ Insurance   │  │ LP shares   │  │   │
 │  │  │ NVSC swap  │  │ Unstake    │  │ fund        │  │ deposit/    │  │   │
 │  │  │            │  │            │  │             │  │ withdraw    │  │   │
-│  │  │ nFgJE...id │  │ 4VDQj...75 │  │ C5mvu...f1  │  │ BJVr4...gT  │  │   │
+│  │  │  nFgJE...id │  │ HjxcK...qb │  │ Cwma3...z   │  │ 2WUt2...kd  │   │   │
 │  │  └────────────┘  └────────────┘  └─────────────┘  └─────────────┘  │   │
 │  │                                                                     │   │
 │  │  ┌────────────┐  ┌────────────┐                                    │   │
@@ -86,9 +86,9 @@
 │  ┌────────────────┐  ┌────────────────┐                                    │
 │  │  EXECUTOR BOT   │  │  PRICE FEED   │                                    │
 │  │  (tsx daemon)    │  │  SERVICE       │                                    │
-│  │  Limit orders   │  │  Pyth 60% +    │                                    │
-│  │  TWAP slices    │  │  Switchboard   │                                    │
-│  │  TP/SL triggers │  │  40%           │                                    │
+│  │  Limit orders   │  │  Pyth (JIT    │                                    │
+│  │  TWAP slices    │  │  pull-oracle) │                                    │
+│  │  TP/SL triggers │  │  100%         │                                    │
 │  │  Liquidations   │  │                │                                    │
 │  └────────────────┘  └────────────────┘                                    │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -104,7 +104,7 @@
 |-------|-------------|----------|--------|---------|
 | **USDC** | `Cx2bf...hS5` | 6 | External | Collateral base currency (devnet) |
 | **nvscUSDC** | `2TmaU...eVk` | 6 | Minted on deposit | Yield-bearing vault share |
-| **NVSC** | `HSaBJ...zYT` | 9 | 1,000,000,000 | Governance + staking + burn target |
+| **NVSC** | `4BXiD...gJkg` | 9 | 1,000,000,000 | Governance + staking + burn target |
 | **WSOL** | `So111...1112` | 9 | Wrapped SOL | Multi-collateral support |
 
 ### 2b. Token Flow Diagram
@@ -170,11 +170,11 @@ nvscUSDC is a **yield-bearing vault share** (similar to ERC-4626):
 ## 3. On-Chain Programs (16 programs)
 
 ### 3a. Position Tracker (Core Engine)
-**Program ID:** `3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY`
+**Program ID:** `6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws`
 **Lines of Code:** ~5,300 (lib.rs) + ~760 (state.rs)
 **Role:** The central perpetual futures engine. Manages positions, orders, funding, liquidation, and oracle verification.
 
-#### All 32 Instructions
+#### Key Instructions
 
 | Category | Instruction | Description |
 |----------|-------------|-------------|
@@ -203,8 +203,6 @@ nvscUSDC is a **yield-bearing vault share** (similar to ERC-4626):
 | **Risk** | `execute_adl` | Auto-Deleveraging: close insolvent position, transfer to healthy counterparty |
 | | `liquidate` | Liquidate an undercollateralized position |
 | | `settle_funding` | Update funding index (once/hour rate limit) |
-| **Oracle** | `update_oracle_consensus` | Dual-oracle consensus update (Pyth + Switchboard) |
-| | `verify_price_deviation` | Circuit breaker: reject if price moved >5% in 4 slots |
 | **Delegation** | `register_session_delegate` | Create session delegate PDA (hot wallet) |
 | | `revoke_session` | Revoke session delegation |
 | **Referrals** | `register_referral` | Create referral PDA |
@@ -231,7 +229,7 @@ last_recorded_slot  u64      (8)    Last slot price was recorded
 bump               u8       (1)    PDA bump
 ```
 
-**PositionAccount (174 bytes)**
+**PositionAccount (227 bytes)**
 ```
 owner              Pubkey   (32)   Position owner
 market             Pubkey   (32)   Market address
@@ -279,7 +277,6 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
 | `Referral` | `["referral", trader]` |
 | `PortfolioRiskConfig` | `["portfolio-risk-config"]` |
 | `OrderCommitment` | `["order-commitment", owner, market]` |
-| `OracleConsensus` | `["oracle-consensus", market]` |
 
 ---
 
@@ -311,7 +308,7 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
 ---
 
 ### 3c. Escrow (Legacy Multi-Collateral)
-**Program ID:** `CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D`
+**Program ID:** `2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ`
 
 **Role:** Holds trader deposits (USDC, WSOL, nvUSDC) with per-trader approvals. Being phased out in favor of direct vault mint/burn for USDC positions.
 
@@ -572,7 +569,7 @@ The primary oracle mechanism. Every price-sensitive instruction pulls a fresh pr
 │              │     │                          │
 │              │     │  position-tracker         │
 │              │     │  enforces:                │
-│              │     │  • price age ≤ 15s        │
+│              │     │  • price age ≤ 30s        │
 │              │     │  • feed_id matches market │
 │              │     │  • deviation ≤ 5%         │
 │              │     └──────────────────────────┘
@@ -581,32 +578,14 @@ The primary oracle mechanism. Every price-sensitive instruction pulls a fresh pr
 
 **Key Constants:**
 ```rust
-JIT_MAX_PRICE_AGE_SECS    = 15     // Max age of oracle price
+JIT_MAX_PRICE_AGE_SECS    = 30     // Max age of oracle price
 JIT_MIN_GUARDIAN_SIGNATURES = 5     // Min Wormhole guardian sigs
 MAX_PRICE_DEVIATION_BPS   = 500    // 5% max deviation between reads
 MAX_PRICE_AGE_SLOTS       = 10     // ~4 seconds at 400ms/slot
-ORACLE_DIVERGENCE_LIMIT_BPS = 200  // 2% max Pyth vs Switchboard divergence
+CLIENT_PRICE_FRESHNESS_GRACE_SECS = 20  // Client-side grace window
 ```
 
-### 5b. Dual Oracle Consensus (TWAP Orders)
-
-For TWAP orders that execute over time, a separate consensus mechanism keeps an on-chain price reference:
-
-```
-┌──────────────┐     update_oracle_consensus()      ┌──────────────┐
-│  KEEPER /    │ ──────────────────────────────────► │  ON-CHAIN     │
-│  ANY WALLET  │                                     │  ORACLE       │
-│              │     Reads both:                     │  CONSENSUS    │
-│              │     1. Pyth JIT price               │  PDA          │
-│              │     2. Switchboard price            │              │
-│              │     Rejects if divergence > 2%      │  Stores:      │
-│              │     Stores last_recorded_price      │  - price      │
-│              │     Rate-limited: 30s cooldown      │  - slot       │
-└──────────────┘                                     │  - feed_id    │
-                                                     └──────────────┘
-```
-
-### 5c. Price Normalization
+### 5b. Price Normalization
 
 All prices are normalized to 1e6 scale (6 decimal places):
 
@@ -720,7 +699,7 @@ Payment is settled into the position's PnL via funding_index delta:
 │  │  ORDERS          │  │  ORDERS          │  │  (TP/SL + LIQ) │ │
 │  │                  │  │                  │  │                │ │
 │  │  getProgramAccts │  │  getProgramAccts │  │  getProgramAccts│ │
-│  │  discriminators  │  │  discriminators  │  │  dataSize=174  │ │
+│  │  discriminators  │  │  discriminators  │  │  dataSize=227  │ │
 │  │  Check triggers  │  │  Check intervals │  │  Manual decode │ │
 │  └────────┬─────────┘  └────────┬─────────┘  └───────┬───────┘ │
 │           │                     │                     │          │
@@ -826,7 +805,6 @@ Payment is settled into the position's PnL via funding_index delta:
 | **TWAP** | `createTwapOrder`, `cancelTwapOrder`, `executeTwapSlice` |
 | **TP/SL** | `setTpSl`, `executeTpSl` |
 | **Risk** | `liquidatePosition`, `executeAdl` |
-| **Oracle** | `updateOracleConsensus` |
 | **Referral** | `registerReferral` |
 
 ---
@@ -837,9 +815,9 @@ Payment is settled into the position's PnL via funding_index delta:
 
 | Program | Devnet ID |
 |---------|-----------|
-| Position Tracker | `3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY` |
+| Position Tracker | `6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws` |
 | NV-USDC Vault | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` |
-| Escrow | `CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D` |
+| Escrow | `2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ` |
 | Burn Engine | `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` |
 | Staking Manager | `HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb` |
 | Token NVSC | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
@@ -847,22 +825,26 @@ Payment is settled into the position's PnL via funding_index delta:
 | Prediction Market | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` |
 | Liquidation Vault | `Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz` |
 | Protocol LP Vault | `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd` |
+| Netting Engine | `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56` |
+| Yield Router | `FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4` |
+| Cross-Border | `C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv` |
+| Clearing Registry | `Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo` |
+| Spot DEX | `8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN` |
+| Bug Bounty | `A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK` |
 
 ### Current Devnet Market State
 
 | Market | Max Leverage | Maint Margin | Trading Fee | Active |
 |--------|-------------|--------------|-------------|--------|
-| BTC/USD | 50x (5000 bps) | 1% (100 bps) | 10% (1000 bps) | Yes |
+| SOL/USD | 50x (500000 bps) | 1% (100 bps) | 0.05% (5 bps) | Yes |
+| BTC/USD | Not deployed | — | — | — |
 | ETH/USD | Not deployed | — | — | — |
-| SOL/USD | Not deployed | — | — | — |
 
 ### Pyth Feed IDs
 
 | Asset | Hex Feed ID |
 |-------|-------------|
-| BTC/USD | `e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43` |
-| ETH/USD | `ff61491a931112dda8671c00aa47ea1588a3e69438ccb1f29eb20be8a862397d` |
-| SOL/USD | `ef0d8b6fda2ceba41116ce183a4a3d5557d4a0cfb1689d6a35f4bf16c087e45c` |
+| SOL/USD | `ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d` |
 
 ---
 
@@ -911,8 +893,8 @@ Payment is settled into the position's PnL via funding_index delta:
 ### Three-Tier Safety
 
 1. **Oracle Security:**
-   - JIT price freshness ≤15s (prevents stale quote front-running)
-   - Dual oracle consensus for TWAP (2% divergence limit)
+   - JIT price freshness ≤30s (prevents stale quote front-running)
+   - Client-side freshness grace of 20s
    - Price deviation circuit breaker (5% in 4 seconds)
    - Wormhole guardian verification (5+ signatures)
 
@@ -924,7 +906,7 @@ Payment is settled into the position's PnL via funding_index delta:
 3. **Audit Trail:**
    - SHA-256 state hash chain on every position mutation
    - All events indexed and stored in PostgreSQL
-   - On-chain position data human-readable at 174 bytes per position
+   - On-chain position data human-readable at 227 bytes per position
 
 ---
 
@@ -933,7 +915,7 @@ Payment is settled into the position's PnL via funding_index delta:
 | Layer | Technology |
 |-------|-----------|
 | Smart Contracts | Rust / Anchor 0.31.1 / Solana 2.x |
-| Frontend | Next.js 15 / React 19 / Tailwind CSS |
+| Frontend | Next.js 14 / React 18 / Tailwind CSS |
 | Oracle | Pyth Network (JIT pull) + Wormhole (VAA verification) |
 | Database | PostgreSQL (indexer) |
 | Services | Express.js / WebSocket (ws) / Ollama (AI) |

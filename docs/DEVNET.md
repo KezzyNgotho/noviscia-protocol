@@ -11,10 +11,10 @@
 
 | Program | ID |
 |---------|----|
-| `position_tracker` | `3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY` |
+| `position_tracker` | `6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws` |
 | `nv_usdc_vault` | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` |
 | `protocol_lp_vault` | `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd` |
-| `escrow` | `CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D` (legacy — not part of the perps margin path) |
+| `escrow` | `2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ` (legacy — not part of the perps margin path) |
 | `burn_engine` | `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` |
 | `staking_manager` | `HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb` |
 | `yield_distributor` | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |
@@ -28,7 +28,7 @@
 |-------|------|
 | USDC (devnet) | `Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5` |
 | nvscUSDC | `2TmaUey4Hh2om1kFR77Vw1RDh8H69qcW6UAACVidJeVk` |
-| NVSC | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
+| NVSC | `4BXiDT5o9J6aQdJNd36QE1L2YvQqedEKSP1wuQdSgJkg` |
 
 ---
 
@@ -36,7 +36,7 @@
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| JIT Pyth pull-oracle perps (SOL/BTC/ETH) | **Live** | 3 registered markets, 50x/1% each; 13 more in the frontend catalog as unregistered previews |
+| JIT Pyth pull-oracle perps (SOL) | **Live** | 1 registered market (SOL/USD), 50x/1%, Pyth feed `ef0d8b...` |
 | Live-NAV margin (collateral = locked nvscUSDC shares, never redeemed while open) | **Live** | "Simultaneous Double-Yield" — see root `README.md` |
 | Peer-to-peer funding settlement | **Live** | Verified exact against a hand-computed expectation, 2026-07-06 |
 | Trading fees (open + close → vault NAV) | **Live** | Verified via NAV-per-share delta, 2026-07-06 |
@@ -68,7 +68,7 @@ solana balance pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA --url devnet
 
 # 3. Extend program space if the binary grew (safe to run even if unsure —
 #    a no-op if the account is already large enough)
-solana program extend 3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY 10240 \
+solana program extend 6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws 10240 \
   --keypair ~/.config/solana/new-id.json --url devnet
 
 # 4. Deploy (upgrade in place — same program ID)
@@ -182,7 +182,7 @@ See [`app/web/.env.example`](../app/web/.env.example) — it's the maintained so
 
 ```bash
 # 1. Check the program deployed correctly
-solana program show 3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY --url devnet
+solana program show 6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws --url devnet
 
 # 2. Check a market account decodes at the expected size (124 bytes as of the
 #    trading_fee_bps migration — bump this note if Market grows again)
@@ -190,7 +190,7 @@ solana account $(npx tsx -e "
   const { PublicKey } = require('@solana/web3.js');
   const [pda] = PublicKey.findProgramAddressSync(
     [Buffer.from('market'), Buffer.from('ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d', 'hex')],
-    new PublicKey('3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY')
+    new PublicKey('6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws')
   );
   console.log(pda.toBase58());
 ") --url devnet

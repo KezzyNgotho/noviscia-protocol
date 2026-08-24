@@ -2,7 +2,7 @@
 
 **Version:** 3.0
 **Last updated:** July 6, 2026
-**Status:** Devnet operational · Mainnet target Q3 2026
+**Status:** Devnet operational · Mainnet target Q1 2027 (post-audit)
 
 > **Disclaimer:** This document describes the Noviscia protocol design and current devnet implementation. It is not financial advice, an offer of securities, or a commitment to future features. Mainnet parameters may change after audit and community review.
 
@@ -198,10 +198,11 @@ Market risk parameters (`max_leverage_bps`, `maintenance_margin_bps`) are valida
 
 | Phase | Milestones | Target |
 |-------|------------|--------|
-| **Now** | JIT-oracle perps engine, live-NAV margin, funding + insurance fund, closed-loop liquidation, any-collateral trading, Collateral Console + Analytics UI | Live |
-| **Q2–Q3 2026** | Security audit, NVSC TGE preparation, mainnet program ID lock, deposit caps | In progress |
-| **Q3 2026** | Mainnet soft launch, SOL/BTC/ETH perps live, production Pyth feeds, Jupiter-routed any-collateral trading | Planned |
-| **Q4 2026+** | Expanded market catalog (16 markets), mobile PWA | Planned |
+| **Now** | JIT-oracle perps engine, live-NAV margin, funding + insurance fund, closed-loop liquidation, Collateral Console + Analytics UI | Live (devnet) |
+| **Q3 2026** | Security audit prep, SDK v0.1.1 published, CCP netting engine + venue registration, 16 programs rebuilt | Complete |
+| **Q4 2026** | Security audit, NVSC TGE preparation, mainnet program ID lock, deposit caps | In progress |
+| **Q1 2027** | Mainnet soft launch, SOL perps live, production Pyth feeds | Planned |
+| **Q2 2027+** | Expanded market catalog (16 markets), mobile PWA, any-collateral Jupiter routing | Planned |
 
 ---
 

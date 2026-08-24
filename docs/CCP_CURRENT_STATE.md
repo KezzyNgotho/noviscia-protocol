@@ -1,4 +1,4 @@
-# Noviscia — As It Is Today (devnet, 2026-08-15)
+# Noviscia — As It Is Today (devnet, 2026-08-24)
 
 **Status snapshot:** all 16 programs rebuilt from current `main` source, upgraded
 in place on devnet (slots 483247186–483249477; netting-engine deploys at
@@ -54,7 +54,7 @@ single yield-bearing omni-pool, and absorbs default losses through a funded
 
 | # | Program | Build | Anchor ID | What it does |
 |---|---------|-------|-----------|--------------|
-| 1 | `position-tracker` | `position_tracker` | `3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY` | Perps: markets, JIT oracle price verification, funding, liquidation, cross-margin hooks |
+| 1 | `position-tracker` | `position_tracker` | `6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws` | Perps: markets, JIT oracle price verification, funding, liquidation, cross-margin hooks |
 | 2 | `noviscia-clearing` | `noviscia_clearing` | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` | Event/outcome markets: create_market, place bet, resolve, claim via parimutuel pool |
 | 3 | `nv-usdc-vault` | `nv_usdc_vault` | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` | Omni-pool: deposit/withdraw nvscUSDC shares, NAV accrue, insurance carve-out, default-fund + CCP-equity reserve routing |
 | 4 | `protocol-lp-vault` | `protocol_lp_vault` | `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd` | Protocol LP layer: fee accumulation, LP NAV, profit share |
@@ -62,10 +62,14 @@ single yield-bearing omni-pool, and absorbs default losses through a funded
 | 6 | `staking-manager` | `staking_manager` | `HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb` | NVSC staking: tiers, rewards, cooldown |
 | 7 | `burn-engine` | `burn_engine` | `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` | Buyback & burn: accumulates trading fees, trigger_burn, vault_fee_authority |
 | 8 | `token-nvsc` | `token_nvsc` | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` | NVSC governance token program |
-| 9 | `escrow` | `escrow` | `CTmCryJca9cFyMRaGdzrhyZeEnjdGLD8ZkEqNcNbvh2D` | Collateral pods (deposit caps, close_escrow, timelocked admin migration) |
+| 9 | `escrow` | `escrow` | `2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ` | Collateral pods (deposit caps, close_escrow, timelocked admin migration) |
 | 10 | `liquidation-vault` | `liquidation_vault` | `Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz` | Auto-deleveraging, withdraw requests, insurance funding |
 | 11 | `bug-bounty` | `bug_bounty` | `A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK` | On-chain security-report ledger: submit/triage/reward reports |
 | 12 | `netting-engine` | `netting_engine` | `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56` | Multilateral Netting & Novation ledger: venue registration, novated-fill reporting, correlation-matrix cross-margin, house book (default-fund sizing) |
+| 13 | `yield-router` | `yield_router` | `FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4` | Yield deployment & atomic recall for margin calls |
+| 14 | `cross-border` | `cross_border` | `C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv` | Cross-border stablecoin settlement (research-phase) |
+| 15 | `clearing-registry` | `clearing_registry` | `Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo` | Multi-tenant clearing registry |
+| 16 | `spot-dex` | `spot_dex` | `8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN` | Constant-product AMM DEX |
 
 All upgrade authority: `pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA`
 (`~/.config/solana/new-id.json`).
@@ -86,8 +90,8 @@ All upgrade authority: `pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA`
 1. **Perps trading** (`/trade/perps`) — up to 50× leverage, fully on-chain
    matching, JIT oracle price verification, funding, TP/SL, permissionless
    liquidation. Margin = nvscUSDC shares that keep yielding while locked.
-2. **Event / prediction markets** (`/trade/prediction`) — outcome contracts on
-   the parimutuel clearing engine; resolve + claim through the same waterfall.
+2. **Event / prediction markets** (`/trade/prediction`) — stubbed; parimutuel
+   clearing engine compiled but not yet wired to frontend.
 3. **Omni-pool vault** (`/earn/vault`) — deposit any asset, mint yield-bearing
    nvscUSDC, earn fee + strategy yield, atomic recall for margin calls.
 4. **Staking** (`/earn/stake`) — stake NVSC, earn ~15% of protocol fees,
