@@ -22,7 +22,7 @@
 ### Perpetual futures
 
 - **Leverage risk:** Small price moves can liquidate positions. You may lose all collateral. On some markets, leverage up to 50x is offered — a 1% adverse price move against a fully-leveraged position can trigger liquidation.
-- **Oracle risk:** Marks depend on a Pyth price feed, verified fresh (≤3 seconds old) on-chain at the moment of every trade action. A stale or unavailable feed will block trading rather than execute against an old price, but does not eliminate all price-manipulation risk on the underlying feed itself.
+- **Oracle risk:** Marks depend on a Pyth price feed, verified fresh (≤30 seconds old) on-chain at the moment of every trade action. A stale or unavailable feed will block trading rather than execute against an old price, but does not eliminate all price-manipulation risk on the underlying feed itself.
 - **Funding risk:** Funding payments transfer value between longs and shorts based on relative open-interest imbalance, settled via a permissionless on-chain instruction (not a fixed hourly schedule). Rates can be positive or negative for either side.
 - **Liquidation risk:** Underwater positions may be fully liquidated by any participant (including, by design, the position's own owner) once equity falls below the maintenance margin threshold. The liquidation penalty is the position's entire remaining collateral, split between the liquidator and the protocol.
 - **ADL risk:** An auto-deleveraging instruction exists on-chain for extreme insurance-fund-exhaustion scenarios and may close positions at market without user consent; exact current trigger conditions have not been independently re-verified as of this update.

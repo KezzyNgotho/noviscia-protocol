@@ -1,6 +1,6 @@
 # Devnet Runbook — Noviscia Protocol
 
-**Last updated:** July 6, 2026
+**Last updated:** August 24, 2026
 **Network:** Solana devnet
 **Deployer wallet:** `pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA`
 **Keypair path:** `~/.config/solana/new-id.json`
@@ -19,9 +19,14 @@
 | `staking_manager` | `HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb` |
 | `yield_distributor` | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |
 | `liquidation_vault` | `Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz` |
-| `prediction_market` | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` |
-
-`lending_integrator` has been deleted from the codebase entirely — do not redeploy or reference it.
+| `token_nvsc` | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
+| `bug_bounty` | `A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK` |
+| `netting_engine` | `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56` |
+| `yield_router` | `FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4` |
+| `clearing_registry` | `Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo` |
+| `spot_dex` | `8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN` |
+| `cross_border` | `C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv` |
+| `noviscia_clearing` | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` (prediction market — stubbed) |
 
 **Key devnet mints:**
 | Token | Mint |
@@ -36,7 +41,7 @@
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| JIT Pyth pull-oracle perps (SOL) | **Live** | 1 registered market (SOL/USD), 50x/1%, Pyth feed `ef0d8b...` |
+| JIT Pyth pull-oracle perps | **Live** | 22 registered markets (BTC, ETH, SOL, DOGE, LINK, AVAX, RENDER, WIF, JUP, RAY, TRUMP, PNUT, BONK, PEPE, OP, ARB, PYTH, JTO, ORCA, POPCAT, MEW, HNT) |
 | Live-NAV margin (collateral = locked nvscUSDC shares, never redeemed while open) | **Live** | "Simultaneous Double-Yield" — see root `README.md` |
 | Peer-to-peer funding settlement | **Live** | Verified exact against a hand-computed expectation, 2026-07-06 |
 | Trading fees (open + close → vault NAV) | **Live** | Verified via NAV-per-share delta, 2026-07-06 |
@@ -48,10 +53,8 @@
 | NVSC staking tiers | **Live** | |
 | Collateral Console UI | **Live** | `/trade/collateral` |
 | Analytics dashboard | **Live** | `/analytics` |
-| Prediction markets | **Beta** | |
-| NVSC TGE / mainnet | **Q3 2026** | |
-
-Dual-oracle (Pyth + Switchboard), AMM/JIT order matching, and the old escrow-based multi-asset `remaining_accounts` collateral weighting have all been **removed** — `position-tracker` was fully rewritten around the JIT Pyth pull-oracle design above (2026-07-05/06). Switchboard has zero references left in `position-tracker`'s source.
+| Prediction markets | **Beta** | noviscia_clearing program is stubbed |
+| NVSC TGE / mainnet | **Q1 2027** | |
 
 ---
 
@@ -135,7 +138,7 @@ Not a bug — a position PDA is `[b"position", trader, market, sub_id]` and ther
 
 ### Oracle / price-update transaction fails silently or with `OracleStale` (6006)
 
-The on-chain freshness ceiling is a strict ≤3 seconds between the Hermes VAA's timestamp and execution. A retry with a freshly-fetched price is the correct, expected recovery — not a sign of a broken oracle. `sendJitInstructionWithRetry` (frontend) and every `e2e-*-devnet.ts` script already retry on this specific condition; don't retry on other error codes, they're deterministic (see the error-code note above).
+The on-chain freshness ceiling is a strict ≤30 seconds between the Hermes VAA's timestamp and execution. A retry with a freshly-fetched price is the correct, expected recovery — not a sign of a broken oracle. `sendJitInstructionWithRetry` (frontend) and every `e2e-*-devnet.ts` script already retry on this specific condition; don't retry on other error codes, they're deterministic (see the error-code note above).
 
 ### "Account not found" on IDL operations
 
@@ -170,7 +173,7 @@ See [`app/web/.env.example`](../app/web/.env.example) — it's the maintained so
 |----------|----------|-------|
 | `NEXT_PUBLIC_SOLANA_RPC` / `NEXT_PUBLIC_SOLANA_RPC_URL` | Yes | Code checks both names; falls back to public devnet RPC if unset (not recommended — see RPC requirements) |
 | `NEXT_PUBLIC_JUPITER_API_KEY` | Recommended | Any-collateral swap routing (mainnet-only functionally, but required for the code path to initialize) |
-| `HELIUS_API_KEY` / `HELIUS_RPC_URL` | Recommended | Phoenix orderbook route + integrations |
+| `HELIUS_API_KEY` / `HELIUS_RPC_URL` | Recommended | Premium RPC endpoint + integrations |
 | `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | Recommended | Without it, WalletConnect wallets can't connect |
 | `NEXT_PUBLIC_POSITION_TRACKER_PROGRAM_ID` etc. | No | Hardcoded fallbacks in `app/lib/programs.ts` already match current devnet deployment |
 
@@ -184,8 +187,8 @@ See [`app/web/.env.example`](../app/web/.env.example) — it's the maintained so
 # 1. Check the program deployed correctly
 solana program show 6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws --url devnet
 
-# 2. Check a market account decodes at the expected size (124 bytes as of the
-#    trading_fee_bps migration — bump this note if Market grows again)
+# 2. Check a market account decodes at the expected size (269 bytes — current
+#    V10 layout; bump this note if Market grows again)
 solana account $(npx tsx -e "
   const { PublicKey } = require('@solana/web3.js');
   const [pda] = PublicKey.findProgramAddressSync(

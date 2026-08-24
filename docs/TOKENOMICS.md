@@ -1,13 +1,13 @@
 # Noviscia token model — nvscUSDC vs NVSC
 
-**Last updated:** July 7, 2026 — margin path corrected below (position-tracker locks margin directly, no escrow reserve step; `lending-integrator` deleted).
+**Last updated:** August 24, 2026 — margin path corrected below (position-tracker locks margin directly, no escrow reserve step; `lending-integrator` deleted).
 
 ## Separation
 
 | | **NVSCUSDC** | **NVSC** |
 |---|--------------|----------|
 | Role | Yield-bearing vault share (margin) | Protocol + governance token |
-| Mint | `nv-usdc-vault` on USDC deposit | `token-nvsc` (fixed supply) |
+| Mint | `nv-usdc-vault` on USDC deposit | `token-nvsc` (fixed supply: 1,000,000,000 NVSC, 9 decimals) |
 | Supply | Elastic (mint/redeem) | Fixed / emissions / burn |
 | Governance | **No votes** | **Staked NVSC votes** |
 | Fees | Indirect (more volume → fee flywheel) | Burn + staking pool share |

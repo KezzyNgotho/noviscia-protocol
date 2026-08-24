@@ -1,8 +1,8 @@
 # API Documentation
 
-**Last updated:** July 7, 2026
+**Last updated:** August 24, 2026
 
-> ⚠️ **Not re-verified against actual routes this cycle.** This document predates the 2026-07-05/06 `position-tracker` rewrite and describes a JWT-authenticated backend with an on-chain orderbook — neither exists in the current architecture. There is no order-matching engine (perps fill via JIT-verified Pyth price, not a book) and no JWT auth layer (the actual `app/web/app/api/*/route.ts` handlers are plain Next.js route handlers; trading itself is wallet-signed transactions sent directly to Solana, not authenticated REST calls). Treat every endpoint below as illustrative/aspirational unless independently checked against `app/web/app/api/`.
+> **⚠️ Illustrative/aspirational.** This document describes the target API surface for mainnet. The current architecture routes all trading through wallet-signed Solana transactions — there is no authenticated REST order-matching backend. The endpoints below represent the planned mainnet API; verify against `app/web/app/api/` for what exists today.
 
 ## Base URL
 

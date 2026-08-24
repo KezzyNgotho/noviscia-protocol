@@ -25,7 +25,7 @@ The following programs are in-scope for the planned pre-mainnet audit:
 | `staking_manager` | NVSC staking, governance proposals, fee-tier discounts |
 | `burn_engine` | Protocol fee accumulation, permissionless burn trigger |
 
-Out of scope for v1 audit: `token_nvsc`, `yield_distributor`, `prediction_market`, `escrow` (legacy — not part of the perps margin path; see root `README.md`).
+Out of scope for v1 audit: `token_nvsc`, `yield_distributor`, `noviscia_clearing` (prediction market — stubbed), `escrow` (legacy — not part of the perps margin path; see root `README.md`).
 
 ---
 
@@ -34,7 +34,7 @@ Out of scope for v1 audit: `token_nvsc`, `yield_distributor`, `prediction_market
 These areas have been identified internally as warranting close scrutiny — updated 2026-07-06 to reflect `position-tracker`'s JIT-oracle rewrite. Not an exhaustive list.
 
 ### 1. JIT oracle freshness enforcement
-Every price-sensitive instruction (`open_position_jit`, `close_position`, `liquidate`, `execute_tp_sl`) calls `verify_jit_price`, which checks the Pyth Hermes VAA's embedded publish time against a strict ≤3-second ceiling before trusting it. Verify: (a) the ceiling is enforced identically across all four call sites, (b) the check cannot be satisfied by a VAA that's valid-but-stale relative to wall-clock time due to a slow `post_update_atomic` CPI, (c) `merkle_price_update_bytes`' hand-rolled Borsh encoding (`encodeMerklePriceUpdate`) can't be crafted to pass verification against a different price than the one actually used downstream.
+Every price-sensitive instruction (`open_position_jit`, `close_position`, `liquidate`, `execute_tp_sl`) calls `verify_jit_price`, which checks the Pyth Hermes VAA's embedded publish time against a strict ≤30-second ceiling before trusting it. Verify: (a) the ceiling is enforced identically across all four call sites, (b) the check cannot be satisfied by a VAA that's valid-but-stale relative to wall-clock time due to a slow `post_update_atomic` CPI, (c) `merkle_price_update_bytes`' hand-rolled Borsh encoding (`encodeMerklePriceUpdate`) can't be crafted to pass verification against a different price than the one actually used downstream.
 
 ### 2. Liquidation fee split and insurance-fund carve-out
 `liquidate` splits the forfeited collateral 20% caller / 80% protocol-retained, then splits that 80% again — 10% to `Market.insurance_fund_usdc`, 90% to vault NAV via `accumulate_protocol_fees`. Verify: the double-split arithmetic is safe against overflow/rounding at both small (sub-cent) and large notional sizes; `caller_bounty_shares`/`protocol_shares` can't be manipulated to exceed the position's actual `collateral_shares`; a self-liquidation (trader == liquidator, permitted by design) can't be exploited to extract more than the intended 20% bounty.
@@ -75,9 +75,9 @@ A live misconfiguration was found and fixed 2026-07-06: ETH's `max_leverage_bps`
 
 | Milestone | Target |
 |-----------|--------|
-| Firm engaged | Q2–Q3 2026 |
-| Fieldwork | Q3 2026 |
-| Report published | Q3 2026 (pre-mainnet launch) |
+| Firm engaged | Q3 2026 |
+| Fieldwork | Q3–Q4 2026 |
+| Report published | Q4 2026 (pre-mainnet launch Q1 2027) |
 
 ---
 

@@ -1,8 +1,8 @@
 # Noviscia User Guide
 
 **Audience:** Traders
-**Network:** Solana devnet (mainnet guide ships with TGE — Q3 2026)
-**Last updated:** July 7, 2026
+**Network:** Solana devnet (mainnet guide ships with TGE — Q1 2027)
+**Last updated:** August 24, 2026
 
 ---
 
@@ -39,12 +39,12 @@ Go to **Trade → Perps** (`/trade/perps`). In the account panel below the order
 
 ### Step 4 — Open a position
 
-1. Select a tradeable market (SOL, BTC, or ETH — others show "Coming soon").
+1. Select a tradeable market (22 markets live: BTC, ETH, SOL, DOGE, LINK, AVAX, RENDER, WIF, JUP, RAY, TRUMP, PNUT, BONK, PEPE, OP, ARB, PYTH, JTO, ORCA, POPCAT, MEW, HNT).
 2. Choose **Long** or **Short**, and **Market** or **Limit**.
 3. In the **Margin** field, either use your existing nvscUSDC/USDC balance, or pick SOL/another asset directly here too — the same swap-then-deposit flow can chain straight into opening the position behind one submit click.
 4. Set leverage with the slider or preset buttons.
 5. Optionally expand **TP / SL** to set a take-profit/stop-loss at open — this is a separate wallet approval right after the position opens (bundling it into the same transaction would exceed Solana's size limit).
-6. Click the submit button (**Long/Short {asset}**, or **Swap & Long/Short {asset}** if using non-USDC margin). The button shows "Verifying live price…" while it fetches and verifies a fresh on-chain price — if that races the strict 3-second freshness window, it retries automatically with one new approval.
+6. Click the submit button (**Long/Short {asset}**, or **Swap & Long/Short {asset}** if using non-USDC margin). The button shows "Verifying live price…" while it fetches and verifies a fresh on-chain price — if that races the strict 30-second freshness window, it retries automatically with one new approval.
 7. Your position appears in the **Positions** tab below.
 
 ### Step 5 — Manage or close

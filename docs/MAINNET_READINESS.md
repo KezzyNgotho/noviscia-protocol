@@ -40,7 +40,7 @@
 ### Operational
 - [ ] Incident response runbook reviewed and tested
 - [ ] Keeper bots run on dedicated infrastructure (Railway/Fly/AWS)
-- [ ] Oracle price feed redundancy (Pyth primary, backup)
+- [ ] Oracle price feed: Pyth (JIT pull-oracle) verified on mainnet
 - [ ] Liquidation bot tested under load
 - [ ] Insurance fund seeded with target TVL percentage
 

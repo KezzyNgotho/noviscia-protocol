@@ -1,6 +1,6 @@
 # Deployment and Maintenance Guide
 
-**Last updated:** July 7, 2026
+**Last updated:** August 24, 2026
 
 > This document previously described a Postgres/Redis/Prisma/PM2/AWS-Lambda stack with a standalone `app/api` service — none of that exists in this repo. Rewritten to match the actual architecture: a single Vercel-deployed Next.js app, Anchor on-chain programs, and a handful of independently-dockerized optional services.
 
@@ -57,7 +57,7 @@ Each has its own `Dockerfile` and can be deployed independently (Railway, Fly.io
 
 ## Mainnet deployment
 
-Not yet performed — target Q3 2026, post-audit (see [`LAUNCH_ROADMAP.md`](./LAUNCH_ROADMAP.md) and [`AUDIT_REPORT.md`](./AUDIT_REPORT.md)). The mechanical steps will mirror devnet (program deploy + IDL copy + Vercel env swap to mainnet RPC/program IDs), gated on:
+Not yet performed — target Q1 2027, post-audit (see [`AUDIT_REPORT.md`](./AUDIT_REPORT.md)). The mechanical steps will mirror devnet (program deploy + IDL copy + Vercel env swap to mainnet RPC/program IDs), gated on:
 
 - [ ] Independent security audit complete, findings resolved
 - [ ] Mainnet program IDs finalized and locked (see `Anchor.toml`'s `[programs.mainnet]` section — currently placeholder-style IDs, not yet real deployments)
@@ -88,7 +88,6 @@ Use a premium devnet/mainnet RPC (Helius/Ankr), not the public `api.devnet.solan
 - [ ] Vercel environment variables set per-environment (Production/Preview/Development) deliberately, not copy-pasted blind
 - [ ] Program upgrade authority is a known, controlled keypair (see `DEVNET.md`'s deployer wallet)
 - [ ] Regular security audits scheduled (see `AUDIT_PREP.md`)
-- [ ] Incident response plan documented (see `INCIDENT_RUNBOOK.md`)
 
 ## Support
 

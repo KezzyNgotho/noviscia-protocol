@@ -17,7 +17,7 @@
 │   │ liq       │  │ loans    │  │          │  │          │  │          │   │
 │   └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
 │                                                                             │
-│   Next.js 14 App Router  ·  React 18  ·  Tailwind  ·  Solana wallet-std   │
+│   Next.js 14 App Router  ·  React 18  ·  Tailwind  ·  @solana/connector/react   │
 └───────────────────────────────┬─────────────────────────────────────────────┘
                                 │
                     ┌───────────┴───────────┐
@@ -41,8 +41,8 @@
 │                         ON-CHAIN PROGRAM LAYER                              │
 │                                                                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
-│  │  POSITION     │  │  NV-USDC     │  │  ESCROW      │  │  PREDICTION  │   │
-│  │  TRACKER      │  │  VAULT       │  │              │  │  MARKET      │   │
+│  │  POSITION     │  │  NV-USDC     │  │  ESCROW      │  │  NOVISCIA    │   │
+│  │  TRACKER      │  │  VAULT       │  │              │  │  CLEARING    │   │
 │  │               │  │              │  │  (legacy)    │  │              │   │
 │  │  9 ix fn's    │  │  mint/burn   │  │              │  │  stubbed     │   │
 │  │  6uvr2...1ws  │  │  CN92h...AWC │  │  2WPb3...CZ  │  │  GtTJW...fe  │   │
@@ -210,14 +210,15 @@ nvscUSDC is a **yield-bearing vault share** (similar to ERC-4626):
 
 #### Key On-Chain Structs
 
-**MarketAccount (140 bytes)**
+**MarketAccount (269 bytes)**
 ```
 authority          Pubkey   (32)   Admin wallet
 feed_id            [u8;32]  (32)   Pyth feed identifier
-max_leverage_bps   u32      (4)    Max leverage in bps (e.g. 5000 = 50x)
+max_leverage_bps   u32      (4)    Max leverage in bps (e.g. 500000 = 50x)
 maintenance_margin_bps u16  (2)    Maint. margin in bps (e.g. 100 = 1%)
 is_active          bool     (1)    Market enabled flag
-funding_index      i128     (16)   Cumulative funding rate (1e6 scale)
+bump               u8       (1)    PDA bump
+funding_index      i64      (8)    Cumulative funding rate (1e6 scale)
 long_oi_usdc       u64      (8)    Long open interest
 short_oi_usdc      u64      (8)    Short open interest
 last_funding_settle_ts i64  (8)    Last settlement timestamp
@@ -225,8 +226,37 @@ insurance_fund_usdc u64     (8)    Per-market insurance fund
 referral_bps       u16      (2)    Referral bonus bps
 trading_fee_bps    u16      (2)    Trading fee in bps
 last_recorded_price u64     (8)    Last oracle price (1e6)
-last_recorded_slot  u64      (8)    Last slot price was recorded
-bump               u8       (1)    PDA bump
+last_recorded_slot  u64     (8)    Last slot price was recorded
+oracle_twap        u64      (8)    Oracle TWAP protection
+twap_last_update_ts i64     (8)    Last TWAP update timestamp
+max_position_size_usdc u64  (8)    Per-user position cap (0 = none)
+max_oi_usdc        u64      (8)    Per-market OI cap
+base_spread_bps    u16      (2)    Dynamic spread
+taker_fee_bps      u16      (2)    Taker fee
+maker_rebate_bps   u16      (2)    Maker rebate
+borrow_base_bps    u16      (2)    Borrow kink curve base
+borrow_kink_bps    u16      (2)    Borrow kink threshold
+borrow_max_bps     u16      (2)    Borrow max rate
+borrow_kink_util_bps u16    (2)    Borrow kink utilization
+volatility_bps     u32      (4)    Volatility multiplier
+vol_tier1_threshold_bps u16 (2)    Vol tier 1 threshold
+vol_tier2_threshold_bps u16 (2)    Vol tier 2 threshold
+vol_tier3_threshold_bps u16 (2)    Vol tier 3 threshold
+vol_tier1_multiplier_bps u16 (2)   Vol tier 1 multiplier
+vol_tier2_multiplier_bps u16 (2)   Vol tier 2 multiplier
+vol_tier3_multiplier_bps u16 (2)   Vol tier 3 multiplier
+soft_max_oi_usdc   u64      (8)    Soft OI cap
+house_net_position_usdc i64 (8)    CCP house net position
+house_funding_pnl_usdc i64  (8)    CCP house funding PnL
+margin_tier1_threshold_usdc u64 (8) Size tier 1 threshold
+margin_tier2_threshold_usdc u64 (8) Size tier 2 threshold
+margin_tier3_threshold_usdc u64 (8) Size tier 3 threshold
+margin_tier1_leverage_bps u16 (2)  Size tier 1 leverage
+margin_tier2_leverage_bps u16 (2)  Size tier 2 leverage
+margin_tier3_leverage_bps u16 (2)  Size tier 3 leverage
+insurance_fund_floor_usdc u64 (8)  Insurance fund floor
+max_positions_per_trader u8  (1)    Max positions per trader
+active_position_count u32   (4)    Active position count
 ```
 
 **PositionAccount (227 bytes)**
@@ -405,7 +435,7 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
                     │                 close_position              │
                     │                 execute_limit_order          │
                     │                 execute_twap_slice           │
-                    │     Current: 1000 bps (10%) on BTC devnet   │
+                    │     Current: 5–50 bps (0.05%–0.50%) by tier  │
                     │     Formula: size_usdc * trading_fee_bps    │
                     │                    / 10_000                  │
                     │                                             │
@@ -822,7 +852,7 @@ Payment is settled into the position's PnL via funding_index delta:
 | Staking Manager | `HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb` |
 | Token NVSC | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
 | Yield Distributor | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |
-| Prediction Market | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` |
+| Noviscia Clearing | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` (prediction market — stubbed) |
 | Liquidation Vault | `Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz` |
 | Protocol LP Vault | `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd` |
 | Netting Engine | `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56` |
@@ -832,19 +862,59 @@ Payment is settled into the position's PnL via funding_index delta:
 | Spot DEX | `8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN` |
 | Bug Bounty | `A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK` |
 
-### Current Devnet Market State
+### Current Devnet Market State (22 markets)
 
-| Market | Max Leverage | Maint Margin | Trading Fee | Active |
-|--------|-------------|--------------|-------------|--------|
-| SOL/USD | 50x (500000 bps) | 1% (100 bps) | 0.05% (5 bps) | Yes |
-| BTC/USD | Not deployed | — | — | — |
-| ETH/USD | Not deployed | — | — | — |
+| Market | Tier | Max Leverage | Maint Margin | Trading Fee |
+|--------|------|-------------|--------------|-------------|
+| BTC/USD | Blue-chip | 50x | 1% | 0.05% |
+| ETH/USD | Blue-chip | 50x | 1% | 0.05% |
+| SOL/USD | Blue-chip | 50x | 2% | 0.05% |
+| DOGE/USD | Large-cap | 20x | 2% | 0.10% |
+| LINK/USD | Large-cap | 20x | 2% | 0.10% |
+| AVAX/USD | Large-cap | 20x | 2% | 0.10% |
+| RENDER/USD | Large-cap | 20x | 2% | 0.10% |
+| WIF/USD | Mid-cap | 10x | 5% | 0.25% |
+| JUP/USD | Mid-cap | 10x | 5% | 0.25% |
+| RAY/USD | Mid-cap | 10x | 5% | 0.25% |
+| TRUMP/USD | Mid-cap | 10x | 5% | 0.25% |
+| PNUT/USD | Mid-cap | 10x | 5% | 0.25% |
+| BONK/USD | Meme | 5x | 10% | 0.50% |
+| PEPE/USD | Meme | 5x | 10% | 0.50% |
+| OP/USD | Meme | 5x | 10% | 0.50% |
+| ARB/USD | Meme | 5x | 10% | 0.50% |
+| PYTH/USD | Catalog | 25x | 2% | 0.25% |
+| JTO/USD | Catalog | 25x | 2% | 0.25% |
+| ORCA/USD | Catalog | 20x | 2% | 0.25% |
+| POPCAT/USD | Catalog | 15x | 5% | 0.50% |
+| MEW/USD | Catalog | 15x | 5% | 0.50% |
+| HNT/USD | Catalog | 20x | 2% | 0.25% |
 
 ### Pyth Feed IDs
 
 | Asset | Hex Feed ID |
 |-------|-------------|
 | SOL/USD | `ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d` |
+| BTC/USD | `e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43` |
+| ETH/USD | `ff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace` |
+| DOGE/USD | `dcef50dd0a4cd2dcc17e45df1676dcb336a11a61c69df7a0299b0150c672d25c` |
+| LINK/USD | `8ac0c70fff57e9aefdf5edf44b51d62c2d433653cbb2cf5cc06bb115af04d221` |
+| AVAX/USD | `93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7` |
+| RENDER/USD | `3d4a2bd9535be6ce8059d75eadeba507b043257321aa544717c56fa19b49e35d` |
+| WIF/USD | `4ca4beeca86f0d164160323817a4e42b10010a724c2217c6ee41b54cd4cc61fc` |
+| JUP/USD | `0a0408d619e9380abad35060f9192039ed5042fa6f82301d0e48bb52be830996` |
+| RAY/USD | `91568baa8beb53db23eb3fb7f22c6e8bd303d103919e19733f2bb642d3e7987a` |
+| TRUMP/USD | `879551021853eec7a7dc827578e8e69da7e4fa8148339aa0d3d5296405be4b1a` |
+| PNUT/USD | `116da895807f81f6b5c5f01b109376e7f6834dc8b51365ab7cdfa66634340e54` |
+| BONK/USD | `72b021217ca3fe68922a19aaf990109cb9d84e9ad004b4d2025ad6f529314419` |
+| PEPE/USD | `d69731a2e74ac1ce884fc3890f7ee324b6deb66147055249568869ed700882e4` |
+| OP/USD | `385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf` |
+| ARB/USD | `3fa4252848f9f0a1480be62745a4629d9eb1322aebab8a791e344b3b9c1adcf5` |
+| PYTH/USD | `0bbf28e9a841a1cc788f6a361b17ca072d0ea3098a1e5df1c3922d06719579ff` |
+| JTO/USD | `b43660a5f790c69354b0729a5ef9d50d68f1df92107540210b9cccba1f947cc2` |
+| ORCA/USD | `37505261e557e251290b8c8899453064e8d760ed5c65a779726f2490980da74c` |
+| POPCAT/USD | `b9312a7ee50e189ef045aa3c7842e099b061bd9bdc99ac645956c3b660dc8cce` |
+| MEW/USD | `514aed52ca5294177f20187ae883cec4a018619772ddce41efcc36a6448f5d5d` |
+| HNT/USD | `649fdd7ec08e8e2a20f425729854e90293dcbe2376abc47197a14da6ff339756` |
 
 ---
 

@@ -1,6 +1,6 @@
 # Noviscia System Diagram
 
-**Last updated:** July 7, 2026 — diagrams 1–4 rewritten to match the current JIT-oracle architecture (no Express/Postgres/Redis backend, no external lending venues, no Switchboard). Diagram 5 (AI layer) is unchanged/unverified this cycle.
+**Last updated:** August 24, 2026 — diagrams 1–4 match current JIT-oracle architecture. Diagram 5 (AI layer) is optional/unverified.
 
 ## 1) System Structure
 
@@ -15,7 +15,7 @@ graph TD
   C --> SM[staking-manager]
   C --> BE[burn-engine]
   C --> TN[token-nvsc]
-  C --> PM[prediction_market]
+  C --> PM[noviscia_clearing\nstubbed — not wired]
 
   PT -->|verify_jit_price, per-instruction| PYTH[Pyth Hermes\nguardian-signed VAA]
   PT -->|CPI: redeem/accumulate_fees/lock_margin| NV
@@ -37,13 +37,13 @@ sequenceDiagram
   W->>H: Fetch latest guardian-signed price VAA
   W->>U: Request signature for open_position_jit tx
   U->>PT: Signed tx (VAA + merkle proof bundled)
-  PT->>PT: verify_jit_price — reject if VAA >3s old
+  PT->>PT: verify_jit_price — reject if VAA >30s old
   PT->>NV: CPI redeem_nvusdc (trading fee) + lock margin
   PT-->>W: Position opened (on-chain confirmation)
   W-->>U: Show filled position
 ```
 
-A retry (fresh VAA + new signature) happens automatically if the 3-second freshness window races network latency — this is expected, not an error.
+A retry (fresh VAA + new signature) happens automatically if the 30-second freshness window races network latency — this is expected, not an error.
 
 ## 3) Yield Flow (perps)
 

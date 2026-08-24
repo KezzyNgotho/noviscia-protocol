@@ -1,6 +1,6 @@
 # Noviscia Protocol — Compliance Overview (Devnet Beta)
 
-**Last updated:** July 7, 2026 (reviewed — substance unchanged; see `docs/SECURITY.md` for the current technical posture this document references)
+**Last updated:** August 24, 2026 (reviewed — substance unchanged; see `docs/SECURITY.md` for the current technical posture this document references)
 **Scope:** Noviscia perpetuals, margin vault, insurance vault, and NVSC/nvscUSDC on **Solana devnet**. This document describes the protocol's current regulatory posture and what changes before mainnet. It is informational, not legal advice — see [LEGAL.md](./LEGAL.md) for terms of use and risk disclosure.
 
 ## Non-custodial posture
@@ -23,7 +23,7 @@ This non-custodial design is the basis for treating Noviscia as software infrast
 
 - Consistent with [LEGAL.md](./LEGAL.md), the protocol may be unavailable to users in jurisdictions where leveraged derivatives trading, or access to this software, is restricted or prohibited.
 - Users are responsible for determining whether their use of Noviscia complies with the laws of their jurisdiction, including local restrictions on derivatives, virtual assets, and sanctions regimes.
-- The frontend does not currently implement IP-based geofencing or wallet-address sanctions screening on devnet. **Both are planned pre-mainnet items** (see [LAUNCH_ROADMAP.md](./LAUNCH_ROADMAP.md), Phase 1 hardening) and are not yet implemented anywhere in this codebase.
+- The frontend does not currently implement IP-based geofencing or wallet-address sanctions screening on devnet. **Both are planned pre-mainnet items** and are not yet implemented anywhere in this codebase.
 
 ## Data privacy
 
@@ -33,13 +33,13 @@ This non-custodial design is the basis for treating Noviscia as software infrast
 
 ## Audit & assurance status
 
-- **No third-party smart-contract audit has been completed as of this writing.** A third-party audit is a tracked pre-mainnet milestone — see [AUDIT_PREP.md](./AUDIT_PREP.md) for the engagement checklist and [LAUNCH_ROADMAP.md](./LAUNCH_ROADMAP.md) for sequencing (target: pre-mainnet, Q3 2026).
+- **No third-party smart-contract audit has been completed as of this writing.** A third-party audit is a tracked pre-mainnet milestone — see [AUDIT_PREP.md](./AUDIT_PREP.md) for the engagement checklist (target: pre-mainnet, Q1 2027).
 - A [bug bounty program](./BUG_BOUNTY.md) covers devnet scope in the interim; see `/more/bug-bounty` in the app.
 - Until an audit is complete, all contracts should be treated as unaudited experimental software, per [LEGAL.md](./LEGAL.md).
 
 ## Path to mainnet
 
-Before any mainnet launch, the following compliance-related items are expected to be addressed (tracked in [LAUNCH_ROADMAP.md](./LAUNCH_ROADMAP.md) Phase 1–2):
+Before any mainnet launch, the following compliance-related items are expected to be addressed:
 
 - [ ] Third-party smart-contract audit completed and findings remediated.
 - [ ] Legal review of jurisdictional availability and any required geofencing/sanctions screening.

@@ -1,8 +1,8 @@
 # Security Audit Preparation Package
 
-**Last updated:** July 7, 2026
+**Last updated:** August 24, 2026
 
-Use this checklist when engaging a third-party auditor (target: pre-mainnet Q3 2026).
+Use this checklist when engaging a third-party auditor (target: pre-mainnet Q1 2027).
 
 ## Programs in scope
 
@@ -18,7 +18,7 @@ Use this checklist when engaging a third-party auditor (target: pre-mainnet Q3 2
 
 ## Known design choices (not bugs)
 
-- JIT (just-in-time) Pyth pull-oracle: every price-sensitive instruction verifies its own fresh guardian-signed VAA in-transaction, ≤3s freshness ceiling — not a continuously-updated price account, not CLOB-matched
+- JIT (just-in-time) Pyth pull-oracle: every price-sensitive instruction verifies its own fresh guardian-signed VAA in-transaction, ≤30s freshness ceiling — not a continuously-updated price account, not CLOB-matched
 - Margin is nvscUSDC shares only, locked (not redeemed) per position — no multi-asset weighted collateral in the current design
 - One `Position` per (trader, market, sub_id); no increase/add-to-position instruction by design — a second open on an already-open tuple fails on-chain
 - Liquidation is permissionless and self-liquidation-eligible (trader may liquidate their own position) — this is intentional, not a bypass

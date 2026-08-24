@@ -8,7 +8,7 @@
 
 ### Non-Custodial Architecture
 
-Novisca employs **Program Derived Accounts (PDAs)** to ensure non-custodial fund management:
+Noviscia employs **Program Derived Accounts (PDAs)** to ensure non-custodial fund management:
 
 ```rust
 // Only user's escrow can be modified by that user
@@ -31,7 +31,7 @@ let price = verify_jit_price(
     /* ... */ signed_price_payload, merkle_price_update_bytes, treasury_id, &clock,
 )?;
 // Verified via Pyth Receiver's post_update_atomic, then checked against
-// a strict ≤3-second freshness ceiling — reverts with OracleStale (6006)
+// a strict ≤30-second freshness ceiling — reverts with OracleStale (6006)
 // if the VAA is older than that, rather than trusting a stale price.
 ```
 

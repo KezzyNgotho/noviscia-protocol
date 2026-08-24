@@ -37,7 +37,7 @@ The protocol separates **yield-bearing margin** (nvscUSDC) from **governance** (
 Trader's USDC (or any SPL asset, swapped via Jupiter)
   → nv-usdc-vault.deposit_usdc → mints nvscUSDC shares at live NAV
   → position-tracker.open_position_jit
-       - verifies a fresh Pyth Hermes VAA on-chain (≤3s old)
+       - verifies a fresh Pyth Hermes VAA on-chain (≤30s old)
        - locks nvscUSDC shares as collateral — never redeemed while open
        - charges a trading fee, swept into vault NAV
   → position open — locked shares compound NAV exactly like any other holder's
@@ -70,10 +70,17 @@ Trader's USDC (or any SPL asset, swapped via Jupiter)
 | **protocol-lp-vault** | Additive trading-fee-backed LP vault |
 | **staking-manager** | NVSC stake tiers (Bronze/Silver/Gold/Platinum); governance proposals |
 | **burn-engine** | USDC fee accumulation; NVSC buyback & burn (permissionless trigger) |
-| **token-nvsc** | Fixed-supply NVSC SPL token |
+| **token-nvsc** | Fixed-supply NVSC SPL token (1B supply, 9 decimals) |
 | **yield-distributor** | Non-perps yield split (legacy lending surface) |
-| **prediction_market** | On-chain prediction markets (adjacent product, beta) |
 | **escrow** | Legacy USDC/collateral/lending surface — **not** part of the perps margin path described in §2 |
+| **liquidation-vault** | Liquidation penalty custody and insurance fund backstop |
+| **bug-bounty** | Bug bounty reward distribution |
+| **netting-engine** | Cross-tenant netting and settlement |
+| **yield-router** | Multi-venue yield routing with atomic recall |
+| **clearing-registry** | Tenant and venue registration for CCP clearing |
+| **spot-dex** | On-chain spot orderbook |
+| **cross-border** | Cross-border settlement and compliance |
+| **noviscia-clearing** | Prediction markets (stubbed — adjacent product, beta) |
 
 ### 3.2 Off-chain services
 
@@ -151,7 +158,7 @@ share value = shares * (vault.total_assets / vault.total_shares)
 
 ## 6. JIT Pyth pull-oracle
 
-Every price-sensitive instruction carries a guardian-signed Wormhole VAA wrapping a Pyth Hermes price update, verified via the Pyth Receiver program's `post_update_atomic` inside the same transaction. A strict ≤3-second freshness ceiling is enforced before the price is trusted — old enough, and the instruction reverts (`OracleStale`) rather than executing against a stale number.
+Every price-sensitive instruction carries a guardian-signed Wormhole VAA wrapping a Pyth Hermes price update, verified via the Pyth Receiver program's `post_update_atomic` inside the same transaction. A strict ≤30-second freshness ceiling is enforced before the price is trusted — old enough, and the instruction reverts (`OracleStale`) rather than executing against a stale number.
 
 There is no continuously-updated on-chain price account to keep fresh, and therefore no off-chain keeper whose downtime could leave the protocol trading on stale data. A retry (fresh price fetch + a new wallet approval) is the normal, expected response when the freshness window races real network latency — not a sign of a broken oracle.
 
@@ -198,11 +205,11 @@ Market risk parameters (`max_leverage_bps`, `maintenance_margin_bps`) are valida
 
 | Phase | Milestones | Target |
 |-------|------------|--------|
-| **Now** | JIT-oracle perps engine, live-NAV margin, funding + insurance fund, closed-loop liquidation, Collateral Console + Analytics UI | Live (devnet) |
+| **Now** | JIT-oracle perps engine, live-NAV margin, funding + insurance fund, closed-loop liquidation, Collateral Console + Analytics UI, 22 markets registered | Live (devnet) |
 | **Q3 2026** | Security audit prep, SDK v0.1.1 published, CCP netting engine + venue registration, 16 programs rebuilt | Complete |
 | **Q4 2026** | Security audit, NVSC TGE preparation, mainnet program ID lock, deposit caps | In progress |
-| **Q1 2027** | Mainnet soft launch, SOL perps live, production Pyth feeds | Planned |
-| **Q2 2027+** | Expanded market catalog (16 markets), mobile PWA, any-collateral Jupiter routing | Planned |
+| **Q1 2027** | Mainnet soft launch, 22 perp markets live, production Pyth feeds | Planned |
+| **Q2 2027+** | Expanded market catalog, mobile PWA, any-collateral Jupiter routing | Planned |
 
 ---
 
