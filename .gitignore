@@ -36,3 +36,7 @@ test-results/
 playwright-report/
 blob-report/
 .playwright/
+
+# Temp / scratch files
+*.tmp
+*.tmp.ts
