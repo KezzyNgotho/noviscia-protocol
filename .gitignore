@@ -13,6 +13,7 @@ target/
 .env
 .env.local
 .env.*.local
+.sdk/.npmrc
 .tmp-build/
 dist/
 build/
@@ -28,3 +29,9 @@ solana.tar.bz2/
 
 programs/clearing-registry/clearing-registry-keypair.json
 programs/spot-dex/spot-dex-keypair.json
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/

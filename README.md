@@ -2,14 +2,20 @@
 
 **The settlement layer for every market — trading, payments, and yield, unified on Solana.**
 
+[![CI](https://github.com/KezzyNgotho/Noviscia-protocal/actions/workflows/ci.yml/badge.svg)](https://github.com/KezzyNgotho/Noviscia-protocal/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/%40noviscia/sdk?color=blue)](https://www.npmjs.com/package/@noviscia/sdk)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Anchor](https://img.shields.io/badge/Anchor-0.31.1-blue)](https://www.anchor-lang.com/)
+[![Solana](https://img.shields.io/badge/Solana-Devnet-green)](https://solana.com/devnet)
+
 Noviscia is the on-chain central counterparty (CCP) that novates both sides of every trade, nets offsetting obligations, runs margin as a single yield-bearing omni-pool, and settles every transaction atomically. Non-custodial, permissionless, auditable, and always solvent.
 
 | | |
 |---|---|
-| **Status** | Devnet beta live · Mainnet target Q4 2026 |
+| **Status** | Devnet beta live · Mainnet target Q1 2027 |
 | **App** | [noviscia.com](https://noviscia.com) |
+| **SDK** | [`npm install @noviscia/sdk`](https://www.npmjs.com/package/@noviscia/sdk) |
 | **Docs** | [`docs/`](./docs/) |
-| **SDK** | [`sdk/`](./sdk/) |
 | **Contact** | [Discord](https://discord.gg/Noviscia-protocol) · ngothokezz18@gmail.com |
 
 > **Disclaimer:** Devnet software for testing only. Not financial advice, not an offer of securities, not a commitment to future features. Parameters may change before mainnet.
@@ -67,6 +73,32 @@ No off-chain keeper. No external lending venue. Every path settles through the s
 
 ---
 
+## Quick install
+
+```bash
+npm install @noviscia/sdk
+```
+
+```typescript
+import { PROGRAM_IDS, ptAddresses, SandboxSimulator } from '@noviscia/sdk';
+
+// All 16 program IDs, env-overridable
+console.log(PROGRAM_IDS.positionTracker.toBase58());
+
+// Derive PDAs
+const addrs = ptAddresses(trader, market, 0);
+
+// Simulate before you submit
+const sim = new SandboxSimulator();
+sim.setMarket('SOL', { price: 150, fundingIndex: 0, maxLeverageBps: 500000, maintenanceMarginBps: 199 });
+const pos = sim.simulateFill('SOL', true, 10_000_000, 150, 10_000_000, 199);
+console.log(sim.checkPositionHealth(pos, 155).ok); // true
+```
+
+Full docs: [npmjs.com/package/@noviscia/sdk](https://www.npmjs.com/package/@noviscia/sdk)
+
+---
+
 ## Core architecture proofs
 
 | Proof | What it demonstrates |
@@ -109,7 +141,7 @@ No off-chain keeper. No external lending venue. Every path settles through the s
 
 ```
 noviscia-protocal/
-├── programs/                         # 16 Solana Anchor programs
+├── programs/                         # 16 Solana Anchor programs (285+ Rust tests)
 │   ├── position-tracker/             # Perps engine — JIT oracle, margin, funding, liquidation
 │   ├── noviscia-clearing/            # Settlement engine + event/outcome contracts
 │   ├── spot-dex/                     # Constant-product AMM (x·y=k) with LP tokens
@@ -127,9 +159,9 @@ noviscia-protocal/
 │   ├── escrow/                       # Collateral escrow, idle yield hooks
 │   └── bug-bounty/                   # On-chain bug bounty vault
 │
-├── sdk/                              # TypeScript SDK
-│   ├── src/                          # Core: ids, client, collateral, crossBorder, tenantOnboarding
-│   └── gateway/                      # Adapters: perpsAdapter, spotAdapter
+├── sdk/                              # TypeScript SDK — published to npm
+│   ├── src/                          # Core: ids, addresses, client, collateral, payloads, sandbox
+│   └── dist/                         # Built output (shipped to npm)
 │
 ├── app/web/                          # Next.js 14 App Router
 │   ├── app/                          # Pages
@@ -155,6 +187,7 @@ noviscia-protocal/
 │   └── utils/                        # Devnet utilities
 │
 ├── docs/                             # Protocol documentation (30+ documents)
+├── .github/workflows/                # CI/CD (lint, test, build, deploy)
 ├── Anchor.toml                       # Anchor workspace config (source of truth for program IDs)
 ├── Cargo.toml                        # Rust workspace
 └── docker-compose.yml                # Local dev (postgres, redis, services)
@@ -166,7 +199,7 @@ noviscia-protocal/
 
 ```bash
 # Clone
-git clone https://github.com/noviscia-protocol/noviscia-protocal.git
+git clone https://github.com/KezzyNgotho/Noviscia-protocal.git
 cd noviscia-protocal
 
 # Install dependencies
@@ -197,45 +230,29 @@ cd app/web && npm run dev
 | `npm run sync:idls` | Sync IDLs from target/ to web app |
 | `npm run indexer:dev` | Start the blockchain indexer |
 | `npm run check:ai-layer` | Verify AI orchestrator health |
+| `cd sdk && npm test` | Run SDK unit tests (47 tests) |
+| `cd app/web && npm test` | Run frontend unit tests |
+| `cargo test --workspace` | Run all Rust program tests (285+) |
 
 ---
 
-## TypeScript SDK
+## Testing
 
-The SDK provides typed instruction builders for every program, wallet adapters, a sandbox simulator, and tenant onboarding helpers.
+| Layer | Runner | Tests | Coverage |
+|-------|--------|-------|----------|
+| **Solana programs** | `cargo test` | 285+ unit + integration | All 16 programs (position-tracker: 93, clearing: 32, vault: 40, staking: 31, etc.) |
+| **SDK** | `node --test` | 47 | ids, addresses, payloads, sandbox simulator |
+| **Frontend** | Jest | 15+ | lib-level unit tests (jitOracle, errorFormatting, constants) |
+| **E2E** | Playwright | 5 | Homepage, sandbox redirect, API health |
+| **Integration** | ts-mocha | Stress tests | Full devnet lifecycle |
 
-```typescript
-import { PROGRAM_IDS, USDC_MINT } from '@noviscia/sdk';
-import { getAssociatedTokenAddress } from '@solana/spl-token';
-
-// All program IDs, env-overridable
-const spotDex = PROGRAM_IDS.spotDex;       // 8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN
-const crossBorder = PROGRAM_IDS.crossBorder; // C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv
-const positionTracker = PROGRAM_IDS.positionTracker; // BGayb5EC13gKPbq1QVeUHUFdUM7trynXXCPtVbBUoCGd
-
-// SDK exports 25+ typed builders:
-//   buildOpenPositionIx, buildClosePositionIx    — perps
-//   buildSwapIx, buildAddLiquidityIx             — spot AMM
-//   buildInitiateSettlementIx                    — cross-border
-//   buildRegisterTenantIx, buildUpdateTenantIx   — tenant onboarding
-//   buildDepositIx, buildWithdrawIx              — vault
-//   buildStakeIx, buildUnstakeIx                 — staking
-//   ... and more
+```bash
+# Run all tests
+cargo test --workspace                           # Rust
+cd sdk && npm test                               # SDK
+cd app/web && npm test                           # Frontend
+cd app/web && npx playwright test                # E2E
 ```
-
-### SDK modules
-
-| Module | Purpose |
-|--------|---------|
-| `sdk/src/ids.ts` | All 16 program IDs + mints, env-overridable |
-| `sdk/src/client.ts` | Main SDK client with connection management |
-| `sdk/src/collateral.ts` | Collateral deposit, withdrawal, NAV queries |
-| `sdk/src/crossBorder.ts` | Cross-border settlement instructions |
-| `sdk/src/tenantOnboarding.ts` | Third-party tenant registration |
-| `sdk/src/payloads.ts` | Instruction payload builders |
-| `sdk/src/sandbox.ts` | Local simulation sandbox |
-| `sdk/gateway/src/perpsAdapter.ts` | Perps instruction adapter |
-| `sdk/gateway/src/spotAdapter.ts` | Spot AMM instruction adapter |
 
 ---
 
@@ -248,14 +265,15 @@ Next.js 14 App Router with Tailwind CSS, Solana wallet adapter, and devnet-pinne
 | Route | Description |
 |-------|-------------|
 | `/` | Homepage — architecture, use cases, token model, FAQ |
-| `/trade/perps` | Perpetual futures — up to 50× leverage, JIT oracle |
-| `/trade/amm` | Spot AMM — constant-product x·y=k pools, swap/add/remove liquidity |
-| `/trade/cross-border` | Cross-border settlement — FX rates, multi-rail, compliance hooks |
+| `/trade/perps` | Perpetual futures — up to 50x leverage, JIT oracle |
+| `/trade/amm` | Spot AMM — constant-product x·y=k pools |
+| `/trade/cross-border` | Cross-border settlement — FX rates, multi-rail |
 | `/trade/collateral` | Collateral console — deposit, withdraw, portfolio view |
+| `/sandbox` | CCP Risk Sandbox — live telemetry, stress tests, yield simulation |
 | `/earn/vault` | Omni-pool vault — deposit USDC, earn yield as nvscUSDC |
 | `/developer/sdk` | SDK documentation — 16 program IDs, instruction builders, examples |
-| `/developer/api` | API documentation — REST endpoints, AMM pool data, settlement status |
-| `/developer/integrations` | Integration guide — Rust CPI, TypeScript frontend, AMM architecture |
+| `/developer/api` | API documentation — REST endpoints, AMM pool data |
+| `/developer/integrations` | Integration guide — Rust CPI, TypeScript frontend |
 | `/token` | NVSC token — governance, staking tiers, fee cascade |
 | `/manage/portfolio` | Portfolio management — positions, margin, PnL |
 
@@ -330,13 +348,23 @@ Every mechanic has a corresponding live-devnet proof script under `scripts/e2e/`
 
 ---
 
+## CI/CD
+
+| Workflow | Trigger | What it does |
+|----------|---------|--------------|
+| `ci.yml` | Push/PR to main | Lint, type-check, Rust tests, Jest tests, Solana build, Next.js build |
+| `deploy.yml` | Push to main | Deploy web app to Vercel (prod), indexer to Railway |
+
+---
+
 ## Roadmap
 
 | Phase | Milestones | Target |
 |-------|------------|--------|
-| **Devnet beta** | JIT-oracle perps, live-NAV margin, funding, insurance, any-collateral, Collateral Console + Analytics | Live |
-| **Q3 2026** | Spot AMM, cross-border payments, 16 programs, SDK v1, developer docs | In progress |
-| **Q4 2026** | Security audit, mainnet IDs locked, NVSC TGE, mainnet soft launch | Planned |
+| **Devnet beta** | JIT-oracle perps, live-NAV margin, funding, insurance, any-collateral, Collateral Console + Sandbox | Live |
+| **Q3 2026** | SDK v1 published, 285+ tests, CI/CD, developer docs, Spot AMM, cross-border | In progress |
+| **Q4 2026** | Security audit, mainnet IDs locked, NVSC TGE | Planned |
+| **Q1 2027** | Mainnet soft launch, public launch | Planned |
 | **2027+** | Expanded markets, options, RWA, mobile PWA, third-party tenant onboarding | Planned |
 
 ---
@@ -345,16 +373,18 @@ Every mechanic has a corresponding live-devnet proof script under `scripts/e2e/`
 
 | Document | Path |
 |----------|------|
-| Clearing house vision | [`docs/CLEARING_HOUSE_VISION.md`](./docs/CLEARING_HOUSE_VISION.md) |
+| Whitepaper | [`docs/WHITEPAPER.md`](./docs/WHITEPAPER.md) |
 | CCP architecture | [`docs/CCP_ARCHITECTURE.md`](./docs/CCP_ARCHITECTURE.md) |
 | Architecture v2 | [`docs/ARCHITECTURE_V2.md`](./docs/ARCHITECTURE_V2.md) |
-| Whitepaper | [`docs/WHITEPAPER.md`](./docs/WHITEPAPER.md) |
 | Tokenomics | [`docs/TOKENOMICS.md`](./docs/TOKENOMICS.md) |
 | Security | [`docs/SECURITY.md`](./docs/SECURITY.md) |
 | Audit prep | [`docs/AUDIT_PREP.md`](./docs/AUDIT_PREP.md) |
+| Mainnet readiness | [`docs/MAINNET_READINESS.md`](./docs/MAINNET_READINESS.md) |
 | Deployment | [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) |
 | API reference | [`docs/API.md`](./docs/API.md) |
+| Compliance | [`docs/COMPLIANCE.md`](./docs/COMPLIANCE.md) |
 | Legal | [`docs/LEGAL.md`](./docs/LEGAL.md) |
+| Privacy | [`docs/PRIVACY_POLICY.md`](./docs/PRIVACY_POLICY.md) |
 
 ---
 
@@ -363,9 +393,16 @@ Every mechanic has a corresponding live-devnet proof script under `scripts/e2e/`
 | Resource | URL |
 |----------|-----|
 | Live app | https://noviscia.com |
+| SDK | https://www.npmjs.com/package/@noviscia/sdk |
 | Discord | https://discord.gg/Noviscia-protocol |
 | Twitter | https://twitter.com/noviscia |
-| GitHub | https://github.com/noviscia-protocol/noviscia-protocal |
+| GitHub | https://github.com/KezzyNgotho/Noviscia-protocal |
+
+---
+
+## License
+
+MIT — see [`sdk/LICENSE`](./sdk/LICENSE)
 
 ---
 
