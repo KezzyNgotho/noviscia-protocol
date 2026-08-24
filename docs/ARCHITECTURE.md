@@ -167,7 +167,7 @@ nvscUSDC is a **yield-bearing vault share** (similar to ERC-4626):
 
 ---
 
-## 3. On-Chain Programs (10 programs)
+## 3. On-Chain Programs (16 programs)
 
 ### 3a. Position Tracker (Core Engine)
 **Program ID:** `3zGRWKZq4V3npHbH9Lati46BwgmstTjynWZFFMxarQgY`

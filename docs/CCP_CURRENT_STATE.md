@@ -1,6 +1,6 @@
 # Noviscia — As It Is Today (devnet, 2026-08-15)
 
-**Status snapshot:** all 12 programs rebuilt from current `main` source, upgraded
+**Status snapshot:** all 16 programs rebuilt from current `main` source, upgraded
 in place on devnet (slots 483247186–483249477; netting-engine deploys at
 483273207), IDLs synced to
 `app/web/app/idl/` and live on-chain.
@@ -50,7 +50,7 @@ single yield-bearing omni-pool, and absorbs default losses through a funded
    └───────────────────────────────────────────────────────────────────────┘
 ```
 
-## 2. The 12 Programs On-Chain
+## 2. The 16 Programs On-Chain
 
 | # | Program | Build | Anchor ID | What it does |
 |---|---------|-------|-----------|--------------|
@@ -124,7 +124,7 @@ graph TB
 ## 6. State Audit Trail
 
 - Rebuilt + upgraded on 2026-08-12 against `main` (HEAD `180b95a4`).
-- IDLs regenerated, synced to `app/web/app/idl/`, uploaded to devnet for all 11.
+- IDLs regenerated, synced to `app/web/app/idl/`, uploaded to devnet for all 16.
 - Deployment scripts: `scripts/deploy/upgrade-*-devnet.sh` (one per program).
 - Proof: `solana program show <id>` slots 483247186–483249477, all fresh.
 

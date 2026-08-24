@@ -15,6 +15,16 @@ export interface NovisciaClientOptions {
  * IDLs are resolved from `idlRoot` (default <repo-root>/target/idl) so SDK
  * consumers never hardcode instruction layouts.
  */
+/**
+ * Resolve IDL root: prefer bundled IDLs (published package), fall back to
+ * monorepo target/idl (local dev).
+ */
+function resolveIdlRoot(): string {
+  const bundled = path.resolve(__dirname, 'idl');
+  if (fs.existsSync(bundled)) return bundled;
+  return path.resolve(__dirname, '..', 'target/idl');
+}
+
 export class NovisciaClient {
   readonly connection: Connection;
   readonly wallet: Keypair;
@@ -29,7 +39,7 @@ export class NovisciaClient {
   readonly stakingManager: Program;
 
   constructor(opts: NovisciaClientOptions = {}) {
-    this.idlRoot = opts.idlRoot ?? path.resolve(__dirname, '../../..', 'target/idl');
+    this.idlRoot = opts.idlRoot ?? resolveIdlRoot();
     this.connection = new Connection(opts.rpc ?? process.env.SOLANA_RPC_DEVNET ?? 'https://api.devnet.solana.com', 'confirmed');
     this.wallet = opts.wallet ?? loadCliWallet();
     this.provider = new AnchorProvider(this.connection, new Wallet(this.wallet), { commitment: 'confirmed' });

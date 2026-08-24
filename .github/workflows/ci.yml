@@ -2,30 +2,35 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
-  test-node:
+  lint-typecheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install gateway deps
-        working-directory: sdk/gateway
+          cache: npm
+          cache-dependency-path: app/web/package-lock.json
+      - name: Install web deps
+        working-directory: app/web
         run: npm ci
-      - name: Run gateway tests
-        working-directory: sdk/gateway
-        run: npm test
+      - name: Lint
+        working-directory: app/web
+        run: npm run lint
+      - name: Type check
+        working-directory: app/web
+        run: npm run type-check
 
   test-rust:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@v1
+      - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
       - uses: Swatinem/rust-cache@v2
@@ -33,6 +38,22 @@ jobs:
         run: cargo check --workspace
       - name: Cargo test
         run: cargo test --workspace --exclude noviscia-protocal
+
+  test-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/web/package-lock.json
+      - name: Install web deps
+        working-directory: app/web
+        run: npm ci
+      - name: Jest tests
+        working-directory: app/web
+        run: npm test -- --ci --coverage
 
   build-programs:
     runs-on: ubuntu-latest
@@ -44,10 +65,26 @@ jobs:
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
       - name: Install Anchor
         run: cargo install --git https://github.com/coral-xyz/anchor avm --locked
-      - name: Cache build
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: target/deploy
           key: programs-${{ hashFiles('programs/*/src/**/*.rs') }}
       - name: Build programs
         run: cargo build-sbf --workspace || echo "Partial build — checking individual programs"
+
+  build-web:
+    runs-on: ubuntu-latest
+    needs: [lint-typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/web/package-lock.json
+      - name: Install web deps
+        working-directory: app/web
+        run: npm ci
+      - name: Build Next.js
+        working-directory: app/web
+        run: npm run build
