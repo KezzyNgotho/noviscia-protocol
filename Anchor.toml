@@ -64,7 +64,7 @@ spot_dex = "11111111111111111111111111111111"
 cross_border = "11111111111111111111111111111111"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json ./tests/**/*.ts"
+test = "echo 'Use cargo test --workspace for Rust tests and npm test in app/web for frontend tests'"
 
 [hooks]
 

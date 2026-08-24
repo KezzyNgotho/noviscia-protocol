@@ -1,0 +1,23 @@
+[advisories]
+ignore = []
+threshold = "low"
+denied = []
+
+[yanked]
+update = true
+
+[licenses]
+unlicensed = "deny"
+allow = [
+  "MIT",
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Unicode-DFS-2016",
+  "Zlib",
+  "0BSD",
+  "Unicode-3.0",
+]
+copyleft = "deny"
+confidence-threshold = 0.8

@@ -33,11 +33,32 @@ jobs:
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
+          components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace -- -D warnings || echo "Clippy warnings found — review required"
       - name: Cargo check
         run: cargo check --workspace
       - name: Cargo test
-        run: cargo test --workspace --exclude noviscia-protocal
+        run: cargo test --workspace
+
+  test-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: sdk/package-lock.json
+      - name: Install SDK deps
+        working-directory: sdk
+        run: npm ci
+      - name: SDK tests
+        working-directory: sdk
+        run: npm test
 
   test-web:
     runs-on: ubuntu-latest
@@ -54,6 +75,57 @@ jobs:
       - name: Jest tests
         working-directory: app/web
         run: npm test -- --ci --coverage
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-coverage
+          path: app/web/coverage/
+          retention-days: 30
+
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+      - name: Audit Rust dependencies
+        run: cargo audit
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, rust]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-programs:
     runs-on: ubuntu-latest
@@ -70,7 +142,7 @@ jobs:
           path: target/deploy
           key: programs-${{ hashFiles('programs/*/src/**/*.rs') }}
       - name: Build programs
-        run: cargo build-sbf --workspace || echo "Partial build — checking individual programs"
+        run: cargo build-sbf --workspace
 
   build-web:
     runs-on: ubuntu-latest

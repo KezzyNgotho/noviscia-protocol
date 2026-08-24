@@ -5,7 +5,7 @@
   "scripts": {
     "build": "anchor build",
     "test": "anchor test",
-    "test:integration": "tsx tests/stress-tests.ts",
+    "test:integration": "tsx scripts/e2e/stress-tests-devnet.ts",
     "deploy": "anchor deploy",
     "deploy:devnet": "anchor deploy --provider.cluster devnet",
     "deploy:mainnet": "anchor deploy --provider.cluster mainnet",
