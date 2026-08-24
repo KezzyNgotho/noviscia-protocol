@@ -922,3 +922,68 @@ Payment is settled into the position's PnL via funding_index delta:
 | DevOps | Anchor CLI / Solana CLI 2.3.13 / Railway |
 | Testing | solana-program-test (Rust) / E2E scripts (TypeScript) |
 | Token Standard | SPL Token (USDC, nvUSDC, NVSC) / Wrapped SOL |
+
+---
+
+## 13. CCP Design & Risk Framework
+
+Noviscia is a **true central counterparty (CCP)** — it interposes itself as counterparty to both sides of every trade (novation), bears default risk, nets obligations, and runs its collateral as a yield engine.
+
+### 13a. True CCP vs Custodial Clearing House
+
+| | Custodial clearing house | **True CCP (Noviscia)** |
+|---|---|---|
+| Counterparty | Buyers/sellers remain counterparties | **Noviscia interposes on both sides** (novation) |
+| Default loss | Defaulter's margin; no further claims | **CCP absorbs** via a loss waterfall |
+| Offsetting obligations | Carried bilaterally | **Collapsed instantly** (netting) |
+| Vault role | Passive backstop | **Guarantee fund + omni-pool** |
+| Collateral | Idle reserve | **Yield engine with atomic recall** |
+| Tenants | Isolated pools | **Share one guarantee fund** (moral hazard pooled) |
+
+### 13b. Loss Waterfall (6-Layer, Enforced On-Chain)
+
+```
+ 1  Trader initial margin (locked nvscUSDC shares)
+ 2  Trader cross-margin (other product collateral)
+ 3  Per-market insurance fund      (10% of liquidation penalties)
+ 4  Global default fund            (15% of fees → 2.5% of OI target)
+ 5  CCP equity                     (15% of default fund — skin in the game)
+ 6  Proportional tenant assessment (third-party pool, contractual)
+    ─ LP yield / stakers touched only if every prior layer is exhausted ─
+```
+
+### 13c. Default Fund Design
+
+- **Target:** 2.5% of aggregate open interest (floor: largest single net house exposure)
+- **Funding:** 15% of trading fees diverted until target reached; over-capacity flows back to NAV/burn
+- **Insurance:** 10% of liquidation penalties → per-market `insurance_fund_usdc`
+- **CCP equity:** 15% of default fund — dedicated reserve, not LP capital
+
+### 13d. Risk Parameters (v1)
+
+| # | Decision | Default | Rationale |
+|---|---|---|---|
+| D-1 | Mark-to-market cadence | Continuous liquidation marking · hourly funding epochs · PnL realized at close · forced settlement of underwater positions | CPMI-IOSCO continuous marking |
+| D-2 | Default-fund target | 2.5% of aggregate OI · 15% of trading fees until target | Covers ~99.9% of expected shortfall |
+| D-3 | Cross-margin haircut matrix | Same asset 1.00 · BTC↔ETH 0.85 · ETH↔SOL 0.70 · SOL↔alts 0.50 · floor: 40% of uncrossed requirement | Deribit-style with safety floor |
+| D-4 | CCP skin-in-the-game | 15% of default fund; funded by TGE + 2.5% fee slice | Industry standard 10–25% |
+| D-5 | Tenant default-fund sharing | Shared fund with risk-based per-tenant tranches; defaulter's own tranche first, then pro-rata with cap | CME/LCH member model |
+
+### 13e. Phased Build Order
+
+1. **P0 — Spec freeze:** margin model, waterfall, default-fund sizing, haircut matrix, fee re-bucket
+2. **P1 — CCP book in perps:** `house_net_position_usdc`, residual funding booking, waterfall on liquidation
+3. **P2 — Default fund:** vault ledger, fee allocation, target sizing
+4. **P3 — Netting engine:** `TraderNetPosition`, cross-margin, cross-tenant
+5. **P4 — Event markets formalize CCP:** house book + waterfall on outcomes
+6. **P5 — Tenant registry + SDK:** third-party DEX / RWA / GameFi plug in
+7. **P6 — Yield router:** external venues + atomic recall
+
+### 13f. Design Rules
+
+1. Every tenant settles into the clearing spine — `accumulate_protocol_fees`-style CPIs, not new silos
+2. Collateral is always yield-bearing — never idle capital
+3. Atomic risk — price-verification + liquidation + recall in a single transaction (JIT pattern)
+4. Unified brand, composable programs — separable Anchor programs with upgrade isolation
+5. Novation is the commitment — vault is the guarantee fund, backed by default fund + CCP equity
+6. Tenants integrate, they don't fork — permissioned registration + SDK + fee contract

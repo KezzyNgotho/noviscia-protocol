@@ -200,3 +200,66 @@ solana account $(npx tsx -e "
 #    instruction path end-to-end and reports exact before/after numbers.
 npx tsx scripts/e2e-jit-open-close-devnet.ts
 ```
+
+---
+
+## Local Development Setup
+
+### Prerequisites
+
+**macOS:**
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install node@20
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
+cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+avm install 0.31.1 && avm use 0.31.1
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt update
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
+cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+avm install 0.31.1 && avm use 0.31.1
+```
+
+Anchor version pinned via `Anchor.toml`'s `[toolchain]` section — use `0.31.1` to match exactly.
+
+### Quick Start
+
+```bash
+git clone <this repo>
+cd noviscia-protocal
+npm install
+cd app/web && npm install && cd ../..
+cp app/web/.env.example app/web/.env.local
+# Edit .env.local — set NEXT_PUBLIC_SOLANA_RPC to a premium devnet RPC
+cd app/web && npm run dev
+```
+
+That's the whole local dev loop — no database, no separate API server, no Docker required.
+
+### Testing
+
+```bash
+cargo test                    # Program tests
+cd app/web && npx tsc --noEmit  # Frontend type-check
+npx tsx scripts/e2e-jit-open-close-devnet.ts  # E2E on devnet
+```
+
+### Optional Services
+
+| Service | Purpose |
+|---------|---------|
+| `services/indexer` | Persistent fills/positions/order history |
+| `services/price-feed` | Price feed relay |
+| `services/websocket` | Realtime ingest |
+| `services/ai-orchestrator` | Optional local AI layer |
+
+Each has its own `Dockerfile` and `package.json`. None are required for core perps trading.

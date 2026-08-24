@@ -1,0 +1,16 @@
+# Railway — deploy perps indexer (Postgres-backed limit orders + fill history).
+# CLI: npm run indexer:railway
+#
+# Requires Postgres in the same Railway project (script provisions if missing).
+# Railway injects PORT — indexer binds to PORT automatically.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "services/indexer/Dockerfile"
+watchPatterns = ["services/indexer/**"]
+
+[deploy]
+restartPolicyType = "ALWAYS"
+healthcheckPath = "/health"
+healthcheckTimeout = 60
+numReplicas = 1
