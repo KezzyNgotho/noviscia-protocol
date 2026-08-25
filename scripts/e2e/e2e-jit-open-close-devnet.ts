@@ -211,12 +211,6 @@ async function main() {
   const traderNvusdc = await getOrCreateAssociatedTokenAccount(connection, trader, NVUSDC_MINT, trader.publicKey);
   const traderUsdc = await getOrCreateAssociatedTokenAccount(connection, trader, USDC_MINT, trader.publicKey);
 
-  const existing = await connection.getAccountInfo(position);
-  if (existing) {
-    console.log('Position already open for this trader/market — run close first, or use a fresh test wallet.');
-    process.exit(1);
-  }
-
   console.log('Fetching live Pyth Hermes VAA...');
   const jit1 = await fetchJitPriceArgs();
 
@@ -251,6 +245,58 @@ async function main() {
     ...nettingRemainingAccounts(trader.publicKey).map((a) => a.pubkey),
   ];
   const altAddress = await getOrCreateAlt(connection, trader, constantAccounts);
+
+  const existing = await connection.getAccountInfo(position);
+  if (existing) {
+    console.log('Position already open — closing it first before starting new cycles...');
+    const jitPre = await fetchJitPriceArgs();
+    const prePriceAcc = Keypair.generate();
+    const preCloseIx = await pt.methods
+      .closePosition(SUB_ID, jitPre.signedPricePayload, jitPre.merklePriceUpdateBytes, TREASURY_ID)
+      .accounts({
+        trader: trader.publicKey,
+        ptConfig,
+        market,
+        position,
+        collateralVault,
+        traderNvusdc: traderNvusdc.address,
+        traderUsdc: traderUsdc.address,
+        vaultConfig,
+        vaultAuthority,
+        vaultUsdc,
+        nvusdcMint: NVUSDC_MINT,
+        nvUsdcVaultProgram: NV_VAULT_PROGRAM,
+        settlementVault,
+        insuranceVault,
+        priceUpdateAccount: prePriceAcc.publicKey,
+        userVaultState: PublicKey.findProgramAddressSync(
+          [Buffer.from('user-vault-state'), ptConfig.toBuffer(), vaultConfig.toBuffer()],
+          NV_VAULT_PROGRAM
+        )[0],
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      } as any)
+      .remainingAccounts([
+        { pubkey: BURN_ENGINE_PROGRAM, isSigner: false, isWritable: false },
+        { pubkey: burnState, isSigner: false, isWritable: true },
+        { pubkey: burnVaultUsdc, isSigner: false, isWritable: true },
+        { pubkey: STAKING_MANAGER_PROGRAM_ID, isSigner: false, isWritable: false },
+        { pubkey: stakingFeePool, isSigner: false, isWritable: true },
+        { pubkey: stakingFeeVault, isSigner: false, isWritable: true },
+        { pubkey: stakeAccount, isSigner: false, isWritable: false },
+        { pubkey: jitPre.guardianSet, isSigner: false, isWritable: false },
+        { pubkey: jitPre.config, isSigner: false, isWritable: false },
+        { pubkey: jitPre.treasury, isSigner: false, isWritable: true },
+        { pubkey: DEFAULT_RECEIVER_PROGRAM_ID, isSigner: false, isWritable: false },
+        ...nettingRemainingAccounts(trader.publicKey),
+      ])
+      .instruction();
+    const preCloseSig = await sendV0(connection, trader, [prePriceAcc], [ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 }), preCloseIx], altAddress);
+    console.log('Pre-close tx:', preCloseSig);
+    const postClose = await connection.getAccountInfo(position);
+    if (postClose) { console.error('Pre-close failed — position still exists'); process.exit(1); }
+    console.log('Existing position closed successfully.');
+  }
 
   const logVaultAssets = async (label: string) => {
     const cfg: any = await (nvProgram.account as any).vaultConfig.fetch(vaultConfig);
@@ -350,25 +396,30 @@ async function main() {
         settlementVault,
         insuranceVault,
         priceUpdateAccount: priceUpdateAccount2.publicKey,
-        guardianSet: jit2.guardianSet,
-        pythConfig: jit2.config,
-        treasury: jit2.treasury,
-        pythReceiverProgram: DEFAULT_RECEIVER_PROGRAM_ID,
         userVaultState: PublicKey.findProgramAddressSync(
           [Buffer.from('user-vault-state'), ptConfig.toBuffer(), vaultConfig.toBuffer()],
           NV_VAULT_PROGRAM
         )[0],
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
-        burnEngineProgram: BURN_ENGINE_PROGRAM,
-        burnState,
-        burnVaultUsdc,
-        stakingManagerProgram: STAKING_MANAGER_PROGRAM_ID,
-        stakingFeePool,
-        stakingFeeVault,
-        stakeAccount,
       } as any)
-      .remainingAccounts(nettingRemainingAccounts(trader.publicKey))
+      .remainingAccounts([
+        // [0..7] fee-split accounts
+        { pubkey: BURN_ENGINE_PROGRAM, isSigner: false, isWritable: false },
+        { pubkey: burnState, isSigner: false, isWritable: true },
+        { pubkey: burnVaultUsdc, isSigner: false, isWritable: true },
+        { pubkey: STAKING_MANAGER_PROGRAM_ID, isSigner: false, isWritable: false },
+        { pubkey: stakingFeePool, isSigner: false, isWritable: true },
+        { pubkey: stakingFeeVault, isSigner: false, isWritable: true },
+        { pubkey: stakeAccount, isSigner: false, isWritable: false },
+        // [7..11] Pyth accounts
+        { pubkey: jit2.guardianSet, isSigner: false, isWritable: false },
+        { pubkey: jit2.config, isSigner: false, isWritable: false },
+        { pubkey: jit2.treasury, isSigner: false, isWritable: true },
+        { pubkey: DEFAULT_RECEIVER_PROGRAM_ID, isSigner: false, isWritable: false },
+        // [11..] netting-engine accounts
+        ...nettingRemainingAccounts(trader.publicKey),
+      ])
       .instruction();
 
     const closeSig = await sendV0(connection, trader, [priceUpdateAccount2], [ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 }), closeIx], altAddress);
