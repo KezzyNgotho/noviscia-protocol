@@ -16,6 +16,7 @@ members = [
     "programs/clearing-registry",
     "programs/spot-dex",
     "programs/cross-border",
+    "programs/tbill-fund",
     "mocks/mock-pyth-receiver",
 ]
 resolver = "2"
