@@ -79,6 +79,72 @@ If critical issues are discovered post-deploy:
 
 ---
 
+## Solana Network Degradation Architecture
+
+The CCP implements a four-tier defense-in-depth model for Solana network degradation events (congestion, halts, or slot-time spikes).
+
+### Network Health Tiers
+
+| Tier | Avg Slot Time | Action |
+|------|---------------|--------|
+| **NORMAL** | ≤ 600ms | Standard operation |
+| **DEGRADED** | ≤ 2s | `pause_opens` on-chain; priority fees 2×; Jito fallback ready |
+| **CRITICAL** | ≤ 5s | `pause_opens + pause_deposits`; Jito bundle submission; 4× priority fees; liquidations pre-signed |
+| **HALT** | > 5s | Emergency pause all; pre-signed fallback queue drains on recovery |
+
+### Components
+
+1. **Network Health Monitor** (`services/liquidation-keeper/src/network-health.ts`)
+   - Rolling 60-sample slot-time tracker, polled every 2s
+   - Emits state transitions to auto-pause controller and alert system
+
+2. **Auto-Pause Controller** (`services/liquidation-keeper/src/auto-pause.ts`)
+   - Sends admin instructions to `PtConfig` to set `pause_opens` / `pause_deposits`
+   - Rate-limited to one instruction per 10 slots (~4s)
+
+3. **Jito Bundle Submission** (`services/liquidation-keeper/src/jito-bundle.ts`)
+   - Atomic bundle submission during degraded conditions
+   - Falls back to standard escalated-fee submission if Jito unreachable
+
+4. **Pre-Signed Fallback Queue** (`services/liquidation-keeper/src/fallback-queue.ts`)
+   - Pre-signs liquidation transactions during degraded conditions
+   - Submits on network recovery (60s TTL, FIFO eviction, max 3 attempts)
+
+5. **Risk Engine Network-Aware Thresholds** (`services/risk-engine/src/index.ts`)
+   - Default fund utilization alert thresholds tighten during degradation:
+     - NORMAL: 80% elevated, 100% critical
+     - DEGRADED: 60% elevated, 80% critical
+     - CRITICAL: 45% elevated, 65% critical
+     - HALT: 30% elevated, 50% critical
+
+### Default Fund Sizing (Network Recovery Factor)
+
+The default fund target must account for the maximum expected recovery delay during network degradation:
+
+```
+DF_target = max(VaR_99, Expected_Shortfall_99) × (1 + recovery_factor)
+```
+
+Where `recovery_factor` estimates the additional exposure accumulated while liquidations cannot execute:
+
+- Normal conditions: `recovery_factor = 0.10` (10% buffer)
+- Historical Solana degradation events: 30s–5min average recovery
+- Worst-case scenario (full halt): up to 30min
+- Pre-signed fallback queue: eliminates gap for positions known at halt time
+- Jito bundles: provides alternative execution path during degraded conditions
+
+**Conservative sizing**: `DF_target = VaR_99 × 1.25` (25% buffer covers up to ~2hr of degraded operation without liquidation execution)
+
+### Loss Waterfall (On-Chain)
+
+```
+Insurance Fund → Default Fund → CCP Equity → Settlement Vault
+```
+
+Implemented in `programs/position-tracker/src/helpers.rs` via `pay_winner_from_waterfall`.
+
+---
+
 ## Target Timeline
 
 | Milestone | Target | Status |
