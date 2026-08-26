@@ -2977,6 +2977,7 @@ dependencies = [
  "anchor-spl",
  "solana-program",
  "spl-token",
+ "tbill-fund",
 ]
 
 [[package]]
