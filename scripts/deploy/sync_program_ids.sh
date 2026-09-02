@@ -111,14 +111,14 @@ for key, value in env_updates.items():
 env_example.write_text(env_text)
 
 lib_map = {
-    "escrow": "programs/escrow/src/lib.rs",
-    "staking-manager": "programs/staking-manager/src/lib.rs",
-    "burn-engine": "programs/burn-engine/src/lib.rs",
-    "token-nvsc": "programs/token-nvsc/src/lib.rs",
-    "yield-distributor": "programs/yield-distributor/src/lib.rs",
-  "position-tracker": "programs/position-tracker/src/lib.rs",
-  "liquidation-vault": "programs/liquidation-vault/src/lib.rs",
-  "noviscia_clearing": "programs/noviscia-clearing/src/lib.rs",
+    "escrow": "programs/later/escrow/src/lib.rs",
+    "staking-manager": "programs/active/staking-manager/src/lib.rs",
+    "burn-engine": "programs/later/burn-engine/src/lib.rs",
+    "token-nvsc": "programs/active/token-nvsc/src/lib.rs",
+    "yield-distributor": "programs/active/yield-distributor/src/lib.rs",
+  "position-tracker": "programs/active/position-tracker/src/lib.rs",
+    "liquidation-vault": "programs/active/liquidation-vault/src/lib.rs",
+    "noviscia_clearing": "programs/active/noviscia-clearing/src/lib.rs",
 }
 
 for program, relative_path in lib_map.items():

@@ -1,0 +1,13 @@
+[package]
+name = "wormhole-core-bridge-solana"
+version = "0.2.0"
+edition = "2021"
+description = "Minimal local shim of the Wormhole Core Bridge Solana SDK surface used by the vendored Pyth Solana Receiver (compiled against anchor-lang 0.31.1 / solana-program 2)"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+anchor-lang = "0.31.1"
+solana-program = "2"

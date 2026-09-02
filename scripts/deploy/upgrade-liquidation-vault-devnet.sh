@@ -14,7 +14,7 @@ mkdir -p "$TMPDIR" "$CARGO_TARGET_DIR/deploy" target/deploy
 solana config set --url devnet
 
 echo "Building liquidation-vault (TMPDIR=$TMPDIR)..."
-cargo build-sbf --manifest-path programs/liquidation-vault/Cargo.toml --tools-version v1.52 -- --locked
+cargo build-sbf --manifest-path programs/active/liquidation-vault/Cargo.toml --tools-version v1.49 -- --locked
 anchor idl build -p liquidation_vault -o target/idl/liquidation_vault.json
 
 for src in "$CARGO_TARGET_DIR/deploy/liquidation_vault.so" "$CARGO_TARGET_DIR/deploy/liquidation-vault.so"; do

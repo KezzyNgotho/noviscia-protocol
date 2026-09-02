@@ -1,7 +1,7 @@
 # Noviscia Protocol — Terms & Risk Disclosure (Devnet Beta)
 
-**Last updated:** July 7, 2026 (mechanism descriptions below corrected to match the current protocol design — legal/liability language unchanged)  
-**Scope:** Noviscia perpetuals, margin vault, insurance vault, and related smart contracts on **Solana devnet** only. Not offered to mainnet users until separately announced.
+**Last updated:** September 3, 2026 (mechanism descriptions below corrected to match the current protocol design — legal/liability language unchanged)  
+**Scope:** Noviscia CCP — perpetuals (via `position-tracker`), the `nv-usdc-vault` USDC omni-pool, NVSC/veNVSC staking, and the netting engines — and related smart contracts on **Solana devnet** only. Not offered to mainnet users until separately announced.
 
 ## Terms of use
 
@@ -35,7 +35,7 @@
 
 ### Operational
 
-- All cranks (oracle refresh, liquidation, ADL, burn, bad-debt coverage) are permissionless — no single operator controls them. However, if no participant calls them for an extended period, marks or liquidations may be delayed.
+- All cranks (oracle refresh, liquidation, ADL, bad-debt coverage) are permissionless — no single operator controls them. However, if no participant calls them for an extended period, marks or liquidations may be delayed.
 - Devnet resets, redeploys, and migrations can orphan old accounts.
 
 ## Limitation of liability

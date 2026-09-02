@@ -41,3 +41,5 @@ blob-report/
 *.tmp
 *.tmp.ts
 2ZUZf7sdhbbHgeg6QYVGXf8PNXyD1btKcKeCRqTP8mcG.json
+# Stray shell-redirect dumps
+

@@ -18,12 +18,12 @@ Canonical production URL: **https://noviscia.com**
 
 6. Redeploy. `vercel.json` redirects `www` → apex.
 
-## ai-rebalancer / indexer
+## ai-orchestrator / indexer
 
 Point callbacks at the live site:
 
 ```bash
-# services/ai-rebalancer/.env
+# services/ai-orchestrator/.env
 NOVISCIA_WEB_URL=https://noviscia.com
 ```
 

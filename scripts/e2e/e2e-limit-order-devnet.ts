@@ -61,7 +61,7 @@ function encodeMerklePriceUpdate(message: Buffer, proof: number[][]): Buffer {
   return Buffer.concat([msgLen, message, proofLen, ...proof.map((n) => Buffer.from(n))]);
 }
 async function fetchJit() {
-  const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${BTC_FEED_HEX}&encoding=base64`);
+  const res = await fetch(`https://pyth.dourolabs.app/hermes/v2/updates/price/latest?ids[]=${BTC_FEED_HEX}&encoding=base64`, { headers: { Authorization: `Bearer ${process.env.PYTH_API_KEY || ''}` } });
   const json: any = await res.json();
   const acc = parseAccumulatorUpdateData(Buffer.from(json.binary.data[0], 'base64'));
   const guardianSetIndex = getGuardianSetIndex(acc.vaa);

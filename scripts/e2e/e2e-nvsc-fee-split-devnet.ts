@@ -53,7 +53,7 @@ async function fetchRetry(url: string, attempts = 5, delayMs = 2000): Promise<Re
   throw lastErr;
 }
 async function fetchJitPriceArgs() {
-  const res = await fetchRetry(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${SOL_FEED_HEX}&encoding=base64`);
+  const res = await fetchRetry(`https://pyth.dourolabs.app/hermes/v2/updates/price/latest?ids[]=${SOL_FEED_HEX}&encoding=base64`);
   const json: any = await res.json();
   const acc = parseAccumulatorUpdateData(Buffer.from(json.binary.data[0], 'base64'));
   const guardianSetIndex = getGuardianSetIndex(acc.vaa);

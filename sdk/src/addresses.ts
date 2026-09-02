@@ -130,3 +130,22 @@ export function feeRoutingAddresses(usdcMint: PublicKey, staker?: PublicKey): Fe
       : pda([B('stake')], PROGRAM_IDS.stakingManager),
   };
 }
+
+// ─── jit-risk (time-slice marketplace) ────────────────────────────────────────
+export interface JitRiskAddresses {
+  marketplace: PublicKey;
+  usdcVault: PublicKey;
+  mmRegistration: PublicKey;
+  receipt: PublicKey;
+}
+export function jitRiskAddresses(mm: PublicKey, slot?: number | bigint): JitRiskAddresses {
+  const pid = PROGRAM_IDS.jitRisk;
+  const slotBuf = Buffer.alloc(8);
+  slotBuf.writeBigUInt64LE(BigInt(slot ?? 0));
+  return {
+    marketplace: pda([B('marketplace')], pid),
+    usdcVault: pda([B('usdc_vault')], pid),
+    mmRegistration: pda([B('mm'), mm.toBuffer()], pid),
+    receipt: slot !== undefined ? pda([B('slice'), mm.toBuffer(), slotBuf], pid) : PublicKey.default,
+  };
+}

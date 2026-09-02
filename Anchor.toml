@@ -1,6 +1,30 @@
 [toolchain]
 anchor_version = "0.31.1"
 
+[workspace]
+members = [
+    "programs/later/escrow",
+    "programs/active/nv-usdc-vault",
+    "programs/active/staking-manager",
+    "programs/active/yield-distributor",
+    "programs/active/position-tracker",
+    "programs/active/noviscia-clearing",
+    "programs/active/netting-engine",
+    "programs/active/liquidation-vault",
+    "programs/active/clearing-registry",
+    "programs/active/token-nvsc",
+    "programs/active/yield-router",
+    "programs/active/jit-risk",
+    "programs/active/sovereign-netting",
+    "programs/active/ve-nvs",
+    "programs/active/gateway-auction",
+    "programs/active/noviscia-credit-line",
+    "programs/later/burn-engine",
+    "programs/later/spot-dex",
+    "programs/later/bug-bounty",
+    "programs/later/protocol-lp-vault",
+]
+
 [features]
 resolution = true
 skip-lint = false
@@ -25,8 +49,11 @@ netting_engine = "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56"
 yield_router = "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4"
 clearing_registry = "Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo"
 spot_dex = "8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN"
-cross_border = "C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv"
-tbill_fund = "FJt5vf3dP7LtjDCuTEkpXvsn7X8Szpgd7UstzPGq7aJj"
+jit_risk = "3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh"
+sovereign_netting = "9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk"
+ve_nvs = "ACJRBrD3h7RHP9UWWffv7Hw8SLFeeJHAH5P31eHnwj5j"
+gateway_auction = "HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR"
+noviscia_credit_line = "8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg"
 
 [programs.localnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
@@ -44,8 +71,11 @@ netting_engine = "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56"
 yield_router = "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4"
 clearing_registry = "Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo"
 spot_dex = "8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN"
-cross_border = "C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv"
-tbill_fund = "FJt5vf3dP7LtjDCuTEkpXvsn7X8Szpgd7UstzPGq7aJj"
+jit_risk = "3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh"
+sovereign_netting = "9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk"
+ve_nvs = "ACJRBrD3h7RHP9UWWffv7Hw8SLFeeJHAH5P31eHnwj5j"
+gateway_auction = "HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR"
+noviscia_credit_line = "8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg"
 
 [programs.mainnet]
 # Replace ALL placeholder IDs with real mainnet deployment addresses before mainnet launch.
@@ -63,8 +93,7 @@ protocol_lp_vault = "11111111111111111111111111111111"
 bug_bounty = "11111111111111111111111111111111"
 clearing_registry = "11111111111111111111111111111111"
 spot_dex = "11111111111111111111111111111111"
-cross_border = "11111111111111111111111111111111"
-tbill_fund = "11111111111111111111111111111111"
+sovereign_netting = "11111111111111111111111111111111"
 
 [scripts]
 test = "echo 'Use cargo test --workspace for Rust tests and npm test in app/web for frontend tests'"

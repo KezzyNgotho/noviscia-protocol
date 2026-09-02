@@ -36,7 +36,7 @@ npm run build
 
 # Deploy programs
 echo "📦 Deploying programs..."
-for program in escrow lending-integrator staking-manager burn-engine token-nvsc yield-distributor; do
+for program in active/staking-manager active/yield-distributor active/token-nvsc later/escrow later/burn-engine; do
   echo "  → Deploying $program..."
   cd programs/$program
   anchor deploy --provider.cluster localnet

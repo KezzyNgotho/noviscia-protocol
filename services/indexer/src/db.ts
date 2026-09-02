@@ -326,6 +326,62 @@ export async function listActivity(
   return res.rows;
 }
 
+export async function jitRiskSummary() {
+  const { rows: premiums } = await pool.query<{ premiums: string }>(`
+    SELECT COALESCE(SUM(
+      CASE WHEN (metadata->>'premium') ~ '^[0-9]+$' THEN (metadata->>'premium')::bigint ELSE 0 END
+    ),0)::text AS premiums
+    FROM user_activity
+    WHERE program = 'jit-risk' AND event_type IN ('SliceRented','SliceReserved')
+  `);
+  const { rows: losses } = await pool.query<{ pool_absorbed: string; forfeited: string }>(`
+    SELECT
+      COALESCE(SUM(
+        CASE WHEN (metadata->>'pool_absorb') ~ '^[0-9]+$' THEN (metadata->>'pool_absorb')::bigint ELSE 0 END
+      ),0)::text AS pool_absorbed,
+      COALESCE(SUM(
+        CASE WHEN (metadata->>'forfeited') ~ '^[0-9]+$' THEN (metadata->>'forfeited')::bigint ELSE 0 END
+      ),0)::text AS forfeited
+    FROM user_activity
+    WHERE program = 'jit-risk' AND event_type IN ('SliceDefaulted','SliceSettled','SliceReaped')
+  `);
+  const { rows: sweep } = await pool.query<{ nav_cut: string; backstop_cut: string; backstop_reserve: string }>(`
+    SELECT nav_cut, backstop_cut, backstop_reserve
+    FROM (
+      SELECT (metadata->>'nav_cut')::text AS nav_cut, (metadata->>'backstop_cut')::text AS backstop_cut,
+             (metadata->>'backstop_reserve')::text AS backstop_reserve,
+             ROW_NUMBER() OVER (ORDER BY created_at DESC) AS rn
+      FROM user_activity
+      WHERE program = 'jit-risk' AND event_type = 'PremiumSwept'
+    ) t WHERE rn = 1
+  `);
+  const { rows: counts } = await pool.query<{ events: string; mms: string; rents: string; reserves: string }>(`
+    SELECT COUNT(*)::text AS events,
+           COUNT(DISTINCT wallet)::text AS mms,
+           COUNT(*) FILTER (WHERE event_type = 'SliceRented')::text AS rents,
+           COUNT(*) FILTER (WHERE event_type = 'SliceReserved')::text AS reserves
+    FROM user_activity WHERE program = 'jit-risk'
+  `);
+  const { rows: byType } = await pool.query<{ event_type: string; count: string }>(
+    `SELECT event_type, COUNT(*)::text AS count
+     FROM user_activity WHERE program = 'jit-risk'
+     GROUP BY event_type ORDER BY event_type`
+  );
+  return {
+    events: Number(counts[0].events),
+    mms: Number(counts[0].mms),
+    sliceRents: Number(counts[0].rents),
+    sliceReserves: Number(counts[0].reserves),
+    premiumsUsdc: premiums[0].premiums,
+    poolAbsorbedUsdc: losses[0].pool_absorbed,
+    forfeitedUsdc: losses[0].forfeited,
+    lastSweep: sweep[0]
+      ? { navUsdc: sweep[0].nav_cut, backstopUsdc: sweep[0].backstop_cut, backstopReserveUsdc: sweep[0].backstop_reserve }
+      : null,
+    byEventType: byType,
+  };
+}
+
 export async function insertOracleTick(row: {
   market: string;
   markPrice: bigint;
@@ -416,4 +472,95 @@ export async function verifyApiKey(key: string): Promise<{ valid: boolean; walle
     wallet: res.rows[0].wallet,
     rateLimit: res.rows[0].rate_limit_per_min,
   };
+}
+
+export type ApiKeyRow = {
+  id: number;
+  wallet: string;
+  label: string | null;
+  rate_limit_per_min: number;
+  revoked: boolean;
+  created_at: Date;
+};
+
+/** List a wallet's active (non-revoked) keys. Never returns the raw key — only metadata. */
+export async function listApiKeys(wallet: string): Promise<ApiKeyRow[]> {
+  const res = await pool.query<ApiKeyRow>(
+    `SELECT id, wallet, label, rate_limit_per_min, revoked, created_at
+     FROM api_keys WHERE wallet = $1 AND NOT revoked ORDER BY created_at DESC`,
+    [wallet]
+  );
+  return res.rows;
+}
+
+/** Revoke a key owned by the given wallet. Returns true if a key was revoked. */
+export async function revokeApiKey(wallet: string, id: number): Promise<boolean> {
+  const res = await pool.query(
+    `UPDATE api_keys SET revoked = TRUE WHERE id = $1 AND wallet = $2 AND NOT revoked`,
+    [id, wallet]
+  );
+  return (res.rowCount ?? 0) > 0;
+}
+
+const REVENUE_PROGRAMS = ['jit-risk', 'gateway-auction', 'sovereign-netting'];
+
+// Event types that represent revenue accruing to the omni-pool, keyed by program.
+// Names must match the on-chain `emit!` event names in each program's IDL.
+const REVENUE_EVENTS: Record<string, string[]> = {
+  'jit-risk': ['SliceRented', 'SliceReserved'],
+  'gateway-auction': ['AuctionSettled', 'BidAccepted'],
+  'sovereign-netting': ['NettingRentPaid'],
+};
+
+/**
+ * Aggregate protocol revenue flowing into the omni-pool, bucketed by calendar
+ * month. Buckets are filled from `user_activity` rows filtered to the revenue
+ * engines' earning events (see REVENUE_EVENTS), summed where an amount is
+ * present. `created_at` timestamps drive the month bucketing. Returns a
+ * chronological series of `{ month, gateway, jit, sovereign, total }` points
+ * (USDC, decimal units).
+ */
+export async function monthlyRevenueSeries(months = 12): Promise<
+  { month: string; gateway: number; jit: number; sovereign: number; total: number }[]
+> {
+  const out: { month: string; gateway: number; jit: number; sovereign: number; total: number }[] = [];
+
+  const { rows } = await pool.query<{ program: string; month: string; amount: string }>(
+    `SELECT program,
+            TO_CHAR(created_at, 'YYYY-MM') AS month,
+            COALESCE(SUM(amount_usdc), 0)::text AS amount
+     FROM user_activity
+     WHERE program = ANY($1)
+       AND event_type = ANY($2::text[])
+       AND amount_usdc IS NOT NULL
+       AND created_at >= NOW() - make_interval(months => $3)
+     GROUP BY program, TO_CHAR(created_at, 'YYYY-MM')
+     ORDER BY month ASC, program ASC`,
+    [REVENUE_PROGRAMS, Object.values(REVENUE_EVENTS).flat(), months]
+  );
+
+  // Map: "YYYY-MM" -> { gateway, jit, sovereign }
+  const buckets = new Map<string, { gateway: number; jit: number; sovereign: number }>();
+  for (const r of rows) {
+    let b = buckets.get(r.month);
+    if (!b) {
+      b = { gateway: 0, jit: 0, sovereign: 0 };
+      buckets.set(r.month, b);
+    }
+    const usdc = Number(r.amount) / 1_000_000;
+    if (r.program === 'jit-risk') b.jit += usdc;
+    else if (r.program === 'gateway-auction') b.gateway += usdc;
+    else if (r.program === 'sovereign-netting') b.sovereign += usdc;
+  }
+
+  // Fill every month in the window (including empty months) chronologically.
+  const now = new Date();
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const b = buckets.get(key) ?? { gateway: 0, jit: 0, sovereign: 0 };
+    out.push({ month: key, gateway: b.gateway, jit: b.jit, sovereign: b.sovereign, total: b.gateway + b.jit + b.sovereign });
+  }
+
+  return out;
 }

@@ -1,8 +1,8 @@
 # Noviscia User Guide
 
 **Audience:** Traders, LPs, tenants
-**Network:** Solana devnet (mainnet guide ships with TGE — Q1 2027)
-**Last updated:** August 24, 2026
+**Network:** Solana devnet (unaudited; mainnet soft launch Q1 2027)
+**Last updated:** September 3, 2026
 
 ---
 
@@ -83,15 +83,9 @@ Noviscia is a multi-product clearing house. Here's what's live:
 
 ### Event / outcome markets (`/trade/prediction`)
 
-Parimutuel clearing engine for binary and multi-outcome events. Compiled on-chain (`noviscia-clearing`) but not yet wired to the frontend — coming in Phase 2.
+Parimutuel clearing engine for binary and multi-outcome events. Compiled on-chain (`noviscia-clearing`) — frontend integration planned.
 
-### Spot DEX
-
-Constant-product AMM for base-pair trading. Deployed on-chain (`spot-dex`) — frontend integration planned.
-
-### Cross-border settlement
-
-Stablecoin settlement rails for cross-border transactions. Research phase — contract surface deployed (`cross-border`).
+> **Deferred** (in `programs/later/`, not live): spot-dex, escrow, protocol-lp-vault, burn-engine, bug-bounty. These programs exist in the repo but are not deployed or wired to the frontend.
 
 ---
 
@@ -99,9 +93,9 @@ Stablecoin settlement rails for cross-border transactions. Research phase — co
 
 ### nvscUSDC vault (`/earn/vault`)
 
-Deposit USDC → mint nvscUSDC shares at current NAV. NAV compounds from **all protocol revenue** — perps fees, event fees, liquidation penalties. You can deposit here and use the resulting nvscUSDC as margin, or deposit/withdraw directly from the perps page.
+Deposit USDC → mint nvscUSDC shares at current NAV. NAV compounds from **all protocol revenue** — perps fees, event fees, liquidation penalties, **sovereign netting rent**, **gateway auction premium tips**, and **JIT risk capacity premiums**. You can deposit here and use the resulting nvscUSDC as margin, or deposit/withdraw directly from the perps page.
 
-**Yield is auto-compounding.** Every fee/liquidation event increases `total_assets`, which increases share value. No reinvest step needed.
+**Yield is auto-compounding.** Every fee/liquidation event increases `total_assets`, which increases share value. No reinvest step needed. Idle pooled capital is also continuously reused as 400ms slot-scoped contingent capacity (TVV yield engine), earning 15–35% APY without moving.
 
 ### NVSC staking (`/earn/stake`)
 
@@ -112,15 +106,13 @@ Deposit USDC → mint nvscUSDC shares at current NAV. NAV compounds from **all p
 | Gold | 10,000 | 50% |
 | Platinum | 100,00 | 100% (free trading) |
 
-### Protocol LP (`/earn/lp`)
-
-LP vault share of fee revenue. Deposit into the protocol's trading pool and earn a share beyond the vault yield.
+> **Note:** The protocol-lp-vault product is deferred (`programs/later/`). Not available on devnet.
 
 ---
 
 ## How margin compounding works ("Simultaneous Double-Yield")
 
-Your nvscUSDC shares are locked per-position but never redeemed. A share's value is `total_assets / total_shares`, and `total_assets` grows from **every trader's fees across all products**. Your locked margin earns at the same rate as an un-locked deposit, for as long as your position stays open.
+Your nvscUSDC shares are locked per-position but never redeemed. A share's value is `total_assets / total_shares`, and `total_assets` grows from **every trader's fees across all products** plus the **TVV yield engine** (jit-risk capacity premiums). Your locked margin earns at the same rate as an un-locked deposit, for as long as your position stays open.
 
 ---
 

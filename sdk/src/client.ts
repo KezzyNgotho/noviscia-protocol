@@ -37,6 +37,7 @@ export class NovisciaClient {
   readonly nvUsdcVault: Program;
   readonly burnEngine: Program;
   readonly stakingManager: Program;
+  readonly jitRisk: Program;
 
   constructor(opts: NovisciaClientOptions = {}) {
     this.idlRoot = opts.idlRoot ?? resolveIdlRoot();
@@ -50,6 +51,7 @@ export class NovisciaClient {
     this.nvUsdcVault = this.program('nv_usdc_vault');
     this.burnEngine = this.program('burn_engine');
     this.stakingManager = this.program('staking_manager');
+    this.jitRisk = this.program('jit_risk');
   }
 
   private program(name: string): Program {

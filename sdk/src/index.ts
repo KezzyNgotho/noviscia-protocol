@@ -36,15 +36,15 @@ export {
   type TenantAccounts,
 } from './tenantOnboarding';
 export {
-  CrossBorderPayments,
-  STABLECOIN_RAILS,
-  deriveFxRatePda,
-  deriveSettlementPda,
-  calculateDestAmount,
-  verifyFxRateSignature,
-  type StablecoinRail,
-  type FxRate,
-  type CrossBorderIntent,
-  type SettlementRecord,
-  type SettlementStatus,
-} from './crossBorder';
+  JitRiskClient,
+  JIT_RISK_PROGRAM_ID,
+} from './jitRisk';
+export {
+  CreditLineClient,
+  CREDIT_LINE_PROGRAM_ID,
+  LP_NAV_SPLIT_BPS,
+  TREASURY_SPLIT_BPS,
+  getBorrowerUsdc,
+  type CreditLineState,
+  type BorrowerState,
+} from './creditLine';

@@ -8,13 +8,17 @@ import {
   initDb,
   insertActivity,
   insertOracleTick,
+  jitRiskSummary,
   listActiveTwapOrders,
   listActivity,
+  listApiKeys,
   listCopyFollowers,
   listCopyFollowing,
   listFills,
   listOrders,
   listPendingOrders,
+  monthlyRevenueSeries,
+  revokeApiKey,
   unfollowLeader,
   updateOrderStatus,
   verifyApiKey,
@@ -26,6 +30,23 @@ function authIngest(req: express.Request): boolean {
   if (!INGEST_SECRET) return true;
   const h = req.headers.authorization || '';
   return h === `Bearer ${INGEST_SECRET}` || req.headers['x-ingest-secret'] === INGEST_SECRET;
+}
+
+/**
+ * Resolve the wallet a request is acting as. Prefers an explicitly bound API key
+ * (x-api-key) so a key alone can scope a user's data; falls back to an explicit
+ * `wallet` query/body param when no key is presented. Returns null when neither
+ * is present or the key is invalid.
+ */
+async function resolveIdentity(req: express.Request): Promise<{ wallet: string; viaKey: boolean } | null> {
+  const apiKey = String(req.headers['x-api-key'] || '');
+  if (apiKey) {
+    const result = await verifyApiKey(apiKey);
+    if (result.valid && result.wallet) return { wallet: result.wallet, viaKey: true };
+  }
+  const wallet = String(req.query.wallet || req.body?.wallet || '');
+  if (wallet) return { wallet, viaKey: false };
+  return null;
 }
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
@@ -208,17 +229,66 @@ export async function startHttpServer(port = 8092): Promise<void> {
     res.json(result);
   });
 
+  // List a wallet's keys (metadata only — the raw key is never stored). Identity
+  // resolves from x-api-key when present, otherwise an explicit ?wallet= param.
+  app.get('/api-keys', async (req, res) => {
+    const identity = await resolveIdentity(req);
+    if (!identity) return res.status(400).json({ error: 'x-api-key or wallet required' });
+    const keys = await listApiKeys(identity.wallet);
+    res.json({ wallet: identity.wallet, keys });
+  });
+
+  // Revoke a key owned by the resolved wallet. Identity must resolve to the key's
+  // owner — scoping by x-api-key or the wallet it was minted for.
+  app.delete('/api-keys/:id', async (req, res) => {
+    const identity = await resolveIdentity(req);
+    if (!identity) return res.status(401).json({ error: 'x-api-key or wallet required' });
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'invalid key id' });
+    const ok = await revokeApiKey(identity.wallet, id);
+    if (!ok) return res.status(404).json({ error: 'key not found or already revoked' });
+    res.json({ ok: true, id });
+  });
+
   app.get('/history', async (req, res) => {
-    const wallet = String(req.query.wallet || '');
-    if (!wallet) return res.status(400).json({ error: 'wallet required' });
+    let wallet = String(req.query.wallet || '');
+    if (!wallet) {
+      const identity = await resolveIdentity(req);
+      if (!identity) return res.status(400).json({ error: 'wallet required' });
+      wallet = identity.wallet;
+    }
     const fills = await listFills(wallet, Number(req.query.limit || 50));
     res.json({ fills });
   });
 
+  // ── Jit-risk yield (TVV time-slice marketplace) ─────────────────────────────
+  app.get('/yield/jit-risk/summary', async (_req, res) => {
+    try {
+      res.json(await jitRiskSummary());
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
+    }
+  });
+
+  // ── Revenue pipeline: month-over-month series ───────────────────────────────
+  // Returns chronological monthly { month, gateway, jit, sovereign, total } (USDC).
+  app.get('/pipeline/revenue/months', async (req, res) => {
+    try {
+      const months = Math.min(Math.max(Number(req.query.months) || 12, 1), 36);
+      res.json({ months: await monthlyRevenueSeries(months) });
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
+    }
+  });
+
   // ── Unified activity log ───────────────────────────────────────────────────
   app.get('/activity', async (req, res) => {
-    const wallet = String(req.query.wallet || '');
-    if (!wallet) return res.status(400).json({ error: 'wallet required' });
+    let wallet = String(req.query.wallet || '');
+    if (!wallet) {
+      const identity = await resolveIdentity(req);
+      if (!identity) return res.status(400).json({ error: 'wallet required' });
+      wallet = identity.wallet;
+    }
     const rows = await listActivity(wallet, {
       limit: Number(req.query.limit || 100),
       program: req.query.program ? String(req.query.program) : undefined,

@@ -23,11 +23,10 @@ Sentry is initialized for client, server, and edge in `app/web/sentry.*.config.t
 |--------|--------|-----------|--------|
 | Insurance fund balance | `vault_usdc` SPL balance | <50,000 USDC | Alert + investigate |
 | Protocol vault solvency | `total_assets - total_liabilities` | <0 | CRITICAL — pause protocol |
-| Oracle staleness | Pyth price account `publish_slot` | >30s old | Alert — check keeper |
+| Oracle staleness | Pyth price account `publish_slot` | >30s old | Alert — investigate |
 | Open interest by market | Market account `long_oi + short_oi` | >80% of max_oi | Alert — cap approaching |
-| Liquidation queue depth | Liquidation vault pending count | >50 | Alert — keeper backlog |
+| Liquidation queue depth | Liquidation vault pending count | >50 | Alert — investigate |
 | Funding rate divergence | Funding rate vs mark price | >0.5% | Alert — market imbalance |
-| Keeper wallet SOL balance | RPC balance check | <0.5 SOL | Alert — refuel needed |
 | Position tracker program slot | `getSlot()` vs current | >10 slots behind | Alert — RPC issue |
 
 ### Tools to deploy
@@ -38,26 +37,17 @@ Sentry is initialized for client, server, and edge in `app/web/sentry.*.config.t
 
 2. **PagerDuty or Opsgenie** — on-call alerting
    - Critical: vault insolvency, oracle down >60s, protocol paused unexpectedly
-   - Warning: keeper balance low, OI approaching cap, Sentry error spike
+   - Warning: OI approaching cap, Sentry error spike
 
 3. **Uptime Robot or Betterstack** — endpoint health checks
-   - Monitor: RPC endpoint, websocket service, price-feed service, indexer
+   - Monitor: RPC endpoint, indexer (8092), websocket, price-feed, netting-relayer, and the web frontend
    - Check interval: 60 seconds
 
-### Keeper health checks
+### On-chain crank health
 
-The liquidation keeper (`services/liquidation-keeper/`) needs:
-- Heartbeat endpoint (HTTP 200 if keeper is running)
-- Last successful liquidation timestamp
-- Error rate (failed TX / total TX)
-- Restart policy: `restart: unless-stopped` in docker-compose
-
-### Oracle keeper health
-
-The oracle keeper (`scripts/utils/oracle-keeper-devnet.ts`) needs:
-- Monitoring of Pyth publish frequency per feed
-- Alert if any feed goes >5 minutes without update
-- Verify keeper wallet has SOL for TX fees
+Liquidations, funding settlement, oracle pulls and revenue sweeps are **permissionless** — any wallet (including the frontend) can execute them, so there is no dedicated keeper to health-check. Monitor:
+- Last liquidation / settle transaction per slot window (query `getSignaturesForAddress` on the liquidation-vault, position-tracker and pipeline programs)
+- Revenue pipeline sweep residue: gateway `tip-vault`, netting `rent-vault`, JIT premium ledger should be ≈ 0 — if a vault refills and stays non-zero, someone should sweep it
 
 ## Incident Response
 
@@ -66,7 +56,7 @@ The oracle keeper (`scripts/utils/oracle-keeper-devnet.ts`) needs:
 | Level | Description | Response time | Example |
 |-------|-------------|---------------|---------|
 | **SEV1** | Protocol funds at risk | Immediate | Vault insolvent, oracle manipulation, unauthorized admin action |
-| **SEV2** | Service degraded | <1 hour | Keeper down, oracle stale, liquidations failing |
+| **SEV2** | Service degraded | <1 hour | downtime, oracle stale, liquidations failing |
 | **SEV3** | Non-critical issue | <24 hours | UI bug, documentation error, monitoring gap |
 
 ### SEV1 Response
@@ -74,7 +64,7 @@ The oracle keeper (`scripts/utils/oracle-keeper-devnet.ts`) needs:
 1. **Pause protocol** via admin `set_pause_flags` instruction
 2. **Verify on-chain state** — check vault balance, position health, oracle prices
 3. **Notify team** in incident channel
-4. **Root cause analysis** — check recent transactions, keeper logs, Sentry errors
+4. **Root cause analysis** — check recent transactions, service logs, Sentry errors
 5. **Fix and resume** — deploy fix, unpause, monitor recovery
 
 ### SEV2 Response

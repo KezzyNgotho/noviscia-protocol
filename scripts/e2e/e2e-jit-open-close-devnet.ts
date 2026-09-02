@@ -84,7 +84,7 @@ function encodeMerklePriceUpdate(message: Buffer, proof: number[][]): Buffer {
 
 async function fetchJitPriceArgs() {
   const res = await fetch(
-    `https://hermes.pyth.network/v2/updates/price/latest?ids[]=${SOL_FEED_HEX}&encoding=base64`
+    `https://pyth.dourolabs.app/hermes/v2/updates/price/latest?ids[]=${SOL_FEED_HEX}&encoding=base64`, { headers: { Authorization: `Bearer ${process.env.PYTH_API_KEY || ''}` } }
   );
   const json: any = await res.json();
   const binary = json.binary.data[0] as string;

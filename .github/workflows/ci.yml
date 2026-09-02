@@ -34,6 +34,10 @@ jobs:
         with:
           toolchain: stable
           components: clippy, rustfmt
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
       - uses: Swatinem/rust-cache@v2
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -41,6 +45,15 @@ jobs:
         run: cargo clippy --workspace -- -D warnings || echo "Clippy warnings found — review required"
       - name: Cargo check
         run: cargo check --workspace
+      - name: Build SBF programs (required by ProgramTest e2e tests)
+        run: |
+          cargo build-sbf --tools-version v1.49 --manifest-path vendor/pyth-solano-receiver/Cargo.toml
+          for d in programs/active/*/ programs/later/*/; do
+            if [ -f "$d/Cargo.toml" ]; then
+              cargo build-sbf --tools-version v1.49 --manifest-path "$d/Cargo.toml"
+            fi
+          done
+          echo "SBF_OUT_DIR=$GITHUB_WORKSPACE/target/deploy" >> $GITHUB_ENV
       - name: Cargo test
         run: cargo test --workspace
 
@@ -140,9 +153,15 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: target/deploy
-          key: programs-${{ hashFiles('programs/*/src/**/*.rs') }}
+          key: programs-${{ hashFiles('programs/**/*.rs') }}
       - name: Build programs
-        run: cargo build-sbf --workspace
+        run: |
+          cargo build-sbf --tools-version v1.49 --manifest-path vendor/pyth-solano-receiver/Cargo.toml
+          for d in programs/active/*/ programs/later/*/; do
+            if [ -f "$d/Cargo.toml" ]; then
+              cargo build-sbf --tools-version v1.49 --manifest-path "$d/Cargo.toml"
+            fi
+          done
 
   build-web:
     runs-on: ubuntu-latest

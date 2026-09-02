@@ -63,14 +63,14 @@ function encodeMerklePriceUpdate(message: Buffer, proof: number[][]): Buffer {
 }
 
 async function fetchJitPriceArgs() {
-  const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${SOL_FEED_HEX}&encoding=base64`);
+  const res = await fetch(`https://pyth.dourolabs.app/hermes/v2/updates/price/latest?ids[]=${SOL_FEED_HEX}&encoding=base64`, { headers: { Authorization: `Bearer ${process.env.PYTH_API_KEY || ''}` } });
   const json: any = await res.json();
   const binary = json.binary.data[0];
   const accumulatorUpdateData = parseAccumulatorUpdateData(Buffer.from(binary, 'base64'));
   const guardianSetIndex = getGuardianSetIndex(accumulatorUpdateData.vaa);
   const trimmedVaa = trimSignatures(accumulatorUpdateData.vaa);
   const update = accumulatorUpdateData.updates[0];
-  const priceRes = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${SOL_FEED_HEX}`);
+  const priceRes = await fetch(`https://pyth.dourolabs.app/hermes/v2/updates/price/latest?ids[]=${SOL_FEED_HEX}`, { headers: { Authorization: `Bearer ${process.env.PYTH_API_KEY || ''}` } });
   const priceJson: any = await priceRes.json();
   const priceRaw = BigInt(priceJson.parsed[0].price.price);
   const expo = priceJson.parsed[0].price.expo;

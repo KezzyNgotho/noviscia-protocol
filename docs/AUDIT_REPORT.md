@@ -1,7 +1,7 @@
 # Noviscia Protocol — Security Audit Report
 
 **Status:** Pre-audit — independent review not yet completed  
-**Last updated:** July 2026
+**Last updated:** September 3, 2026
 
 ---
 
@@ -15,17 +15,27 @@ This document will be updated with the full audit report upon completion.
 
 ## Audit scope (planned)
 
-The following programs are in-scope for the planned pre-mainnet audit:
+The following **live programs** (`programs/active/`) are in-scope for the planned pre-mainnet audit. Parked programs in `programs/later/` (`bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`) are **deferred / out of scope**.
 
 | Program | Description |
 |---------|-------------|
 | `position_tracker` | JIT Pyth pull-oracle perp engine — open/close/liquidate, peer-to-peer funding, insurance fund, trading fees, TP/SL, limit/TWAP orders |
 | `nv_usdc_vault` | Single share-based USDC vault — NAV accrual, fee/liquidation-revenue sweep |
-| `protocol_lp_vault` | Trading-fee LP vault, share-based NAV |
+| `netting_engine` | Multilateral netting + CCP default-fund sizing |
+| `sovereign_netting` | Slot-scoped contingent capacity / netting rent revenue engine |
+| `jit_risk` | JIT risk engine, slice rental + premium sweep revenue |
+| `gateway_auction` | Auction engine, premium-tip revenue |
+| `noviscia_clearing` | CCP clearing/novation layer |
+| `clearing_registry` | Clearing/venue registry |
+| `noviscia_credit_line` | Credit-line engine |
 | `staking_manager` | NVSC staking, governance proposals, fee-tier discounts |
-| `burn_engine` | Protocol fee accumulation, permissionless burn trigger |
+| `ve_nvs` | veNVSC governance/weighted voting |
+| `yield_router` | TVV yield engine — idle-capital routing/recall |
+| `yield_distributor` | Yield distribution |
+| `token_nvsc` | NVSC token |
+| `liquidation_vault` | Liquidation vault |
 
-Out of scope for v1 audit: `token_nvsc`, `yield_distributor`, `noviscia_clearing` (prediction market — stubbed), `escrow` (legacy — not part of the perps margin path; see root `README.md`).
+Out of scope for v1 audit (parked/deferred): `bug_bounty`, `burn_engine`, `escrow`, `protocol_lp_vault`, `spot_dex`. The deleted `cross-border` and `tbill-fund` programs (and the deleted `lending-integrator`) are gone from the codebase and out of scope.
 
 ---
 
@@ -58,7 +68,7 @@ A live misconfiguration was found and fixed 2026-07-06: ETH's `max_leverage_bps`
 
 ## Pre-audit checklist
 
-- [x] All programs compile cleanly (`cargo build-sbf`)
+- [x] All programs compile cleanly (`cargo build-sbf --tools-version v1.49` per manifest)
 - [x] Rust workspace dependency graph clean (no lending-integrator or external venue CPI — `lending_integrator` deleted, external lending retired from `nv-usdc-vault`)
 - [x] TypeScript SDK compiles cleanly (`tsc --noEmit`)
 - [x] Key e2e flows proven live on devnet, 2026-07-06: open/close + trading-fee NAV increase; peer-to-peer funding settled exact against a hand-computed expectation; liquidation 20/80 split + insurance-fund carve-out (both NAV and `insurance_fund_usdc` deltas verified exact)
@@ -81,9 +91,9 @@ A live misconfiguration was found and fixed 2026-07-06: ETH's `max_leverage_bps`
 
 ---
 
-## Bug bounty
+## Responsible disclosure
 
-A responsible disclosure process is in place during devnet. See [`BUG_BOUNTY.md`](BUG_BOUNTY.md) for scope and reward structure. Critical findings during devnet beta should be reported privately before public disclosure.
+A responsible-disclosure process is in place during devnet. The dedicated bug-bounty program (`programs/later/bug-bounty`) is **deferred** — not live on devnet. Critical findings during devnet beta should be reported privately to `security@noviscia.com` before public disclosure.
 
 ---
 

@@ -1,20 +1,32 @@
 # Security Audit Preparation Package
 
-**Last updated:** August 24, 2026
+**Last updated:** September 3, 2026
 
 Use this checklist when engaging a third-party auditor (target: pre-mainnet Q1 2027).
 
 ## Programs in scope
 
+The scope below reflects the **15 live programs** in `programs/active/`. Parked programs in `programs/later/` (`bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`) are **deferred / out of scope** for the live-protocol audit.
+
 | Program | Path | Priority |
 |---------|------|----------|
-| position-tracker | `programs/position-tracker/src/lib.rs`, `state.rs` | P0 |
-| nv-usdc-vault | `programs/nv-usdc-vault/src/lib.rs` | P0 |
-| protocol-lp-vault | `programs/protocol-lp-vault/src/lib.rs` | P1 |
-| staking-manager | `programs/staking-manager/src/lib.rs` | P1 |
-| burn-engine | `programs/burn-engine/src/lib.rs` | P1 |
+| position-tracker | `programs/active/position-tracker/src/lib.rs`, `state.rs` | P0 |
+| nv-usdc-vault | `programs/active/nv-usdc-vault/src/lib.rs` | P0 |
+| netting-engine | `programs/active/netting-engine/src` | P0 |
+| sovereign-netting | `programs/active/sovereign-netting/src` | P0 |
+| jit-risk | `programs/active/jit-risk/src` | P0 |
+| gateway-auction | `programs/active/gateway-auction/src` | P0 |
+| noviscia-clearing | `programs/active/noviscia-clearing/src` | P1 |
+| clearing-registry | `programs/active/clearing-registry/src` | P1 |
+| noviscia-credit-line | `programs/active/noviscia-credit-line/src` | P1 |
+| staking-manager | `programs/active/staking-manager/src/lib.rs` | P1 |
+| ve-nvs | `programs/active/ve-nvs/src` | P1 |
+| yield-router | `programs/active/yield-router/src` | P1 |
+| yield-distributor | `programs/active/yield-distributor/src` | P1 |
+| token-nvsc | `programs/active/token-nvsc/src` | P1 |
+| liquidation-vault | `programs/active/liquidation-vault/src` | P1 |
 
-`escrow`, `lending-integrator`, `liquidation-vault` are **out of scope for the perps engine specifically** — `lending-integrator` has been deleted from the codebase entirely; `escrow` and `liquidation-vault` are legacy surfaces not in the current perps margin/liquidation path (see root `README.md`). Include them only if auditing the non-perps yield/lending product surfaces separately.
+**Out of scope:** `lending-integrator` has been deleted from the codebase entirely. Parked programs (`bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`) are deferred — include them only when they move to `programs/active/`. `escrow` and `liquidation-vault` are not part of the current JIT perps margin/liquidation path (see root `README.md`); `liquidation-vault` is included above as it is a live active program.
 
 ## Known design choices (not bugs)
 
@@ -28,14 +40,13 @@ Use this checklist when engaging a third-party auditor (target: pre-mainnet Q1 2
 
 ```bash
 cargo test
-npx tsx scripts/e2e-jit-open-close-devnet.ts
-npx tsx scripts/e2e-tp-sl-devnet.ts
-npx tsx scripts/e2e-limit-order-devnet.ts
-npx tsx scripts/e2e-funding-devnet.ts
-npx tsx scripts/e2e-liquidation-devnet.ts
+npx tsx scripts/e2e/e2e-jit-open-close-devnet.ts
+npx tsx scripts/e2e/e2e-tp-sl-devnet.ts
+npx tsx scripts/e2e/e2e-limit-order-devnet.ts
+npx tsx scripts/e2e/e2e-funding-devnet.ts
 ```
 
-Each `e2e-*-devnet.ts` script is a live proof against real devnet state, not a mock — auditors should be able to run these directly and cross-check the printed before/after numbers against the on-chain program logic.
+Each `scripts/e2e/e2e-*-devnet.ts` script is a live proof against real devnet state, not a mock — auditors should be able to run these directly and cross-check the printed before/after numbers against the on-chain program logic.
 
 ## Off-chain scope
 

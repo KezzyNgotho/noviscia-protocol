@@ -118,50 +118,6 @@ services:
       - indexer
     restart: unless-stopped
 
-  # Liquidation Keeper — HF position watch, JIT pricing, atomic-recall liquidations
-  liquidation-keeper:
-    build:
-      context: ./services/liquidation-keeper
-      dockerfile: Dockerfile
-    container_name: novisca-liquidation-keeper
-    environment:
-      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://api.devnet.solana.com}
-      EXECUTOR_KEYPAIR_PATH: /keys/new-id.json
-      WS_INGEST_URL: http://websocket:8080
-      WS_INGEST_SECRET: ${WS_INGEST_SECRET:-}
-      KEEPER_ENABLE_ATOMIC_RECALL: "true"
-      KEEPER_ENABLE_FUNDING: "true"
-      POLL_INTERVAL_MS: ${KEEPER_POLL_MS:-15000}
-      HEALTH_PORT: "8081"
-      CIRCUIT_BREAKER_THRESHOLD: ${KEEPER_CIRCUIT_BREAKER:-5}
-    ports:
-      - "8081:8081"
-    volumes:
-      - ${KEYPAIR_DIR:-~/.config/solana}:/keys:ro
-      - ./target/idl:/target/idl:ro
-    depends_on:
-      - websocket
-    restart: unless-stopped
-
-  # Risk Engine — VaR / Expected-Shortfall analytics over the netting house book
-  risk-engine:
-    build:
-      context: ./services/risk-engine
-      dockerfile: Dockerfile
-    container_name: novisca-risk-engine
-    environment:
-      SOLANA_RPC_DEVNET: ${SOLANA_RPC_DEVNET:-https://api.devnet.solana.com}
-      WS_INGEST_URL: http://websocket:8080
-      WS_INGEST_SECRET: ${WS_INGEST_SECRET:-}
-      RISK_PORT: 8095
-    ports:
-      - "8095:8095"
-    volumes:
-      - ./target/idl:/target/idl:ro
-    depends_on:
-      - websocket
-    restart: unless-stopped
-
   # Netting Relayer — permissionless consolidate crank: keeps every trader's
   # NettingSet.margin_required_usdc and the house-book default-fund target live
   # so the netting-engine risk policy actually gates position-tracker opens.

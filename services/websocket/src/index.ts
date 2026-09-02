@@ -17,13 +17,51 @@ export class NoviscaWebSocketServer extends EventEmitter {
   private server: http.Server;
   private port: number;
   private clients: Map<string, Set<WebSocket>> = new Map(); // channel -> clients
+  private indexerUrl: string;
 
   constructor(port: number = 8080) {
     super();
     this.port = port;
+    this.indexerUrl =
+      process.env.INDEXER_URL || process.env.NOVISCIA_INDEXER_URL || 'http://localhost:8092';
     this.server = http.createServer((req, res) => this.handleHttp(req, res));
     this.wss = new WebSocket.Server({ server: this.server });
     this.setupConnectionHandler();
+  }
+
+  /** Channels that expose a single user's private data and therefore require ownership proof. */
+  private isPrivateChannel(channel: string): boolean {
+    return (
+      channel.startsWith('positions:') ||
+      channel.startsWith('yields:') ||
+      channel.startsWith('alerts:')
+    );
+  }
+
+  /** Regex to extract the wallet handle from a private channel name. */
+  private walletFromChannel(channel: string): string | null {
+    const m = channel.match(/^(?:positions|yields|alerts):(.+)$/);
+    return m ? m[1] : null;
+  }
+
+  /**
+   * Verify an API key against the Noviscia indexer and return the wallet it is
+   * bound to, or null when the key is absent or invalid.
+   */
+  private async verifyKey(apiKey: string): Promise<string | null> {
+    if (!apiKey || !this.indexerUrl) return null;
+    try {
+      const res = await fetch(`${this.indexerUrl}/api-keys/verify`, {
+        method: 'GET',
+        headers: { 'x-api-key': apiKey },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { valid?: boolean; wallet?: string };
+      return data.valid && data.wallet ? data.wallet : null;
+    } catch {
+      return null;
+    }
   }
 
   /** Internal ingest for keeper AI liquidation alerts */
@@ -118,14 +156,37 @@ export class NoviscaWebSocketServer extends EventEmitter {
     const { action, channel } = message;
 
     if (action === 'subscribe') {
-      this.subscribeClient(ws, channel);
-      ws.send(JSON.stringify({ success: true, channel, action: 'subscribed' }));
+      this.handleSubscribe(ws, channel, message.apiKey as string | undefined);
     } else if (action === 'unsubscribe') {
       this.unsubscribeClient(ws, channel);
       ws.send(JSON.stringify({ success: true, channel, action: 'unsubscribed' }));
     } else {
       ws.send(JSON.stringify({ error: 'Unknown action' }));
     }
+  }
+
+  /** Subscribe to a channel, enforcing ownership for private wallet channels. */
+  private async handleSubscribe(
+    ws: WebSocket,
+    channel: string,
+    apiKey?: string
+  ): Promise<void> {
+    if (this.isPrivateChannel(channel)) {
+      const wallet = this.walletFromChannel(channel);
+      const boundWallet = await this.verifyKey(apiKey ?? '');
+      if (!wallet || !boundWallet || wallet !== boundWallet) {
+        ws.send(
+          JSON.stringify({
+            error: 'unauthorized',
+            message:
+              'Private wallet channels require an API key bound to that wallet. Send { action: "subscribe", channel, apiKey }.',
+          })
+        );
+        return;
+      }
+    }
+    this.subscribeClient(ws, channel);
+    ws.send(JSON.stringify({ success: true, channel, action: 'subscribed' }));
   }
 
   /**

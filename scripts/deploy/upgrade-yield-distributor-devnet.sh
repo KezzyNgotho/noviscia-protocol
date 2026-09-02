@@ -19,7 +19,7 @@ mkdir -p "$TMPDIR" "$CARGO_TARGET_DIR/deploy" target/deploy
 solana config set --url devnet
 
 echo "Building yield-distributor (TMPDIR=$TMPDIR)..."
-cargo build-sbf --manifest-path programs/yield-distributor/Cargo.toml --tools-version v1.52 -- --locked
+cargo build-sbf --manifest-path programs/active/yield-distributor/Cargo.toml --tools-version v1.49 -- --locked
 anchor idl build -p yield_distributor -o target/idl/yield_distributor.json
 
 for src in "$CARGO_TARGET_DIR/deploy/yield_distributor.so" "$CARGO_TARGET_DIR/deploy/yield-distributor.so"; do

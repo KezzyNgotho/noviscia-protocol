@@ -84,8 +84,8 @@ export class PriceFeedService {
     const hex = feedHex[symbol];
     if (!hex) return null;
     try {
-      const url = `https://hermes.pyth.network/v2/updates/price/latest?ids[]=${hex}&parsed=true`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      const url = `https://pyth.dourolabs.app/hermes/v2/updates/price/latest?ids[]=${hex}&parsed=true`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000), headers: { Authorization: `Bearer ${process.env.PYTH_API_KEY || ''}` } });
       if (!res.ok) return null;
       const json = (await res.json()) as { parsed?: { price?: { price: string; conf: string; expo: number } }[] };
       const p = json.parsed?.[0]?.price;

@@ -1,7 +1,7 @@
 # Mainnet Readiness Checklist
 
 **Status:** Pre-mainnet · Devnet-only
-**Last updated:** 2026-08-24
+**Last updated:** 2026-09-03
 
 ---
 
@@ -10,12 +10,12 @@
 ### Security
 - [ ] External audit by reputable firm (OtterSec, Neodyme, or Zellic)
 - [ ] All P0/P1 audit findings resolved
-- [ ] Bug bounty program live (Immunefi or equivalent)
+- [ ] Bug bounty program live (Immunefi or equivalent) — deferred, planned post-audit (`programs/later/bug-bounty`)
 - [ ] Admin key rotated to Squads multisig (M-of-N)
 - [ ] No hardcoded keys or secrets in source code
 
 ### Smart Contracts
-- [ ] All 16 programs compiled with matching Anchor version
+- [ ] All on-chain programs compiled with matching Anchor version
 - [ ] Program binary hashes recorded before deploy
 - [ ] Upgrade authority transferred to multisig
 - [ ] Emergency pause mechanism tested
@@ -39,9 +39,10 @@
 
 ### Operational
 - [ ] Incident response runbook reviewed and tested
-- [ ] Keeper bots run on dedicated infrastructure (Railway/Fly/AWS)
+- [ ] Netting-relayer runs on dedicated infrastructure (keeps netting floors + default-fund target live)
+- [ ] Permissionless crank readiness verified (liquidations, funding, revenue sweeps — no dedicated keeper estate required)
 - [ ] Oracle price feed: Pyth (JIT pull-oracle) verified on mainnet
-- [ ] Liquidation bot tested under load
+- [ ] Liquidation path tested under load (permissionless `liquidate` on `position-tracker`)
 - [ ] Insurance fund seeded with target TVL percentage
 
 ### Compliance
@@ -59,7 +60,7 @@
 3. **Register IDLs** — `anchor idl upgrade` for each program on mainnet
 4. **Initialize vaults** — Call `initialize_vault_config` with mainnet USDC mint (`EPjFWa...`)
 5. **Seed insurance fund** — Transfer initial USDC to insurance vault
-6. **Configure keeper** — Update RPC endpoint, keypair, and program IDs in keeper config
+6. **Deploy netting-relayer** — Update RPC endpoint, keypair, and poll interval in `docker-compose.yml` / service config
 7. **Deploy frontend** — Vercel production branch, env vars verified
 8. **Smoke test** — Open/close small position on mainnet with real USDC
 9. **Monitor** — Watch error rates, liquidation events, oracle staleness for 24h
@@ -73,7 +74,7 @@ If critical issues are discovered post-deploy:
 
 1. **Pause** — Call emergency pause on affected programs (if multisig supports it)
 2. **Revert** — Deploy previous program version using `solana program deploy --force`
-3. **Halt keeper** — Stop all automated trading/liquidation bots
+3. **Halt relayers** — Stop the netting-relayer and any automated cranks
 4. **Communicate** — Status page update within 15 minutes
 5. **Investigate** — Root cause analysis before any re-deploy
 
@@ -89,33 +90,17 @@ The CCP implements a four-tier defense-in-depth model for Solana network degrada
 |------|---------------|--------|
 | **NORMAL** | ≤ 600ms | Standard operation |
 | **DEGRADED** | ≤ 2s | `pause_opens` on-chain; priority fees 2×; Jito fallback ready |
-| **CRITICAL** | ≤ 5s | `pause_opens + pause_deposits`; Jito bundle submission; 4× priority fees; liquidations pre-signed |
-| **HALT** | > 5s | Emergency pause all; pre-signed fallback queue drains on recovery |
+| **CRITICAL** | ≤ 5s | `pause_opens + pause_deposits`; Jito bundle submission; 4× priority fees; liquidations escalated |
+| **HALT** | > 5s | Emergency pause all; cranks resume on recovery |
 
 ### Components
 
-1. **Network Health Monitor** (`services/liquidation-keeper/src/network-health.ts`)
-   - Rolling 60-sample slot-time tracker, polled every 2s
-   - Emits state transitions to auto-pause controller and alert system
+Liquidation, funding settlement, oracle pulls and revenue sweeps are **permissionless** on-chain — any wallet can execute them, so the frontend doubles as the crank and no dedicated keeper estate is required.
 
-2. **Auto-Pause Controller** (`services/liquidation-keeper/src/auto-pause.ts`)
-   - Sends admin instructions to `PtConfig` to set `pause_opens` / `pause_deposits`
-   - Rate-limited to one instruction per 10 slots (~4s)
-
-3. **Jito Bundle Submission** (`services/liquidation-keeper/src/jito-bundle.ts`)
-   - Atomic bundle submission during degraded conditions
-   - Falls back to standard escalated-fee submission if Jito unreachable
-
-4. **Pre-Signed Fallback Queue** (`services/liquidation-keeper/src/fallback-queue.ts`)
-   - Pre-signs liquidation transactions during degraded conditions
-   - Submits on network recovery (60s TTL, FIFO eviction, max 3 attempts)
-
-5. **Risk Engine Network-Aware Thresholds** (`services/risk-engine/src/index.ts`)
-   - Default fund utilization alert thresholds tighten during degradation:
-     - NORMAL: 80% elevated, 100% critical
-     - DEGRADED: 60% elevated, 80% critical
-     - CRITICAL: 45% elevated, 65% critical
-     - HALT: 30% elevated, 50% critical
+1. **Protocol safety rails** — `pause_opens` / `pause_deposits` flags live in `PtConfig` and are settable immediately by admin (no keeper path — direct instructions)
+2. **Permissionless liquidation/funding** — any caller runs the liquidation-vault / position-tracker cranks; the first signer in a slot wins
+3. **Revenue pipeline (permissionless sweeps)** — gateway `settle`, netting `sweep_netting_rent`, JIT `sweep_premiums` are unwalled Calls that anyone (or the earn UI) can execute
+4. **Netting relayer** — keeps `NettingSet.margin_required_usdc` and the house-book default-fund target live so the netting policy gates position opens
 
 ### Default Fund Sizing (Network Recovery Factor)
 
@@ -141,7 +126,7 @@ Where `recovery_factor` estimates the additional exposure accumulated while liqu
 Insurance Fund → Default Fund → CCP Equity → Settlement Vault
 ```
 
-Implemented in `programs/position-tracker/src/helpers.rs` via `pay_winner_from_waterfall`.
+Implemented in `programs/active/position-tracker/src/helpers.rs` via `pay_winner_from_waterfall`.
 
 ---
 
@@ -151,7 +136,7 @@ Implemented in `programs/position-tracker/src/helpers.rs` via `pay_winner_from_w
 |-----------|--------|--------|
 | Audit engagement | Q3 2026 | Not started |
 | Audit complete | Q4 2026 | Not started |
-| Bug bounty live | Q4 2026 | Not started |
+| Bug bounty live (deferred, post-audit) | Q4 2026 | Not started |
 | Multisig deployment | Q4 2026 | Not started |
 | Mainnet soft launch | Q1 2027 | Not started |
 | Mainnet public launch | Q1 2027 | Not started |

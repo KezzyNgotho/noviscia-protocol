@@ -24,6 +24,11 @@ const PROGRAMS: ProgramMeta[] = [
   { name: 'yield-distributor', programId: process.env.NEXT_PUBLIC_YIELD_DISTRIBUTOR_PROGRAM_ID || 'YieldXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', idlName: 'yield_distributor' },
   { name: 'prediction-market', programId: process.env.NEXT_PUBLIC_PREDICTION_MARKET_PROGRAM_ID  || 'GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe', idlName: 'prediction_market' },
   { name: 'token-nvsc',        programId: process.env.NEXT_PUBLIC_NVSC_MINT                     || 'HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT', idlName: 'token_nvsc' },
+  { name: 'jit-risk',          programId: process.env.NEXT_PUBLIC_JIT_RISK_PROGRAM_ID            || '3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh', idlName: 'jit_risk' },
+  // Revenue engines: gateway-auction + sovereign-netting (matches jit-risk above).
+  // These feed the omni-pool revenue chart. IDL names are the target/idl filenames.
+  { name: 'gateway-auction',   programId: process.env.NEXT_PUBLIC_GATEWAY_AUCTION_PROGRAM_ID      || 'HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR', idlName: 'gateway_auction' },
+  { name: 'sovereign-netting', programId: process.env.NEXT_PUBLIC_SOVEREIGN_NETTING_PROGRAM_ID    || '9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk', idlName: 'sovereign_netting' },
 ];
 
 export interface ParsedEvent {
@@ -74,6 +79,15 @@ function toPlain(value: unknown): unknown {
   if (typeof value === 'bigint') return value.toString();
   if (value instanceof PublicKey) return value.toBase58();
   if (Buffer.isBuffer(value)) return value.toString('hex');
+  // u64/i64 in Anchor events deserialize to BN — serialize as decimal string
+  // so consumers can read numeric fields (premium, collateral, …) directly.
+  if (
+    typeof value === 'object' &&
+    Array.isArray((value as { words?: unknown }).words) &&
+    typeof (value as { toString: () => string }).toString === 'function'
+  ) {
+    return (value as { toString: (base?: number) => string }).toString(10);
+  }
   if (Array.isArray(value)) return value.map(toPlain);
   if (typeof value === 'object') {
     const out: Record<string, unknown> = {};
@@ -86,7 +100,7 @@ function toPlain(value: unknown): unknown {
 }
 
 function extractWallet(data: Record<string, unknown>): string | null {
-  for (const key of ['user', 'wallet', 'authority', 'keeper']) {
+  for (const key of ['user', 'wallet', 'authority', 'keeper', 'mm', 'winner', 'bidder', 'payer']) {
     const v = data[key];
     if (v instanceof PublicKey) return v.toBase58();
     if (typeof v === 'string' && v.length >= 32) return v;
@@ -101,12 +115,27 @@ function extractMarket(data: Record<string, unknown>): string | null {
 }
 
 function extractAmountUsdc(data: Record<string, unknown>): bigint | null {
-  for (const key of ['amount_usdc', 'amountUsdc', 'collateral_usdc', 'collateralUsdc',
-                     'notional_usdc', 'notionalUsdc', 'amount', 'usdc_amount']) {
+  // Revenue-carrying fields first (premium/tip/rent are the value flowing to the
+  // omni-pool), then generic capacity fields. Order matters: for SliceRented we
+  // want `premium` (earnings), not `amount_usdc` (risk capacity).
+  const keys = [
+    'premium', 'nav_cut', 'tip', 'premium_tips', 'amount_base', 'rent',
+    'amount_usdc', 'amountUsdc', 'collateral_usdc', 'collateralUsdc',
+    'notional_usdc', 'notionalUsdc', 'amount', 'usdc_amount',
+  ];
+  for (const key of keys) {
     const v = data[key];
     if (typeof v === 'bigint') return v;
     if (typeof v === 'number') return BigInt(v);
     if (typeof v === 'string') { try { return BigInt(v); } catch { /* skip */ } }
+    // Anchor decodes u64/i64 to a BN instance — normalize to bigint.
+    if (
+      typeof v === 'object' && v !== null &&
+      typeof (v as { toString?: unknown }).toString === 'function'
+    ) {
+      const s = (v as { toString: (radix?: number) => string }).toString(10);
+      if (/^\d+$/.test(s)) { try { return BigInt(s); } catch { /* skip */ } }
+    }
   }
   return null;
 }
@@ -117,6 +146,10 @@ function extractPnlUsdc(data: Record<string, unknown>): bigint | null {
     if (typeof v === 'bigint') return v;
     if (typeof v === 'number') return BigInt(v);
     if (typeof v === 'string') { try { return BigInt(v); } catch { /* skip */ } }
+    if (typeof v === 'object' && v !== null && typeof (v as { toString?: unknown }).toString === 'function') {
+      const s = (v as { toString: (radix?: number) => string }).toString(10);
+      if (/^-?\d+$/.test(s)) { try { return BigInt(s); } catch { /* skip */ } }
+    }
   }
   return null;
 }

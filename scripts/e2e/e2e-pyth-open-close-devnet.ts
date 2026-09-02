@@ -63,7 +63,7 @@ const STAKING_MANAGER_PROGRAM = new PublicKey('HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM
 const BURN_VAULT_USDC = new PublicKey('5gXoi3aqnomJiCZkE6ta5T7tJKNvW9GfNrfHEncsLnna');
 
 const SOL_FEED_HEX = 'ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d';
-const HERMES_URL = 'https://hermes.pyth.network/v2/updates/price/latest';
+const HERMES_URL = 'https://pyth.dourolabs.app/hermes/v2/updates/price/latest';
 
 const TREASURY_ID = 0;
 const SUB_ID = Number(process.env.PYTH_E2E_SUB_ID ?? 0);
@@ -259,7 +259,7 @@ async function getOrCreateAlt(
  * (`buildTxs` re-fetches the price so every retry carries a brand-new VAA and
  * a brand-new ephemeral price_update_account). Checks the ACTUAL on-chain
  * result — a tx can submit cleanly yet revert (e.g. OracleStale), which looks
- * like success unless you inspect `.err` (per e2e-liquidate-devnet.ts).
+ * like success unless you inspect `.err` (as the devnet e2e scripts do).
  */
 async function sendFeedTxWithRetry(
   connection: Connection,

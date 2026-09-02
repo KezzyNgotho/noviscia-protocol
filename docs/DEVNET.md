@@ -1,6 +1,6 @@
 # Devnet Runbook — Noviscia Protocol
 
-**Last updated:** August 24, 2026
+**Last updated:** September 3, 2026
 **Network:** Solana devnet
 **Deployer wallet:** `pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA`
 **Keypair path:** `~/.config/solana/new-id.json`
@@ -13,20 +13,21 @@
 |---------|----|
 | `position_tracker` | `6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws` |
 | `nv_usdc_vault` | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` |
-| `protocol_lp_vault` | `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd` |
-| `escrow` | `2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ` (legacy — not part of the perps margin path) |
-| `burn_engine` | `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` |
 | `staking_manager` | `HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb` |
 | `yield_distributor` | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |
 | `liquidation_vault` | `Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz` |
 | `token_nvsc` | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
-| `bug_bounty` | `A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK` |
 | `netting_engine` | `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56` |
 | `yield_router` | `FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4` |
 | `clearing_registry` | `Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo` |
-| `spot_dex` | `8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN` |
-| `cross_border` | `C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv` |
-| `noviscia_clearing` | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` (prediction market — stubbed) |
+| `jit_risk` | `3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh` |
+| `sovereign_netting` | `9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk` |
+| `ve_nvs` | `ACJRBrD3h7RHP9UWWffv7Hw8SLFeeJHAH5P31eHnwj5j` |
+| `gateway_auction` | `HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR` |
+| `noviscia_credit_line` | `8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg` |
+| `noviscia_clearing` | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` |
+
+> **Parked / not live** (in `programs/later/` — deferred, not deployed as live): `bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`. The deleted programs `cross-border` and `tbill-fund` (and the deleted services `liquidation-keeper`, `risk-engine`, `ai-rebalancer`, `mock-pyth-receiver`) are gone from the codebase and are **not** part of the current state.
 
 **Key devnet mints:**
 | Token | Mint |
@@ -41,6 +42,8 @@
 
 | Feature | Status | Notes |
 |---------|--------|-------|
+| One balance sheet (`nv-usdc-vault` omni-pool, mints `nvscUSDC`) | **Live** | Single pooled collateral — the sole balance sheet for both engines |
+| CCP core (clearing/netting/risk) | **Live** | `noviscia-clearing`, `netting-engine` (sovereign-netting), `jit-risk`, `clearing-registry` |
 | JIT Pyth pull-oracle perps | **Live** | 22 registered markets (BTC, ETH, SOL, DOGE, LINK, AVAX, RENDER, WIF, JUP, RAY, TRUMP, PNUT, BONK, PEPE, OP, ARB, PYTH, JTO, ORCA, POPCAT, MEW, HNT) |
 | Live-NAV margin (collateral = locked nvscUSDC shares, never redeemed while open) | **Live** | "Simultaneous Double-Yield" — see root `README.md` |
 | Peer-to-peer funding settlement | **Live** | Verified exact against a hand-computed expectation, 2026-07-06 |
@@ -50,10 +53,10 @@
 | Take-profit / stop-loss, resting limit orders | **Live** | `/trade/triggers` |
 | Any-collateral trading (Jupiter swap → margin) | **Wired, mainnet-only** | Devnet has no Jupiter liquidity to route through |
 | nvscUSDC vault deposit / withdraw | **Live** | |
-| NVSC staking tiers | **Live** | |
-| Collateral Console UI | **Live** | `/trade/collateral` |
-| Analytics dashboard | **Live** | `/analytics` |
-| Prediction markets | **Beta** | noviscia_clearing program is stubbed |
+| NVSC staking tiers + veNVSC | **Live** | `staking-manager`, `ve-nvs` |
+| TVV yield engine (idle pooled capital → slot-scoped contingent capacity, 15–35% APY) | **Live** | `yield-router`, `yield-distributor`, `nv-usdc-vault` |
+| Revenue engines 1–3 (feed omni-pool NAV) | **Live** | `sovereign-netting` (`NettingRentPaid`), `gateway-auction` (`AuctionSettled` premium tips), `jit-risk` (`SliceRented`/`PremiumSwept`) — indexer tracks all |
+| Protocol analytics | **Live** | `/analytics`, `/api/protocol/metrics`, `/api/protocol/solvency` |
 | NVSC TGE / mainnet | **Q1 2027** | |
 
 ---
@@ -82,7 +85,7 @@ solana program deploy target/deploy/position_tracker.so \
 cp target/idl/position_tracker.json app/web/app/idl/position_tracker.json
 ```
 
-Repeat steps 3–5 per-program (substitute `nv_usdc_vault`, `protocol_lp_vault`, etc.) — only redeploy what actually changed; program IDs stay fixed across upgrades.
+Repeat steps 3–5 per-program (substitute `nv_usdc_vault`, `netting_engine`, etc.) — only redeploy what actually changed; program IDs stay fixed across upgrades.
 
 > **Migration note:** `position-tracker`'s `Market` account has grown across several migrations (`SPACE_V1` → `SPACE_V2` → current, appending `funding_index`/OI/insurance/`trading_fee_bps`). A market registered under an older layout needs `resize_market` run once before any instruction that does typed deserialization against the current struct will work. See `scripts/resize-markets-devnet.ts`.
 
@@ -160,8 +163,8 @@ No trusted operator is required for core perps operation:
 | Liquidation | `liquidate` on `position-tracker` — any signer, including the position owner |
 | Limit-order fill | `execute_limit_order` on `position-tracker` |
 | TP/SL execution | `execute_tp_sl` on `position-tracker` |
-| Burn trigger | `trigger_burn` on `burn-engine` |
 | Yield distribution | `distribute_yield` on `yield-distributor` |
+| Revenue sweeps | `sweep_netting_rent` (sovereign-netting), `settle`/premium sweeps (gateway-auction, jit-risk) — feed omni-pool NAV |
 
 ---
 
@@ -199,9 +202,9 @@ solana account $(npx tsx -e "
 ") --url devnet
 
 # 3. Run an e2e proof script rather than testing through the UI first —
-#    each one in scripts/e2e-*-devnet.ts exercises the real on-chain
+#    each one in scripts/e2e/e2e-*-devnet.ts exercises the real on-chain
 #    instruction path end-to-end and reports exact before/after numbers.
-npx tsx scripts/e2e-jit-open-close-devnet.ts
+npx tsx scripts/e2e/e2e-jit-open-close-devnet.ts
 ```
 
 ---
@@ -253,16 +256,17 @@ That's the whole local dev loop — no database, no separate API server, no Dock
 ```bash
 cargo test                    # Program tests
 cd app/web && npx tsc --noEmit  # Frontend type-check
-npx tsx scripts/e2e-jit-open-close-devnet.ts  # E2E on devnet
+npx tsx scripts/e2e/e2e-jit-open-close-devnet.ts  # E2E on devnet
 ```
 
 ### Optional Services
 
 | Service | Purpose |
 |---------|---------|
-| `services/indexer` | Persistent fills/positions/order history |
+| `services/indexer` | Persistent fills/positions/order history + revenue/protocol indexer (port 8092) |
 | `services/price-feed` | Price feed relay |
 | `services/websocket` | Realtime ingest |
 | `services/ai-orchestrator` | Optional local AI layer |
+| `services/netting-relayer` | Permissionless crank — keeps netting margin floors + default-fund target live |
 
 Each has its own `Dockerfile` and `package.json`. None are required for core perps trading.

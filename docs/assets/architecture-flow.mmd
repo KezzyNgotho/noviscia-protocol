@@ -5,28 +5,30 @@ flowchart TB
         Web["Web App<br/>Vault · Perps · Stake · Rewards"]
     end
 
-    subgraph OFF["Off-chain Services (Railway)"]
-        Keeper["Keeper<br/>oracle marks · liquidations<br/>funding · burn trigger"]
-        Indexer["Indexer<br/>fills · history"]
+    subgraph OFF["Off-chain Services (Docker)"]
+        Indexer["Indexer :8092<br/>fills · history"]
+        PriceFeed["Price Feed<br/>Pyth relay"]
+        WebSocket["WebSocket :8080<br/>live updates"]
+        NettingRelayer["Netting Relayer<br/>consolidate crank"]
+        AIOrch["AI Orchestrator :11435<br/>Ollama qwen2.5:7b"]
     end
 
-    subgraph ONCHAIN["Solana Programs — Anchor 0.31.1"]
+    subgraph ONCHAIN["Solana Programs — Anchor"]
         PT["position_tracker<br/>perps · JIT Pyth oracle<br/>22 markets · funding · liquidation"]
         Vault["nv_usdc_vault<br/>USDC ⇄ nvscUSDC · omni-pool"]
-        PLV["protocol_lp_vault<br/>LP fee share"]
         Yield["yield_distributor"]
+        YR["yield_router<br/>atomic recall"]
         Staking["staking_manager<br/>NVSC staking · governance"]
-        Burn["burn_engine<br/>buyback & burn"]
         Token["token_nvsc<br/>NVSC (1B supply)"]
         LiqVault["liquidation_vault<br/>ADL"]
-        NC["noviscia_clearing<br/>stubbed — not wired"]
+        NC["noviscia_clearing<br/>event/outcome markets"]
         NE["netting_engine<br/>multilateral netting"]
-        BB["bug_bounty<br/>security reports"]
+        SN["sovereign_netting<br/>tenant netting rent"]
+        GA["gateway_auction<br/>premium tips"]
+        JR["jit-risk<br/>slot-scoped capacity"]
         CR["clearing_registry<br/>tenant onboarding"]
-        Spot["spot_dex<br/>constant-product AMM"]
-        CB["cross_border<br/>settlement (research)"]
-        YR["yield_router<br/>atomic recall"]
-        Escrow["escrow<br/>legacy — not in perps path"]
+        CL["noviscia_credit_line"]
+        VN["ve_nvs<br/>governance"]
     end
 
     subgraph EXT["External"]
@@ -45,29 +47,31 @@ flowchart TB
     PT == "CPI: lock margin / fees / PnL" ==> Vault
     PT -->|"verify_jit_price"| Pyth
     PT -->|"report_fill"| NE
-    PT --> Burn
 
     Vault -->|"insurance carve-out"| LiqVault
-    Vault -->|"fee sweep"| PLV
     Vault -->|"yield claim"| Yield
     Vault -->|"atomic recall"| YR
 
-    Staking -->|"NVSC stakes"| Burn
-    Token -->|"mint/burn"| Staking
-    BB -.->|"reward funding"| Vault
+    JR -->|"premium sweep"| Vault
+    GA -->|"auction revenue"| Vault
+    SN -->|"netting rent"| Vault
 
-    Keeper -.-> PT
-    Keeper -.-> Burn
-    Keeper --> Pyth
+    Staking -->|"NVSC stakes"| Token
+    NE -->|"netting rent"| SN
+
     Indexer --> PT
     Indexer -.-> Web
+    PriceFeed --> WebSocket
+    WebSocket -.-> Web
+    NettingRelayer --> NE
+    AIOrch -.-> Web
 
     classDef onchain fill:#0f172a,stroke:#10b981,stroke-width:1px,color:#e5e7eb
     classDef offchain fill:#0f172a,stroke:#f59e0b,stroke-width:1px,color:#e5e7eb
     classDef frontend fill:#0f172a,stroke:#3b82f6,stroke-width:1px,color:#e5e7eb
     classDef external fill:#0f172a,stroke:#9ca3af,stroke-width:1px,color:#e5e7eb
 
-    class PT,Vault,PLV,Yield,Staking,Burn,Token,LiqVault,NC,NE,BB,CR,Spot,CB,YR,Escrow onchain
-    class Keeper,Indexer offchain
+    class PT,Vault,Yield,YR,Staking,Token,LiqVault,NC,NE,SN,GA,JR,CR,CL,VN onchain
+    class Indexer,PriceFeed,WebSocket,NettingRelayer,AIOrch offchain
     class Web frontend
     class Pyth,Jup external

@@ -1,6 +1,6 @@
 # Security Best Practices & Audit Guide
 
-**Last updated:** August 24, 2026
+**Last updated:** September 3, 2026
 **Status:** Devnet · unaudited · mainnet requires audit sign-off
 
 ---
@@ -48,7 +48,7 @@ let price = verify_jit_price(
 
 The netting engine (`68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56`) handles cross-tenant risk:
 
-- **Venue registration** — Each product registers as a venue (perps = venue 0, events = venue 1)
+- **Venue registration** — Each product registers as a venue (perps = venue 0; other venues may follow)
 - **Novated fill reporting** — Every trade reported for multilateral netting
 - **Correlation-matrix cross-margin** — Portfolio margin across correlated positions
 - **House book** — CCP default fund sizing and capital adequacy
@@ -107,7 +107,7 @@ All perps cranks are permissionless — no operator key required:
 - `execute_limit_order` — Limit order fill
 - `execute_tp_sl` — TP/SL trigger
 - `execute_twap_slice` — TWAP slice execution
-- `trigger_burn` — NVSC burn
+- Revenue sweeps — `sweep_netting_rent` (sovereign-netting), gateway/jit premium sweeps (feed omni-pool NAV)
 
 ---
 
@@ -115,7 +115,7 @@ All perps cranks are permissionless — no operator key required:
 
 - **No independent third-party audit completed.**
 - Target: Q4 2026 (see [`AUDIT_PREP.md`](./AUDIT_PREP.md))
-- Bug bounty program covers devnet scope (see [`BUG_BOUNTY.md`](./BUG_BOUNTY.md))
+- Bug-bounty program (`programs/later/bug-bounty`) is **deferred** — not live on devnet; a responsible-disclosure email contact applies meanwhile.
 - **Until audit complete, treat all contracts as unaudited experimental software.**
 
 ---
@@ -128,7 +128,7 @@ All perps cranks are permissionless — no operator key required:
 - [ ] Upgrade authority transferred to multisig
 - [ ] No hardcoded keys or secrets in source
 - [ ] Emergency pause mechanism tested
-- [ ] Bug bounty program live (mainnet scope)
+- [ ] Bug bounty program live (mainnet scope) — deferred, planned post-audit
 - [ ] Incident response plan reviewed
 
 ---
@@ -141,7 +141,7 @@ All perps cranks are permissionless — no operator key required:
 4. **Recovery** — Resume operations, verify state
 5. **Communication** — Notify users, post-mortem
 
-**Contact:** security@noviscia.com · Bug bounty: https://github.com/noviscia/protocol/issues
+**Contact:** security@noviscia.com · Issue tracker: https://github.com/noviscia/protocol/issues (responsible disclosure until the bug-bounty program is live on mainnet)
 
 ---
 

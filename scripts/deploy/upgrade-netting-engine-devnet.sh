@@ -13,7 +13,7 @@ mkdir -p "$TMPDIR" "$CARGO_TARGET_DIR/deploy" target/deploy
 solana config set --url devnet
 
 echo "Building netting_engine (TMPDIR=$TMPDIR)..."
-cargo build-sbf --manifest-path programs/netting-engine/Cargo.toml --tools-version v1.52 -- --locked
+cargo build-sbf --manifest-path programs/active/netting-engine/Cargo.toml --tools-version v1.49 -- --locked
 anchor idl build -p netting_engine -o target/idl/netting_engine.json
 
 for src in "$CARGO_TARGET_DIR/deploy/netting_engine.so"; do

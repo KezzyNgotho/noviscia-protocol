@@ -101,7 +101,7 @@ export function toAccountMetas(accounts: Array<{ pubkey: PublicKey; isSigner: bo
 
 /** Hermes latest price for a Pyth feed, scaled to 1e6 USDC units. */
 export async function fetchJitPrice(feedId: string): Promise<{ price1e6: number; publishTime: number }> {
-  const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${feedId}`);
+  const res = await fetch(`https://pyth.dourolabs.app/hermes/v2/updates/price/latest?ids[]=${feedId}`, { headers: { Authorization: `Bearer ${process.env.PYTH_API_KEY || ''}` } });
   if (!res.ok) throw new Error(`Hermes ${res.status}`);
   const json = await res.json() as { parsed: Array<{ price: { price: string; expo: number }; publishTime: number }> };
   const p = json.parsed[0]?.price;

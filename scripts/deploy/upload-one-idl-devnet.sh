@@ -46,6 +46,10 @@ case "${1:?usage: upload-one-idl-devnet.sh <program-name>}" in
   bug_bounty)         IDL_PKG=bug_bounty;         IDL_FILE=bug_bounty.json;         PROGRAM_ID=A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK ;;
   protocol_lp_vault)  IDL_PKG=protocol_lp_vault;  IDL_FILE=protocol_lp_vault.json;  PROGRAM_ID=2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd ;;
   netting_engine)     IDL_PKG=netting_engine;     IDL_FILE=netting_engine.json;     PROGRAM_ID=68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56 ;;
+  ve_nvs)             IDL_PKG=ve_nvs;             IDL_FILE=ve_nvs.json;             PROGRAM_ID=ACJRBrD3h7RHP9UWWffv7Hw8SLFeeJHAH5P31eHnwj5j ;;
+  gateway-auction)    IDL_PKG=gateway-auction;    IDL_FILE=gateway-auction.json;    PROGRAM_ID=HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR ;;
+  benchmarks)         IDL_PKG=benchmarks;         IDL_FILE=benchmarks.json;         PROGRAM_ID=J4kf51om1NakkZaQAtD1B3jV9EGqTrdnAzLeURCQGUz6 ;;
+  sol_vault)          IDL_PKG=sol_vault;          IDL_FILE=sol_vault.json;          PROGRAM_ID=7DLgmhy9zJ8texqjHEoiq7SBEvwVtft938UagnUPu53W ;;
   *) echo "Unknown program name: $1" >&2; exit 1 ;;
 esac
 

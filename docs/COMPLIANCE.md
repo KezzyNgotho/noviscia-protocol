@@ -1,7 +1,7 @@
 # Noviscia Protocol — Compliance Overview (Devnet Beta)
 
-**Last updated:** August 24, 2026
-**Scope:** Noviscia CCP clearing house — perpetuals, event markets, spot DEX, margin vault, insurance vault, NVSC/nvscUSDC on **Solana devnet**. This document describes the protocol's current regulatory posture and what changes before mainnet. Informational, not legal advice — see [LEGAL.md](./LEGAL.md).
+**Last updated:** September 3, 2026
+**Scope:** Noviscia CCP — perpetuals (perps via `position-tracker`), the `nv-usdc-vault` USDC omni-pool, NVSC/veNVSC staking, and the netting engines (`netting-engine`/`sovereign-netting`) on **Solana devnet**. This document describes the protocol's current regulatory posture and what changes before mainnet. Informational, not legal advice — see [LEGAL.md](./LEGAL.md).
 
 ---
 
@@ -45,7 +45,7 @@ The CCP model means Noviscia is the buyer to every seller and seller to every bu
 ## Audit & assurance status
 
 - **No third-party audit completed.** Target: Q4 2026 (see [`AUDIT_PREP.md`](./AUDIT_PREP.md)).
-- Bug bounty program covers devnet scope.
+- The bug-bounty program (`programs/later/bug-bounty`) is **deferred** — not live on devnet.
 - All contracts should be treated as unaudited experimental software.
 
 ---
@@ -81,7 +81,7 @@ The CCP model means Noviscia is the buyer to every seller and seller to every bu
 
 ## Contact
 
-Compliance: see [LEGAL.md](./LEGAL.md) or `/more/support`. Security: [bug bounty](./BUG_BOUNTY.md).
+Compliance: see [LEGAL.md](./LEGAL.md) or `/more/support`. Security: see [`SECURITY.md`](./SECURITY.md).
 
 ---
 

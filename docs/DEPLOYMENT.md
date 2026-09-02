@@ -1,6 +1,6 @@
 # Deployment and Maintenance Guide
 
-**Last updated:** August 24, 2026
+**Last updated:** September 3, 2026
 
 > This document previously described a Postgres/Redis/Prisma/PM2/AWS-Lambda stack with a standalone `app/api` service — none of that exists in this repo. Rewritten to match the actual architecture: a single Vercel-deployed Next.js app, Anchor on-chain programs, and a handful of independently-dockerized optional services.
 
@@ -16,16 +16,15 @@
 ```
 programs/            Anchor on-chain programs — see docs/DEVNET.md for deploy flow
 app/web/              Next.js 14 app — deployed to Vercel (vercel.json), NOT a separate API server
-services/            Independently-dockerized, optional, NOT required for core perps trading:
-  indexer/              Persistent fills/positions/order history
+services/            Independently-dockerized services (see docker-compose.yml for the live set):
+  indexer/              Persistent fills/positions/order history + revenue/protocol indexer (port 8092)
   price-feed/           Price feed relay
   websocket/            Realtime ingest
   ai-orchestrator/      Optional local AI layer
-  ai-rebalancer/        Optional local AI layer
-  squid/                Subsquid-based indexer (own TypeORM/Postgres, internal to this service)
+  netting-relayer/      Permissionless crank — keeps netting margin floors + default-fund target live
 ```
 
-Core perps trading (open/close/liquidate/funding/TP-SL/limit orders) needs only the on-chain programs and the Next.js app — none of `services/*` are in that path. They exist for supplementary features (persistent history, an optional AI layer) and are deployed separately (Railway/Fly/Docker), never on Vercel.
+Core perps trading (open/close/liquidate/funding/TP-SL/limit orders) needs only the on-chain programs and the Next.js app. The services are supplementary: the indexer (port 8092) provides persistent fills/history and tracks the three revenue engines feeding the omni-pool NAV, and the netting-relayer is a permissionless crank keeping netting margin floors + the default-fund target live. They are deployed separately (Railway/Fly/Docker), never on Vercel.
 
 ## Environment Setup
 

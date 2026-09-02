@@ -83,7 +83,7 @@ async function mintUsdc(connection: Connection, admin: Keypair, to: PublicKey, a
   return { sig, ata };
 }
 
-// ── state-hash chain (mirrors programs/noviscia-clearing/src/state.rs) ──
+// ── state-hash chain (mirrors programs/active/noviscia-clearing/src/state.rs) ──
 const STATE_HASH_DOMAIN = Buffer.from('noviscia-clear-state-v1');
 const RESOLUTION_HASH_DOMAIN = Buffer.from('noviscia-clear-resolution-v1');
 

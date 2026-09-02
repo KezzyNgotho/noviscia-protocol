@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
@@ -15,9 +16,12 @@
     "pg": "^8.13.0"
   },
   "devDependencies": {
+    "@coral-xyz/borsh": "^0.30.0",
+    "@types/bn.js": "^5.2.0",
     "@types/express": "^4.17.21",
     "@types/node": "^20.14.0",
     "@types/pg": "^8.11.6",
+    "bn.js": "^5.2.1",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0"
   }

@@ -58,7 +58,7 @@ function marketBytes(market: string): Buffer {
 }
 
 async function refreshOracle(pt: Program, admin: Keypair, oracle: PublicKey, ptConfig: PublicKey): Promise<void> {
-  const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d`);
+  const res = await fetch(`https://pyth.dourolabs.app/hermes/v2/updates/price/latest?ids[]=ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d`, { headers: { Authorization: `Bearer ${process.env.PYTH_API_KEY || ''}` } });
   const updates: any = await res.json();
   const priceObj = updates.parsed[0].price;
   const expo = priceObj.expo;

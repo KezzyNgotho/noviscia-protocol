@@ -67,6 +67,9 @@ const WATCHED_PIDS = new Set(
     process.env.NEXT_PUBLIC_YIELD_DISTRIBUTOR_PROGRAM_ID,
     process.env.NEXT_PUBLIC_PREDICTION_MARKET_PROGRAM_ID || 'GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe',
     process.env.NEXT_PUBLIC_NVSC_MINT                    || 'HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT',
+    process.env.NEXT_PUBLIC_JIT_RISK_PROGRAM_ID          || '3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh',
+    process.env.NEXT_PUBLIC_GATEWAY_AUCTION_PROGRAM_ID     || 'HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR',
+    process.env.NEXT_PUBLIC_SOVEREIGN_NETTING_PROGRAM_ID   || '9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk',
   ].filter(Boolean) as string[])
 );
 
@@ -106,10 +109,14 @@ async function ingestSlot(conn: Connection, slot: number) {
     // ── Unified activity log: parse all Anchor events ─────────────────────────
     const events = parseActivityFromLogs(logs);
     for (const ev of events) {
-      if (!ev.wallet) continue; // skip protocol-level events with no user wallet
+      // Revenue events (premium/tip/rent flowing to the omni-pool) often carry
+      // no per-user wallet — keep them so the revenue chart has data. Everything
+      // else needs a wallet to be a meaningful user-activity row.
+      const revenueProgram = ev.program === 'jit-risk' || ev.program === 'gateway-auction' || ev.program === 'sovereign-netting';
+      if (!ev.wallet && !revenueProgram) continue;
       await insertActivity({
         signature: sig,
-        wallet: ev.wallet,
+        wallet: ev.wallet ?? 'protocol',
         program: ev.program,
         eventType: ev.eventType,
         market: ev.market ?? undefined,

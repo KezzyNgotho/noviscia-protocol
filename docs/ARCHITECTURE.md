@@ -40,35 +40,31 @@
 ┌───────────────────────────────┴─────────────────────────────────────────────┐
 │                         ON-CHAIN PROGRAM LAYER                              │
 │                                                                             │
+│  (CCP CORE — novation, netting, risk)                                   │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
-│  │  POSITION     │  │  NV-USDC     │  │  ESCROW      │  │  NOVISCIA    │   │
-│  │  TRACKER      │  │  VAULT       │  │              │  │  CLEARING    │   │
-│  │               │  │              │  │  (legacy)    │  │              │   │
-│  │  9 ix fn's    │  │  mint/burn   │  │              │  │  stubbed     │   │
-│  │  6uvr2...1ws  │  │  CN92h...AWC │  │  2WPb3...CZ  │  │  GtTJW...fe  │   │
+│  │  POSITION     │  │  NOVISCIA    │  │  NETTING     │  │  CLEARING    │   │
+│  │  TRACKER      │  │  CLEARING    │  │  ENGINE      │  │  REGISTRY    │   │
+│  │  (perps)      │  │  (events)    │  │  (multilat.) │  │  (tenants)   │   │
+│  │  6uvr2...1ws  │  │  GtTJW...fe  │  │  68s4v...s56 │  │  Hg5Qv...7mo  │   │
 │  └───────┬──────┘  └──────┬───────┘  └──────────────┘  └──────────────┘   │
-│          │    CPI          │                                                │
-│  ┌───────┴─────────────────┴───────────────────────────────────────────┐   │
-│  │                      SUPPORTING PROGRAMS                            │   │
-│  │                                                                     │   │
-│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌─────────────┐  │   │
-│  │  │ BURN       │  │ STAKING    │  │ LIQUIDATION │  │ PROTOCOL-LP │  │   │
-│  │  │ ENGINE     │  │ MANAGER    │  │ VAULT       │  │ VAULT       │  │   │
-│  │  │            │  │            │  │             │  │             │  │   │
-│  │  │ nvUSDC→    │  │ Stake/     │  │ Insurance   │  │ LP shares   │  │   │
-│  │  │ NVSC swap  │  │ Unstake    │  │ fund        │  │ deposit/    │  │   │
-│  │  │            │  │            │  │             │  │ withdraw    │  │   │
-│  │  │  nFgJE...id │  │ HjxcK...qb │  │ Cwma3...z   │  │ 2WUt2...kd  │   │   │
-│  │  └────────────┘  └────────────┘  └─────────────┘  └─────────────┘  │   │
-│  │                                                                     │   │
-│  │  ┌────────────┐  ┌────────────┐                                    │   │
-│  │  │ TOKEN-NVSC │  │ YIELD      │                                    │   │
-│  │  │            │  │ DISTRIB.   │                                    │   │
-│  │  │ 1B NVSC    │  │ Lend yield │                                    │   │
-│  │  │ mint       │  │ split      │                                    │   │
-│  │  │            │  │            │                                    │   │
-│  │  │ HSaBJ...YT │  │ CrN1o...tw │                                    │   │
-│  │  └────────────┘  └────────────┘                                    │   │
+│          │                │             │               │                 │
+│  (REVENUE ENGINES — all feed omni-pool NAV)                               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                     │
+│  │  SOVEREIGN   │  │  GATEWAY-    │  │  JIT-RISK    │                     │
+│  │  NETTING     │  │  AUCTION     │  │  (TVV)       │                     │
+│  │  rent        │  │  premium tips│  │  slice premia│                     │
+│  │  9YxL2...Dyk │  │  HQ26V...9xR │  │  3w9Gr...Xwh │                     │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘                     │
+│         └─────────────────┼─────────────────┘                             │
+│                           ▼                                                │
+│  ┌────────────────────────────────────────────────────────────────────┐   │
+│  │   nv-usdc-vault — ONE OMNI-POOL (nvscUSDC shares · fee_index NAV)    │   │
+│  │   accumulate_protocol_fees · insurance reserve · default fund        │   │
+│  └────────────────────────────────────────────────────────────────────┘   │
+│  ┌────────────────────────── SUPPORTING PROGRAMS ──────────────────────┐   │
+│  │  staking-manager · ve-nvs · token-nvsc · yield-distributor          │   │
+│  │  yield-router (atomic recall) · liquidation-vault                   │   │
+│  │  noviscia-credit-line · sovereign-netting (also rents)              │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────┘
                                 │
@@ -77,10 +73,10 @@
 │                                                                             │
 │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐               │
 │  │  INDEXER        │  │  WEBSOCKET     │  │  AI LAYER      │               │
-│  │  (Express + PG) │  │  (ws :8080)    │  │  (Ollama)      │               │
+│  │  (Express + PG) │  │  (ws :8080)    │  │  (ai-orch.)    │               │
 │  │  Slot polling   │  │  Prices        │  │  Trading agent  │               │
-│  │  Event parsing  │  │  Positions     │  │  Rebalancer     │               │
-│  │  Fills/Activity │  │  Yields        │  │                 │               │
+│  │  Event parsing  │  │  Positions     │  │  Netting       │               │
+│  │  Fills/Activity │  │  Yields        │  │  relayer       │               │
 │  └────────────────┘  └────────────────┘  └────────────────┘               │
 │                                                                             │
 │  ┌────────────────┐  ┌────────────────┐                                    │
@@ -119,8 +115,9 @@
                   │       └──────────────┘ │
                   │                        │
            ┌──────┴────────┐        ┌──────┴─────────┐
-           │  ESCROW       │        │  OPEN POSITION  │
-           │  (legacy)     │        │  (JIT direct)   │
+            │  ESCROW       │        │  OPEN POSITION  │
+            │  (deferred —  │        │  (JIT direct)   │
+            │  not live)    │        │                 │
            │               │        │                 │
            │  deposit()    │        │  USDC ──► NV-   │
            │  approve_     │        │  USDC-VAULT     │
@@ -161,13 +158,20 @@ nvscUSDC is a **yield-bearing vault share** (similar to ERC-4626):
 
 1. **Deposit (mint):** `mint_usdc()` burns user's USDC 1:1 and mints nvscUSDC shares. The share price = `total_usdc / total_shares`. Early depositors get more shares per USDC.
 2. **Withdraw (burn):** `burn_usdc()` burns nvscUSDC shares and returns USDC at the current share price. The USDC returned > the original deposit as the vault accumulates yield.
-3. **Yield sources:** Trading fees (60% vault NAV share) + liquidation surplus (70% vault NAV share) + buyback & burn deflation. **No external lending integrations** — yield is self-contained from protocol activity.
+3. **Yield sources:** All revenue engines (sovereign-netting rent, gateway-auction tips, jit-risk slice premia) + perp trading fees + liquidation surplus accrue into NAV. **No external lending integrations** — yield is self-contained from protocol activity.
 4. **Locked margin:** When a position is open, the trader's nvUSDC shares are "locked" (`locked_margin += shares`). They continue accruing yield even while locked.
 5. **Simultaneous Double-Yield:** Positions earn trading yield on their margin while simultaneously trading — the vault's `fee_index` keeps compounding even on locked shares.
 
 ---
 
-## 3. On-Chain Programs (16 programs)
+## 3. On-Chain Programs
+
+**Program layout (15 active on devnet):** CCP core (position-tracker, noviscia-clearing,
+netting-engine, clearing-registry) · revenue engines (sovereign-netting, gateway-auction,
+jit-risk) · supporting (nv-usdc-vault, liquidation-vault, yield-router, yield-distributor,
+staking-manager, ve-nvs, token-nvsc, noviscia-credit-line). Programs under `programs/later/`
+(bug-bounty, burn-engine, escrow, protocol-lp-vault, spot-dex) are **deferred / not yet live**
+and are preserved for reference only.
 
 ### 3a. Position Tracker (Core Engine)
 **Program ID:** `6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws`
@@ -337,30 +341,24 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
 
 ---
 
-### 3c. Escrow (Legacy Multi-Collateral)
+### 3c. Escrow (Deferred — Not Live)
 **Program ID:** `2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ`
 
-**Role:** Holds trader deposits (USDC, WSOL, nvUSDC) with per-trader approvals. Being phased out in favor of direct vault mint/burn for USDC positions.
+**Role:** Formerly held trader deposits (USDC, WSOL, nvUSDC) with per-trader approvals. **Deferred / not yet live** — margin now flows directly through the omni-pool's `nv-usdc-vault` mint/burn (`deposit_sol`/`withdraw_sol` retained in the vault). Preserved under `programs/later/` for reference.
 
 ---
 
-### 3d. Burn Engine (Deflationary NVSC Sink)
+### 3d. Burn Engine (Deferred — Not Live)
 **Program ID:** `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id`
 **Lines:** ~687
 
-**Role:** Converts trading fees (nvUSDC) into NVSC tokens via AMM, then burns the NVSC — creating deflationary pressure.
+**Role:** Designed to convert trading fees (nvUSDC) into NVSC tokens via AMM, then burn the NVSC — creating deflationary pressure. **Deferred / not yet live** — the NVSC buyback/burn flywheel is handled through the omni-pool's fee spine (`accumulate_protocol_fees`) rather than a dedicated burn program. Preserved under `programs/later/` for reference.
 
-#### Flow
-1. Receives 15% of every trading fee (in nvUSDC shares)
-2. `accumulate_funds()` — receives nvUSDC shares from position-tracker
+#### Flow (as designed)
+1. Receives a share of trading fees (in nvUSDC shares)
+2. `accumulate_funds()` — receives nvUSDC shares
 3. `swap_nvusdc_to_nvsc()` — CPI into NVSC AMM to convert nvUSDC → NVSC
 4. NVSC is sent to a burn address (permanently removed from supply)
-
-#### Key PDAs
-| PDA | Seeds |
-|-----|-------|
-| `burn_state` | `["burn_state"]` |
-| `burn_vault_usdc` | ATA of `burn_state` for USDC |
 
 ---
 
@@ -393,10 +391,10 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
 
 ---
 
-### 3g. Protocol LP Vault
+### 3g. Protocol LP Vault (Deferred — Not Live)
 **Program ID:** `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd`
 
-**Role:** Accepts LP deposits into the protocol's trading pool. LPs earn a share of the trading fees beyond the vault share.
+**Role:** Designed to accept LP deposits into the protocol's trading pool. **Deferred / not yet live** — LP yield now flows through the omni-pool (`nvscUSDC` shares + `fee_index` NAV accrual) rather than a dedicated LP vault. Preserved under `programs/later/` for reference.
 
 ---
 
@@ -414,10 +412,22 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
 
 ---
 
-### 3j. Prediction Market
+### 3j. Noviscia Clearing (Broad/Event Markets)
 **Program ID:** `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe`
 
-**Role:** Binary prediction markets on Solana. Separate from the perps engine.
+**Role:** Broad / event-outcome market clearing (parimutuel engine) on Solana — part of the CCP core. Separate from the perps engine.
+
+---
+
+### 3k. Revenue Engines (all feed the omni-pool NAV)
+
+| Engine | Program ID | Revenue event | Description |
+|--------|-----------|---------------|-------------|
+| **sovereign-netting** | `9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk` | `NettingRentPaid` | State-A netting rent accured from cross-tenant netting |
+| **gateway-auction** | `HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR` | `AuctionSettled` | State-B gateway auction + premium tips |
+| **jit-risk** | `3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh` | `SliceRented` / `PremiumSwept` | State-C slot-scoped JIT premiums (400ms contingent capacity) |
+
+All three accrue into the `nv-usdc-vault` 5-authority `accumulate_protocol_fees` spine and grow `fee_index`/NAV. The indexer tracks all three engines.
 
 ---
 
@@ -430,62 +440,60 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
                     │           REVENUE ENTRY POINTS              │
                     ├─────────────────────────────────────────────┤
                     │                                             │
-                    │  1. TRADING FEE (trading_fee_bps)          │
-                    │     Charged on: open_position_jit           │
-                    │                 close_position              │
+                    │  1. REVENUE ENGINE — SOVEREIGN NETTING      │
+                    │     State-A netting rent (NettingRentPaid)   │
+                    │     → 100% → fee spine → vault NAV           │
+                    │                                             │
+                    │  2. REVENUE ENGINE — GATEWAY AUCTION         │
+                    │     State-B auction + premium tips           │
+                    │     (AuctionSettled) → fee spine → vault NAV │
+                    │                                             │
+                    │  3. REVENUE ENGINE — JIT-RISK (TVV)          │
+                    │     State-C slot-scoped slice premia         │
+                    │     (SliceRented / PremiumSwept)             │
+                    │     → 85% NAV / 15% backstop                 │
+                    │                                             │
+                    │  4. PERP TRADING FEE (trading_fee_bps)       │
+                    │     Charged on: open_position_jit            │
+                    │                 close_position               │
                     │                 execute_limit_order          │
                     │                 execute_twap_slice           │
                     │     Current: 5–50 bps (0.05%–0.50%) by tier  │
-                    │     Formula: size_usdc * trading_fee_bps    │
-                    │                    / 10_000                  │
+                    │     → 100% → vault NAV                       │
                     │                                             │
-                    │  2. LIQUIDATION PENALTY                     │
+                    │  5. LIQUIDATION PENALTY                     │
                     │     Triggered on: liquidate                  │
                     │     Split: 2000 bps (20%) of position value │
+                    │     20% liquidator · 80% retained           │
+                    │     (10% insurance fund · 90% vault NAV)    │
                     │                                             │
-                    │  3. FUNDING RATE                            │
+                    │  6. FUNDING RATE                            │
                     │     Peer-to-peer, settled hourly            │
-                    │     Rate: 1 bps/settlement of one-sided OI │
                     │     No pool — paid directly long↔short      │
-                    │                                             │
-                    │  4. BUYBACK & BURN DEFLATION                   │
-                    │     15% of fees → nvUSDC → NVSC → burned     │
-                    │     Permanently reduces NVSC supply           │
-                    │     (no external yield sources)               │
                     │                                             │
                     └─────────────────────────────────────────────┘
 ```
 
-### 4b. Trading Fee Split (Three-Way)
+### 4b. Perp Trading Fee (Vault NAV)
 
-Every `trading_fee_bps` charge (on open AND close) splits three ways:
+Every `trading_fee_bps` charge (on open AND close) accrues into the omni-pool NAV
+(via `accumulate_protocol_fees`), lifting `fee_index` for **all** nvscUSDC holders —
+including those with locked margin:
 
 ```
-                         size_usdc × trading_fee_bps / 10,000
+                    size_usdc × trading_fee_bps / 10,000
                                     │
-                    ┌───────────────┼───────────────┐
-                    │               │               │
-                    ▼               ▼               ▼
-           ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-           │  60% VAULT   │ │  25% STAKING │ │  15% BURN    │
-           │  NAV         │ │  FEE POOL    │ │  ENGINE      │
-           │              │ │              │ │              │
-           │  Swept into  │ │  Records to  │ │  nvUSDC →    │
-           │  total_assets│ │  staking     │ │  NVSC → Burn │
-           │  → increases │ │  fee_pool PDA│ │  (deflation) │
-           │  share price │ │  → NVSC      │ │              │
-           │  for ALL     │ │  stakers     │ │  Removes NVSC│
-           │  nvUSDC      │ │  claim       │ │  from supply │
-           │  holders     │ │              │ │              │
-           └──────────────┘ └──────────────┘ └──────────────┘
+                                    ▼
+                       ┌──────────────────────────┐
+                       │         100% VAULT NAV   │
+                       │  Swept into total_assets │
+                       │  → share price increases │
+                       │  for ALL nvUSDC holders  │
+                       └──────────────────────────┘
 ```
 
-**Constants (from `state.rs`):**
-```rust
-TRADING_FEE_VAULT_SHARE_BPS  = 6_000   // 60% → vault NAV
-TRADING_FEE_STAKING_SHARE_BPS = 2_500   // 25% → staking fee pool
-// Burn engine gets the remainder: 10_000 - 6_000 - 2_500 = 1_500 (15%)
-```
+NVSC buyback/burn and staker fee-share are handled through the fee spine and
+`staking-manager`; the dedicated burn program is **deferred** (`programs/later/`).
 
 ### 4c. Liquidation Penalty Split
 
@@ -533,47 +541,27 @@ REFERRAL_SHARE_BPS = 500   // 5% of liquidation protocol share → referrer
 ### 4f. Complete Revenue Waterfall
 
 ```
-USER OPENS POSITION ($10,000 long, 50x, trading_fee=1000bps)
+REVENUE ENGINES → omni-pool NAV (all tracked by the indexer)
 │
-├── Trading Fee: $10,000 × 1000 / 10,000 = $1,000
-│   ├── $600 (60%) → nvUSDC vault NAV → share price increases
-│   ├── $250 (25%) → staking fee pool → NVSC stakers claim
-│   └── $150 (15%) → burn engine → nvUSDC → NVSC → burned
+sovereign-netting (State-A rent)      → 100% → fee spine → vault NAV
+gateway-auction (State-B tips)        → 100% → fee spine → vault NAV
+jit-risk (State-C slice premia)       → 85% → NAV · 15% → backstop reserve
 │
-├── Position opens with $9,000 effective margin ($10K - $1K fee)
+PERP TRADING FEE (open + close)       → 100% → vault NAV
 │
-USER CLOSES POSITION (exit at same price)
+LIQUIDATION PENALTY
+│   ├── 20% (2000 bps) → liquidator caller
+│   └── 80% protocol-retained
+│       ├── 10% → per-market insurance fund
+│       └── 90% → vault NAV
 │
-├── Trading Fee: $10,000 × 1000 / 10,000 = $1,000
-│   ├── $600 → vault NAV
-│   ├── $250 → staking
-│   └── $150 → burn
+FUNDING RATE (peer-to-peer)           → redistributed long↔short (not revenue)
 │
-├── PnL: $0 (same price)
-│
-├── Total fees collected: $2,000 round-trip
-│
-POSITION GOES UNDERCOLLATERALIZED → LIQUIDATION
-│
-├── Liquidation Penalty: $10,000 × 2000 / 10,000 = $2,000
-│   ├── $400 (20%) → liquidator caller
-│   ├── $200 (10%) → market insurance fund
-│   └── $1,400 (70%) → vault NAV
-│
-TOTAL ANNUAL REVENUE (if $100M daily volume):
-│
-├── Trading Fees: $100M × 10% × 365 = $3.65B
-│   ├── $2.19B → vault NAV (increases nvUSDC yield)
-│   ├── $912.5M → NVSC stakers
-│   └── $547.5M → NVSC burned (deflationary)
-│
-├── Liquidation Penalties: ~$50M (estimated)
-│   ├── ~$10M → liquidation callers
-│   ├── ~$5M → insurance funds
-│   └── ~$35M → vault NAV
-│
-├── TOTAL: ~$3.70B annually
+ALL ENGINE REVENUE GROWS fee_index / NAV for every nvscUSDC holder
 ```
+
+The indexer (`:8092`) tracks all three revenue engines plus perp/liquidation flows to keep
+the omni-pool NAV and the frontend home metrics (Velocity APY 15–35%, AUM, κ) current.
 
 ---
 
@@ -713,6 +701,12 @@ Payment is settled into the position's PnL via funding_index delta:
 
 ## 8. Off-Chain Infrastructure
 
+**Live services (`docker-compose.yml`):** postgres, redis, websocket, price-feed,
+indexer (port 8092 — revenue/tick indexer), ai-orchestrator, web, netting-relayer.
+The `indexer` is the revenue/tick indexer tracking all three revenue engines. The
+removed services `liquidation-keeper`, `risk-engine`, `ai-rebalancer`, and
+`mock-pyth-receiver` are no longer part of the live set.
+
 ### 8a. Executor Bot
 
 **File:** `scripts/executor/execute-limit-twap-devnet.ts` (790 lines)
@@ -841,26 +835,29 @@ Payment is settled into the position's PnL via funding_index delta:
 
 ## 9. Devnet Deployment State
 
-### Program IDs (all deployed and verified)
+### Program IDs (15 active programs, deployed and verified on devnet)
 
-| Program | Devnet ID |
-|---------|-----------|
-| Position Tracker | `6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws` |
-| NV-USDC Vault | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` |
-| Escrow | `2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ` |
-| Burn Engine | `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` |
-| Staking Manager | `HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb` |
-| Token NVSC | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
-| Yield Distributor | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |
-| Noviscia Clearing | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` (prediction market — stubbed) |
-| Liquidation Vault | `Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz` |
-| Protocol LP Vault | `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd` |
-| Netting Engine | `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56` |
-| Yield Router | `FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4` |
-| Cross-Border | `C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv` |
-| Clearing Registry | `Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo` |
-| Spot DEX | `8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN` |
-| Bug Bounty | `A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK` |
+| # | Program | Devnet ID |
+|---|---------|-----------|
+| 1 | Position Tracker | `6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws` |
+| 2 | nv-usdc-vault | `CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC` |
+| 3 | netting-engine | `68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56` |
+| 4 | clearing-registry | `Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo` |
+| 5 | noviscia-clearing | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` |
+| 6 | sovereign-netting | `9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk` |
+| 7 | gateway-auction | `HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR` |
+| 8 | jit-risk | `3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh` |
+| 9 | noviscia-credit-line | `8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg` |
+| 10 | liquidation-vault | `Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz` |
+| 11 | yield-router | `FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4` |
+| 12 | yield-distributor | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |
+| 13 | staking-manager | `HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb` |
+| 14 | ve-nvs | (veNVSC vote-escrow) |
+| 15 | token-nvsc | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
+
+**Deferred / not live** (`programs/later/`): burn-engine `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` · escrow `2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ` · protocol-lp-vault `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd` · spot-dex `8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN` · bug-bounty `A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK`.
+
+**Removed / no longer in the codebase:** cross-border (`C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv`) and tbill-fund programs; liquidation-keeper, risk-engine, ai-rebalancer, mock-pyth-receiver services.
 
 ### Current Devnet Market State (22 markets)
 

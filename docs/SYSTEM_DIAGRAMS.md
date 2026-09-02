@@ -1,6 +1,6 @@
 # Noviscia System Diagram
 
-**Last updated:** August 24, 2026 — diagrams 1–4 match current JIT-oracle architecture. Diagram 5 (AI layer) is optional/unverified.
+**Last updated:** September 3, 2026 — diagrams reflect live devnet architecture (15 active programs, 7 services).
 
 ## 1) System Structure
 
@@ -10,17 +10,25 @@ graph TD
   W -->|RPC, wallet-signed txs| C[Solana Programs]
 
   C --> PT[position-tracker\nJIT oracle, funding, liquidation]
-  C --> NV[nv-usdc-vault\nshare-based NAV]
-  C --> PLV[protocol-lp-vault]
+  C --> NV[nv-usdc-vault\nshare-based NAV, omni-pool]
   C --> SM[staking-manager]
-  C --> BE[burn-engine]
   C --> TN[token-nvsc]
-  C --> PM[noviscia_clearing\nstubbed — not wired]
+  C --> SN[sovereign-netting\ntenant netting rent]
+  C --> GA[gateway-auction\npremium tips]
+  C --> JR[jit-risk\nslot-scoped capacity]
+  C --> NC[noviscia-clearing\nevent/outcome markets]
+  C --> NE[netting-engine\nmultilateral netting]
+  C --> CR[clearing-registry\ntenant onboarding]
+  C --> YR[yield-router\natomic recall]
+  C --> YD[yield-distributor]
+  C --> CL[noviscia-credit-line]
+  C --> LV[liquidation-vault\nADL]
+  C --> VN[ve-nvs\ngovernance]
 
   PT -->|verify_jit_price, per-instruction| PYTH[Pyth Hermes\nguardian-signed VAA]
   PT -->|CPI: redeem/accumulate_fees/lock_margin| NV
 
-  W -.->|optional, not required to trade| SVC[services/*\nindexer, price-feed, websocket, ai-*]
+  W -.->|off-chain services| SVC[services/\nindexer :8092, price-feed, websocket,\nai-orchestrator, netting-relayer]
 ```
 
 ## 2) Trade Flow (open_position_jit)
@@ -73,44 +81,35 @@ flowchart LR
 ## Target shape (current)
 
 - **Frontend:** wallet-connected trading UI, deployed to Vercel — no separate API server for core trading
-- **Programs:** own all custody, margin, oracle verification, funding, liquidation, staking, and burn logic
-- **Optional services:** indexer/price-feed/websocket/AI layer, each dockerized separately, not on the critical trading path
+- **Programs:** own all custody, margin, oracle verification, funding, liquidation, staking, netting, gateway auction, and JIT risk logic (15 active programs)
+- **Services:** indexer (:8092), price-feed, websocket, ai-orchestrator, netting-relayer — each dockerized, off the critical trading path
 - **No database:** on-chain accounts are the only persistence layer for perps state
 
-## 5) AI Orchestration Layer (devnet — local Ollama)
+## 5) AI Orchestration Layer
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                         AI ORCHESTRATION LAYER                                      │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  ┌───────────────┐ │
-│  │  AI Yield       │  │  AI Risk        │  │  AI Rebalancer  │  │  AI Trading   │ │
-│  │  Router         │  │  Predictor      │  │                 │  │  Agent API    │ │
-│  │  (30-min)       │  │  (Real-time)    │  │  (Hourly)       │  │  (NL / hint)  │ │
-│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘  └───────┬───────┘ │
-│           └────────────────────┴────────────────────┴──────────────────┘         │
-│                                      │                                              │
-│                              ┌───────┴───────┐                                      │
-│                              │  Orchestrator │  :11435                              │
-│                              │  + Ollama     │  qwen2.5:7b                          │
-│                              └───────┬───────┘                                      │
-└──────────────────────────────────────┼──────────────────────────────────────────────┘
-                                       │
-                    ┌──────────────────┴──────────────────┐
-                    │ ai-rebalancer (execute) · Web (advise/UI) │
-                    └─────────────────────────────────────┘
+```mermaid
+graph TD
+  AO[ai-orchestrator\n:11435 · Ollama qwen2.5:7b]
+
+  AO --> RSK[Risk predictor\nreal-time · mark crank]
+  AO --> TA[AI Trading Agent\non-demand · NL parse + trade-hint]
+
+  RSK --> Web[Web App · advise/UI alerts]
+  TA --> Web
+
+  AO --> RG[Rules engine\nvalidates all AI JSON before action]
 ```
 
-| Agent | Cadence | Service | Orchestrator path |
-|-------|---------|---------|-------------------|
-| Yield Router | 30 min | `services/ai-rebalancer` | `POST /agents/yield` |
-| Rebalancer | Hourly | `services/ai-rebalancer` | `POST /agents/rebalance` |
-| Trading Agent | On-demand | `app/web` perps UI | `POST /agents/parse-trade`, `/agents/trade-hint` |
+| Agent | Cadence | Endpoint |
+|-------|---------|----------|
+| Risk predictor | Real-time (mark crank) | `POST /decide` (orchestrator) |
+| Trading agent (NL parse) | On-demand | `POST /api/ai/parse-trade`, `/decide` |
+| Trading agent (trade hint) | On-demand | `POST /api/ai/trade-hint`, `/decide` |
 
-(Risk Predictor was removed along with the keeper service and has no replacement.)
+Live status: `GET /api/ai/health` · `GET /api/ai/orchestration` (web) · `GET /health` (orchestrator).
 
-Live status: `GET /api/ai/orchestration` (web) · `GET /orchestration/status` (orchestrator).
-
-Rules engine validates all AI JSON before it acts. See `docs/AI_INTEGRATION.md`.
+The `ai-orchestrator` service is a local (Ollama + `qwen2.5:7b`) LLM proxy — no cloud
+APIs. Every AI response is validated by the rules engine before any action is taken.
 
 ## Notes
 
@@ -118,3 +117,4 @@ Rules engine validates all AI JSON before it acts. See `docs/AI_INTEGRATION.md`.
 - Keep **Solana programs** as the source of truth for funds.
 - Keep **off-chain services** stateless where possible.
 - Broadcast live updates through **WebSocket**, not polling.
+- Architecture-flow and roadmap-timeline diagrams: source `.mmd` files are in `docs/assets/`. Regenerate SVGs from them (`mmdc -i *.mmd -o *.svg`). Do not hand-edit SVGs.

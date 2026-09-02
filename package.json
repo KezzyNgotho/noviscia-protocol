@@ -30,8 +30,6 @@
     "upgrade:devnet-mocks": "bash scripts/deploy/upgrade-burn-devnet.sh && bash scripts/deploy/upgrade-position-tracker-devnet.sh",
     "crank:burn-mock-once": "tsx scripts/utils/crank-burn-mock-once.ts",
     "crank:oracle-refresh": "tsx scripts/utils/refresh-all-oracles-devnet.ts",
-    "crank:oracle-keeper": "tsx scripts/utils/oracle-keeper-devnet.ts",
-    "keeper:oracle-install": "bash scripts/deploy/install-oracle-keeper-devnet.sh",
     "fund:burn-vault-nvsc": "tsx scripts/utils/fund-burn-vault-nvsc.ts",
     "execute:limit-twap-devnet": "tsx scripts/executor/execute-limit-twap-devnet.ts",
     "verify:burn-authority": "tsx scripts/monitor/verify-burn-authority-devnet.ts",
