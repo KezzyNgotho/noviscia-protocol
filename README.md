@@ -85,7 +85,12 @@ The **institutional asset lifecycle** layers the newer windows on top of that sp
   gRPC `GetDeskStatus` RPC. Default is structurally impossible: a **soft lock** freezes
   all new borrows at 24h maturity (outstanding debt can only shrink), a **2h grace wall**
   meters a deterministic per-block late fee, and past that the desk is **Breached** and
-  cleared offline under the Master Loan Agreement.
+  cleared offline under the Master Loan Agreement. Around the borrow side sits an
+  **ERC-4626 share layer** (`deposit_asset_liquidity` → mint nUSDC/nSOL/nNVSC shares,
+  `withdraw_asset_liquidity` → burn): premium splits 90/10 LP/engine at `settle_daily` so
+  the vault **auto-compounds** the 90% LP credit with no manual claim, and every
+  redemption is gated by a solvency floor — an LP can never pull idle liquidity below the
+  desk's active credit utilization.
 - `noviscia-permissioned-pool` — provider-agnostic (de-Sumsub) on-chain KYC/AML ring
   gating institutional liquidity.
 
