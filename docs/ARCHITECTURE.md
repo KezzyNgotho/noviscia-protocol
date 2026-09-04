@@ -448,7 +448,32 @@ All three accrue into the `nv-usdc-vault` 5-authority `accumulate_protocol_fees`
 - **Phase 2 soft lock (window maturity).** Once `current_slot >= window_start_slot + WINDOW_SLOTS`, the running 24h window is frozen: `apply_allocation` refuses every new borrow with `WindowOverdue`, so outstanding debt is capped at its printed value and the pool can no longer be drained. The Risk Sentinel *observes* this posture via gRPC — it never has to fire a defensive transaction.
 - **Phase 3 hard escalation wall (2h grace).** `GRACE_SLOTS` (18,000 ≈ 2h) of grace follow maturity. The per-block default-interest meter — `compute_late_fee(principal, overdue_blocks)` at `LATE_FEE_RATE_BPS` (50 micro-bps/slot, ~90 bps ≈ 0.9% over the full grace) — ticks deterministically and must be remitted alongside principal + premiums or `settle_daily` refuses with `LateFeeMismatch`. Throughout grace, `DeskPosture` in the gRPC envelope reports `OPEN / OVERDUE / BREACHED` at each observed slot. Once `current_slot >= mature + GRACE_SLOTS` the desk is **Breached**: the on-chain layer stands down, refuses settlement (`WindowBreached`) and hands off to corporate risk / off-chain Master Loan Agreement covenants.
 
-**Ledger accounts.** `AssetRegistry` (global config) → `AssetPool` (per-mint params + vault pair) → `InstitutionalCreditLine` (aggregate ceiling + window + meter) → `DeskPosition` (per institution × mint mirror). Liquidity providers seed pools via `deposit_asset_liquidity`; the engine/guard authority can return idle capital via `withdraw_asset_liquidity`; fees are swept per-mint via `withdraw_asset_fees`.
+**Ledger accounts.** `AssetRegistry` (global config) → `AssetPool` (per-mint params + vault pair) → `InstitutionalCreditLine` (aggregate ceiling + window + meter) → `DeskPosition` (per institution × mint mirror). Liquidity providers seed pools via `deposit_asset_liquidity` (minting ERC-4626 share tokens); LPs redeem proportional value via `withdraw_asset_liquidity` (subject to the desk-solvency floor); fees are swept per-mint via `withdraw_asset_fees`.
+
+### 3m. LP Share Vaults — ERC-4626 Accounting Layer
+
+The multi-asset engine's borrow side is paired with an ERC-4626-style **share layer** so external liquidity co-exists with the desk's windowed credit. Accounting is a pure on-chain ledger — no external pool contract, no re-staking, no manual claim.
+
+**Share tokens.** Each registered asset mints its own internal share (nUSDC, nSOL, nNVSC) from PDA `[asset-lp-mint, mint]` at the asset's own decimals. A per-(pool, LP) ledger `[asset-lp-position, mint, lp]` tracks `shares` + `deposited_assets`.
+
+**Deposit → mint (proportional).** `deposit_asset_liquidity` transfers the native asset into the pool vault first (donation-proof — yields inflate the whole book), then mints `shares = deposit × total_shares / total_assets` (1:1 on the first seed) to the LP's share ATA.
+
+**Auto-compounding.** At `settle_daily`, each desk payment splits into `principal → vault`, and premium splits by `lp_yield_split_bps` (default profile 9,000 bps = 90%): the 90% `lp_credit` lands in the pool vault alongside principal while 10% + late fee goes to the fee spine. Raw vault assets rise at constant total shares → **share price rises block-by-block with no manual action**; LP claims grow silently.
+
+**Withdraw → burn (with desk-solvency floor).** `withdraw_asset_liquidity` burns share tokens and pays `shares × total_assets / total_shares` from the vault. The redemption is refused (`InsufficientIdleReserve`) if it would drop idle liquidity below the pool's active credit utilization — an LP can never starve an open desk window, even under co-ordinated exit.
+
+**Structural system map (off-chain ↔ on-chain latencies).**
+
+| Sub-System | Primary Role | Placement | Latency Profile |
+|---|---|---|---|
+| Sumsub / SAS Matrix | Issues cryptographic compliance stamps (KYC/AML proof) | Hybrid — Off-chain webhook → on-chain PDA root | Asynchronous |
+| Leader Schedule Tracker | Pre-routes transaction bundles to the winning node set | Pure Off-Chain (RAM memory map) | Sub-Millisecond (<1ms) |
+| Jito Bundle Sequencer | Packages allocation + arbitrage atomically per slot | Pure Off-Chain Engine | Real-Time Execution |
+| Risk Sentinel Engine | Monitors 24h timelines, triggers Overdue locks / breach flags | Pure Off-Chain (Automated Ref) | Per-Minute Evaluation |
+| Clearinghouse Module | Atomic balance resets + premium splits at window close | Pure On-Chain Smart Contract | Single-Slot Finality |
+| LP Share Vaults | Deposit / withdraw / auto-compounding share accounting | Pure On-Chain Ledger Accounts | Real-Time Accounting |
+
+**Accounting units.** USDC (6 decimals) → nUSDC stables cash pool; wSOL (9 decimals) → nSOL network liquidity pool; NVSC (9 decimals) → nNVSC native equity capital under strict haircut reserves.
 
 ---
 

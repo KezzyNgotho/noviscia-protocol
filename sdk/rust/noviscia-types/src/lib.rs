@@ -444,6 +444,10 @@ pub const ASSET_AUTHORITY_SEED: &[u8] = b"asset-authority";
 pub const ASSET_CREDIT_LINE_SEED: &[u8] = b"credit-line";
 /// Per-desk per-mint borrow mirror PDA seed.
 pub const DESK_POSITION_SEED: &[u8] = b"desk-position";
+/// Per-pool ERC-4626 share-mint (nUSDC / nSOL / nNVSC) PDA seed.
+pub const ASSET_LP_MINT_SEED: &[u8] = b"asset-lp-mint";
+/// Per-(pool, LP) share-position ledger seed.
+pub const ASSET_LP_POSITION_SEED: &[u8] = b"asset-lp-position";
 /// Floating KYC/allocation window length (~24h @ 400ms blocks).
 pub const WINDOW_SLOTS: u64 = 216_000;
 /// Hard-escalation grace window (~2h @ 400ms blocks) before a desk "Breaches".
@@ -493,10 +497,15 @@ pub struct AssetPool {
     pub premium_cap_bps: u16,
     pub min_premium_lamports: u64,
     pub max_capacity: u64,
+    /// ERC-4626 share-mint for this pool (nUSDC / nSOL / nNVSC).
+    pub lp_mint: Pubkey,
+    pub total_lp_shares: u64,
+    pub lp_yield_split_bps: u16,
 }
 
 impl AssetPool {
-    pub const SPACE: usize = 8 + 32 + 1 + 32 + 32 + 32 + 1 + 1 + 8 + 8 + 2 + 2 + 8 + 8;
+    pub const SPACE: usize =
+        8 + 32 + 1 + 32 + 32 + 32 + 1 + 1 + 8 + 8 + 2 + 2 + 8 + 8 + 32 + 8 + 2;
 }
 
 /// Aggregate institutional multi-asset credit ceiling + 24h floating window.

@@ -24,8 +24,9 @@ use solana_sdk::sysvar::rent::ID as RENT_ID;
 
 use noviscia_types::{
     ASSET_AUTHORITY_SEED, ASSET_CREDIT_LINE_SEED, ASSET_ENGINE_PROGRAM_ID, ASSET_FEE_VAULT_SEED,
-    ASSET_POOL_SEED, ASSET_REGISTRY_SEED, ASSET_VAULT_SEED, BPS, DESK_POSITION_SEED,
-    GRACE_SLOTS, LATE_FEE_BASE, LATE_FEE_RATE_BPS, WINDOW_SLOTS,
+    ASSET_LP_MINT_SEED, ASSET_LP_POSITION_SEED, ASSET_POOL_SEED, ASSET_REGISTRY_SEED,
+    ASSET_VAULT_SEED, BPS, DESK_POSITION_SEED, GRACE_SLOTS, LATE_FEE_BASE, LATE_FEE_RATE_BPS,
+    WINDOW_SLOTS,
 };
 
 pub use noviscia_types::{AssetEngineRegistry, AssetPool, DeskPosition, InstitutionalCreditLine};
@@ -89,6 +90,26 @@ pub fn desk_position_pda(program_id: &Pubkey, institution: &Pubkey, mint: &Pubke
     pda
 }
 
+/// ERC-4626 share-mint per pool: `[asset-lp-mint, mint]` (nUSDC / nSOL / nNVSC).
+pub fn asset_lp_mint_pda(program_id: &Pubkey, mint: &Pubkey) -> Pubkey {
+    let (pda, _bump) =
+        Pubkey::find_program_address(&[ASSET_LP_MINT_SEED, mint.as_ref()], program_id);
+    pda
+}
+
+/// Per-(pool, LP) share-position ledger: `[asset-lp-position, mint, lp]`.
+pub fn asset_lp_position_pda(
+    program_id: &Pubkey,
+    mint: &Pubkey,
+    lp: &Pubkey,
+) -> Pubkey {
+    let (pda, _bump) = Pubkey::find_program_address(
+        &[ASSET_LP_POSITION_SEED, mint.as_ref(), lp.as_ref()],
+        program_id,
+    );
+    pda
+}
+
 /// Per-asset plan used by `register_asset`.
 #[derive(Clone, Copy, Debug)]
 pub struct AssetParams {
@@ -97,6 +118,8 @@ pub struct AssetParams {
     pub premium_cap_bps: u16,
     pub max_capacity: u64,
     pub min_premium_lamports: u64,
+    /// Basis points of paid premium credited to LPs (compounds their share value).
+    pub lp_yield_split_bps: u16,
 }
 
 /// Standard NVSC project-token profile (9 decimals, VAULT-scale tokens, no min premium).
@@ -106,6 +129,7 @@ pub const NVSC_PROFILE: AssetParams = AssetParams {
     premium_cap_bps: 500,
     max_capacity: 100_000_000_000_000,
     min_premium_lamports: 0,
+    lp_yield_split_bps: 9_000,
 };
 
 /// Standard USDC profile (6 decimals, fast-cash pool, tighter ceiling).
@@ -115,6 +139,7 @@ pub const USDC_PROFILE: AssetParams = AssetParams {
     premium_cap_bps: 250,
     max_capacity: 5_000_000_000_000,
     min_premium_lamports: 0,
+    lp_yield_split_bps: 9_000,
 };
 
 /// Standard wSOL profile (9 decimals, native-interop).
@@ -124,6 +149,7 @@ pub const WSOL_PROFILE: AssetParams = AssetParams {
     premium_cap_bps: 300,
     max_capacity: 100_000_000_000,
     min_premium_lamports: 0,
+    lp_yield_split_bps: 9_000,
 };
 
 // ── Instruction Builders ───────────────────────────────────────────────────
@@ -167,6 +193,7 @@ pub fn build_register_asset_ix(
         AccountMeta::new(asset_vault_pda(&program_id, &mint), false),
         AccountMeta::new(asset_fee_vault_pda(&program_id, &mint), false),
         AccountMeta::new_readonly(asset_authority_pda(&program_id, &mint), false),
+        AccountMeta::new(asset_lp_mint_pda(&program_id, &mint), false),
         AccountMeta::new_readonly(solana_program::system_program::ID, false),
         AccountMeta::new_readonly(spl_token::ID, false),
         AccountMeta::new_readonly(RENT_ID, false),
@@ -177,6 +204,7 @@ pub fn build_register_asset_ix(
     data.extend_from_slice(&params.premium_cap_bps.to_le_bytes());
     data.extend_from_slice(&params.max_capacity.to_le_bytes());
     data.extend_from_slice(&params.min_premium_lamports.to_le_bytes());
+    data.extend_from_slice(&params.lp_yield_split_bps.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
 
@@ -198,6 +226,7 @@ pub fn build_update_asset_params_ix(
     data.extend_from_slice(&params.premium_cap_bps.to_le_bytes());
     data.extend_from_slice(&params.max_capacity.to_le_bytes());
     data.extend_from_slice(&params.min_premium_lamports.to_le_bytes());
+    data.extend_from_slice(&params.lp_yield_split_bps.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
 
@@ -423,45 +452,59 @@ pub fn build_settle_daily_ix(
     Instruction { program_id, accounts, data }
 }
 
-/// Build `deposit_asset_liquidity` — LP seeds a pool vault in native asset.
+/// Build `deposit_asset_liquidity` — LP seeds a pool vault in native asset and
+/// receives freshly minted ERC-4626 share tokens (nUSDC / nSOL / nNVSC).
+#[allow(clippy::too_many_arguments)]
 pub fn build_deposit_asset_liquidity_ix(
     program_id: Pubkey,
     mint: Pubkey,
     provider: Pubkey,
     provider_token_account: Pubkey,
+    provider_lp_token_account: Pubkey,
     amount: u64,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
         AccountMeta::new(asset_vault_pda(&program_id, &mint), false),
+        AccountMeta::new(asset_lp_mint_pda(&program_id, &mint), false),
+        AccountMeta::new(asset_lp_position_pda(&program_id, &mint, &provider), false),
+        AccountMeta::new_readonly(asset_authority_pda(&program_id, &mint), false),
         AccountMeta::new(provider, true),
         AccountMeta::new(provider_token_account, false),
+        AccountMeta::new(provider_lp_token_account, false),
         AccountMeta::new_readonly(spl_token::ID, false),
+        AccountMeta::new_readonly(solana_program::system_program::ID, false),
     ];
     let mut data = anchor_discriminator("deposit_asset_liquidity").to_vec();
     data.extend_from_slice(&amount.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
 
-/// Build `withdraw_asset_liquidity` — engine/guard authority returns idle PDP capital.
+/// Build `withdraw_asset_liquidity` — an LP burns share tokens and redeems a
+/// proportional slice of the pool vault, subject to the desk-solvency floor
+/// (`idle − shares_value ≥ active credit utilization`).
+#[allow(clippy::too_many_arguments)]
 pub fn build_withdraw_asset_liquidity_ix(
     program_id: Pubkey,
-    authority: Pubkey,
     mint: Pubkey,
+    lp: Pubkey,
+    lp_token_account: Pubkey,
     destination: Pubkey,
-    amount: u64,
+    shares: u64,
 ) -> Instruction {
     let accounts = vec![
-        AccountMeta::new(registry_pda(&program_id), false),
-        AccountMeta::new(authority, true),
         AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
         AccountMeta::new(asset_vault_pda(&program_id, &mint), false),
+        AccountMeta::new_readonly(asset_lp_mint_pda(&program_id, &mint), false),
+        AccountMeta::new(asset_lp_position_pda(&program_id, &mint, &lp), false),
         AccountMeta::new_readonly(asset_authority_pda(&program_id, &mint), false),
+        AccountMeta::new(lp, true),
+        AccountMeta::new(lp_token_account, false),
         AccountMeta::new(destination, false),
         AccountMeta::new_readonly(spl_token::ID, false),
     ];
     let mut data = anchor_discriminator("withdraw_asset_liquidity").to_vec();
-    data.extend_from_slice(&amount.to_le_bytes());
+    data.extend_from_slice(&shares.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
 
@@ -541,6 +584,46 @@ pub fn window_posture(window_start_slot: u64, current_slot: u64) -> WindowPostur
     } else {
         WindowPosture::Breached
     }
+}
+
+/// ERC-4626 deposit: shares minted for `deposit` at the current share price.
+/// Mirrors `AssetPool::compute_deposit_shares` on-chain; 1:1 on first deposit.
+pub fn compute_deposit_shares(deposit: u64, total_shares: u64, total_assets: u64) -> u64 {
+    if deposit == 0 {
+        return 0;
+    }
+    if total_shares == 0 || total_assets == 0 {
+        return deposit;
+    }
+    let shares_ratio = (deposit as u128)
+        .checked_mul(total_shares as u128)
+        .unwrap_or(0)
+        / total_assets as u128;
+    shares_ratio as u64
+}
+
+/// ERC-4626 redeem: native assets returned for `shares` at the current price.
+/// Mirrors `AssetPool::compute_lp_withdraw_value` on-chain (caps at assets).
+pub fn compute_lp_withdraw_value(shares: u64, total_shares: u64, total_assets: u64) -> u64 {
+    if shares == 0 || total_shares == 0 {
+        return 0;
+    }
+    let value = (shares as u128)
+        .checked_mul(total_assets as u128)
+        .unwrap_or(0)
+        / total_shares as u128;
+    value.min(total_assets as u128) as u64
+}
+
+/// Scaled per-share price (×1_000_000) — the auto-compounding readout.
+pub fn compute_lp_share_price(total_shares: u64, total_assets: u64) -> u128 {
+    if total_shares == 0 {
+        return 1_000_000;
+    }
+    (total_assets as u128)
+        .checked_mul(1_000_000u128)
+        .unwrap_or(0)
+        / total_shares as u128
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -658,20 +741,38 @@ mod tests {
             credit_line_pda(&ASSET_ENGINE_PROGRAM_ID, &institution)
         );
 
-        // Liquidity builders hit the vault pair + change the idle ledger.
+        // Liquidity builders route LP deposits through the share-mint + position.
         let depositor = Pubkey::new_unique();
-        let pool_ata = Pubkey::new_unique();
+        let deposit_ata = Pubkey::new_unique();
+        let deposit_lp_ata = Pubkey::new_unique();
         let dep = build_deposit_asset_liquidity_ix(
-            ASSET_ENGINE_PROGRAM_ID, mint, depositor, pool_ata, 2_000_000_000,
+            ASSET_ENGINE_PROGRAM_ID, mint, depositor, deposit_ata, deposit_lp_ata, 2_000_000_000,
         );
         assert_eq!(dep.accounts[1].pubkey, asset_vault_pda(&ASSET_ENGINE_PROGRAM_ID, &mint));
-        assert_eq!(dep.accounts.len(), 5);
-
-        let wd = build_withdraw_asset_liquidity_ix(
-            ASSET_ENGINE_PROGRAM_ID, Pubkey::new_unique(), mint, Pubkey::new_unique(), 1_000,
+        assert_eq!(dep.accounts[2].pubkey, asset_lp_mint_pda(&ASSET_ENGINE_PROGRAM_ID, &mint));
+        assert_eq!(
+            dep.accounts[3].pubkey,
+            asset_lp_position_pda(&ASSET_ENGINE_PROGRAM_ID, &mint, &depositor)
         );
-        assert_eq!(wd.accounts[0].pubkey, registry_pda(&ASSET_ENGINE_PROGRAM_ID));
-        assert_eq!(wd.accounts.len(), 7);
+        assert_eq!(dep.accounts[5].pubkey, depositor);
+        assert!(dep.accounts[5].is_signer);
+        assert_eq!(dep.accounts.len(), 10);
+        assert_eq!(&dep.data[8..16], &2_000_000_000u64.to_le_bytes());
+
+        // LP redemption burns shares and honors the desk-solvency floor.
+        let title_lp = Pubkey::new_unique();
+        let burn_ata = Pubkey::new_unique();
+        let wd_dest = Pubkey::new_unique();
+        let wd = build_withdraw_asset_liquidity_ix(
+            ASSET_ENGINE_PROGRAM_ID, mint, title_lp, burn_ata, wd_dest, 500,
+        );
+        assert_eq!(wd.accounts[0].pubkey, asset_pool_pda(&ASSET_ENGINE_PROGRAM_ID, &mint));
+        assert_eq!(wd.accounts[3].pubkey, asset_lp_position_pda(&ASSET_ENGINE_PROGRAM_ID, &mint, &title_lp));
+        assert_eq!(wd.accounts[5].pubkey, title_lp);
+        assert!(wd.accounts[5].is_signer);
+        assert_eq!(wd.accounts[7].pubkey, wd_dest);
+        assert_eq!(wd.accounts.len(), 9);
+        assert_eq!(&wd.data[8..16], &500u64.to_le_bytes());
     }
 
     #[test]
@@ -679,17 +780,19 @@ mod tests {
         let mint = Pubkey::new_unique();
         let authority = Pubkey::new_unique();
         let ix = build_register_asset_ix(ASSET_ENGINE_PROGRAM_ID, authority, mint, USDC_PROFILE);
-        assert_eq!(ix.accounts.len(), 10);
+        assert_eq!(ix.accounts.len(), 11);
         let pool = asset_pool_pda(&ASSET_ENGINE_PROGRAM_ID, &mint);
         let vault = asset_vault_pda(&ASSET_ENGINE_PROGRAM_ID, &mint);
         let fee_vault = asset_fee_vault_pda(&ASSET_ENGINE_PROGRAM_ID, &mint);
         assert_eq!(ix.accounts[3].pubkey, pool);
         assert_eq!(ix.accounts[4].pubkey, vault);
         assert_eq!(ix.accounts[5].pubkey, fee_vault);
+        assert_eq!(ix.accounts[7].pubkey, asset_lp_mint_pda(&ASSET_ENGINE_PROGRAM_ID, &mint));
         assert_ne!(pool, vault);
         assert_ne!(vault, fee_vault);
-        // decimals byte then bps/capacity args
+        // decimals byte then bps/capacity args, LP yield split appended last.
         assert_eq!(ix.data[8], USDC_PROFILE.decimals);
+        assert_eq!(&ix.data[29..31], &USDC_PROFILE.lp_yield_split_bps.to_le_bytes());
     }
 
     #[test]
@@ -725,5 +828,20 @@ mod tests {
             noviscia_types::WSOL_MINT.to_string().starts_with("So111"),
             true
         );
+    }
+
+    #[test]
+    fn lp_share_math_mirrors_the_4626_onchain_ledger() {
+        // First deposit is 1:1.
+        assert_eq!(compute_deposit_shares(1_000, 0, 0), 1_000);
+        // After compounding 1_000 → 1_200 at constant shares, price is 1.2.
+        assert_eq!(compute_lp_share_price(1_000, 1_200), 1_200_000);
+        assert_eq!(compute_lp_withdraw_value(1_000, 1_000, 1_200), 1_200);
+        // Bob deposits 600 at 1.2/share → 500 shares.
+        assert_eq!(compute_deposit_shares(600, 1_000, 1_200), 500);
+        assert_eq!(compute_lp_withdraw_value(500, 1_500, 1_800), 600);
+        // Redeems cap at total assets.
+        assert_eq!(compute_lp_withdraw_value(1_000, 1_000, 0), 0);
+        assert_eq!(compute_lp_withdraw_value(1_000, 1_000, 500), 500);
     }
 }
