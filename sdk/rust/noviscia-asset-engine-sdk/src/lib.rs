@@ -158,36 +158,40 @@ pub const WSOL_PROFILE: AssetParams = AssetParams {
 #[allow(clippy::too_many_arguments)]
 pub fn build_initialize_ix(
     program_id: Pubkey,
-    authority: Pubkey,
-    guard_authority: Pubkey,
+    upgrade_authority: Pubkey,
+    breaker_authority: Pubkey,
+    risk_committee_authority: Pubkey,
     wsol_mint: Pubkey,
     usdc_mint: Pubkey,
     nvsc_mint: Pubkey,
 ) -> Instruction {
     let accounts = vec![
-        AccountMeta::new(authority, true),
+        AccountMeta::new(upgrade_authority, true),
         AccountMeta::new(registry_pda(&program_id), false),
         AccountMeta::new_readonly(solana_program::system_program::ID, false),
     ];
     let mut data = anchor_discriminator("initialize").to_vec();
-    data.extend_from_slice(guard_authority.as_ref());
+    data.extend_from_slice(breaker_authority.as_ref());
+    data.extend_from_slice(risk_committee_authority.as_ref());
+    data.extend_from_slice(upgrade_authority.as_ref());
     data.extend_from_slice(wsol_mint.as_ref());
     data.extend_from_slice(usdc_mint.as_ref());
     data.extend_from_slice(nvsc_mint.as_ref());
     Instruction { program_id, accounts, data }
 }
 
-/// Build `register_asset` — onboards a mint into the token register.
+/// Build `register_asset` — onboards a mint (Tier 3: Core Ecosystem Council,
+/// 5-of-7 Squads, 72h timelock).
 #[allow(clippy::too_many_arguments)]
 pub fn build_register_asset_ix(
     program_id: Pubkey,
-    authority: Pubkey,
+    upgrade_authority: Pubkey,
     mint: Pubkey,
     params: AssetParams,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(registry_pda(&program_id), false),
-        AccountMeta::new(authority, true),
+        AccountMeta::new(upgrade_authority, true),
         AccountMeta::new_readonly(mint, false),
         AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
         AccountMeta::new(asset_vault_pda(&program_id, &mint), false),
@@ -208,16 +212,17 @@ pub fn build_register_asset_ix(
     Instruction { program_id, accounts, data }
 }
 
-/// Build `update_asset_params` — adjusts a registered asset's parameters.
+/// Build `update_asset_params` — adjusts a registered asset's parameters
+/// (Tier 2: Risk Committee, 3-of-5 Squads).
 pub fn build_update_asset_params_ix(
     program_id: Pubkey,
-    authority: Pubkey,
+    risk_committee_authority: Pubkey,
     mint: Pubkey,
     params: AssetParams,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(registry_pda(&program_id), false),
-        AccountMeta::new(authority, true),
+        AccountMeta::new(risk_committee_authority, true),
         AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
         AccountMeta::new_readonly(mint, false),
     ];
@@ -230,16 +235,17 @@ pub fn build_update_asset_params_ix(
     Instruction { program_id, accounts, data }
 }
 
-/// Build `set_asset_support` — toggles an asset's registration latch.
+/// Build `set_asset_support` — toggles an asset's registration latch
+/// (Tier 2: Risk Committee, 3-of-5 Squads).
 pub fn build_set_asset_support_ix(
     program_id: Pubkey,
-    authority: Pubkey,
+    risk_committee_authority: Pubkey,
     mint: Pubkey,
     supported: bool,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(registry_pda(&program_id), false),
-        AccountMeta::new(authority, true),
+        AccountMeta::new(risk_committee_authority, true),
         AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
         AccountMeta::new_readonly(mint, false),
     ];
@@ -249,16 +255,17 @@ pub fn build_set_asset_support_ix(
 }
 
 /// Build `initialize_credit_line` — registers an institution's aggregate
-/// multi-asset credit ceiling.
+/// multi-asset credit ceiling (Tier 2: Risk Committee, 3-of-5, post-KYB).
 pub fn build_initialize_credit_line_ix(
     program_id: Pubkey,
     institution: Pubkey,
-    authority: Pubkey,
+    risk_committee_authority: Pubkey,
     total_credit_limit: u64,
 ) -> Instruction {
     let accounts = vec![
+        AccountMeta::new(registry_pda(&program_id), false),
         AccountMeta::new(institution, true),
-        AccountMeta::new(authority, true),
+        AccountMeta::new(risk_committee_authority, true),
         AccountMeta::new(credit_line_pda(&program_id, &institution), false),
         AccountMeta::new_readonly(solana_program::system_program::ID, false),
     ];
@@ -267,15 +274,17 @@ pub fn build_initialize_credit_line_ix(
     Instruction { program_id, accounts, data }
 }
 
-/// Build `update_credit_limit` — adjusts the aggregate ceiling.
+/// Build `update_credit_limit` — adjusts the aggregate ceiling
+/// (Tier 2: Risk Committee, 3-of-5 Squads).
 pub fn build_update_credit_limit_ix(
     program_id: Pubkey,
-    authority: Pubkey,
+    risk_committee_authority: Pubkey,
     institution: Pubkey,
     new_limit: u64,
 ) -> Instruction {
     let accounts = vec![
-        AccountMeta::new(authority, true),
+        AccountMeta::new_readonly(registry_pda(&program_id), false),
+        AccountMeta::new(risk_committee_authority, true),
         AccountMeta::new(credit_line_pda(&program_id, &institution), false),
         AccountMeta::new_readonly(institution, false),
     ];
@@ -284,16 +293,17 @@ pub fn build_update_credit_limit_ix(
     Instruction { program_id, accounts, data }
 }
 
-/// Build `set_credit_frozen` — freezes an institution's credit line.
+/// Build `set_credit_frozen` — freezes an institution's credit line
+/// (Tier 1: Emergency Risk Guard "The Breaker", 1-of-3 Squads).
 pub fn build_set_credit_frozen_ix(
     program_id: Pubkey,
-    authority: Pubkey,
+    breaker_authority: Pubkey,
     institution: Pubkey,
     frozen: bool,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(registry_pda(&program_id), false),
-        AccountMeta::new(authority, true),
+        AccountMeta::new(breaker_authority, true),
         AccountMeta::new(credit_line_pda(&program_id, &institution), false),
         AccountMeta::new_readonly(institution, false),
     ];
@@ -302,10 +312,15 @@ pub fn build_set_credit_frozen_ix(
     Instruction { program_id, accounts, data }
 }
 
-/// Build `set_paused` — engine-level allocation pause.
-pub fn build_set_paused_ix(program_id: Pubkey, authority: Pubkey, paused: bool) -> Instruction {
+/// Build `set_paused` — engine-level allocation pause
+/// (Tier 1: Emergency Risk Guard "The Breaker", 1-of-3 Squads).
+pub fn build_set_paused_ix(
+    program_id: Pubkey,
+    breaker_authority: Pubkey,
+    paused: bool,
+) -> Instruction {
     let accounts = vec![
-        AccountMeta::new(authority, true),
+        AccountMeta::new(breaker_authority, true),
         AccountMeta::new(registry_pda(&program_id), false),
     ];
     let mut data = anchor_discriminator("set_paused").to_vec();
@@ -392,14 +407,17 @@ pub fn build_recredit_asset_capacity_ix(
 }
 
 /// Build `set_kyc_root` — posts a desk's provider-agnostic Merkle root.
+/// Build `set_kyc_root` — provider-agnostic Merkle KYC root for a desk
+/// (Tier 2: Risk Committee, 3-of-5 Squads).
 pub fn build_set_kyc_root_ix(
     program_id: Pubkey,
-    authority: Pubkey,
+    risk_committee_authority: Pubkey,
     institution: Pubkey,
     kyc_merkle_root: [u8; 32],
 ) -> Instruction {
     let accounts = vec![
-        AccountMeta::new(authority, true),
+        AccountMeta::new_readonly(registry_pda(&program_id), false),
+        AccountMeta::new(risk_committee_authority, true),
         AccountMeta::new(credit_line_pda(&program_id, &institution), false),
         AccountMeta::new_readonly(institution, false),
     ];
@@ -509,16 +527,19 @@ pub fn build_withdraw_asset_liquidity_ix(
 }
 
 /// Build `withdraw_asset_fees` — sweeps a per-asset fee vault.
+/// Build `withdraw_asset_fees` — sweeps a per-asset fee vault (Tier 3:
+/// Core Ecosystem Council, 5-of-7 Squads, 72h timelock — treasury allocation).
 pub fn build_withdraw_asset_fees_ix(
     program_id: Pubkey,
-    authority: Pubkey,
+    upgrade_authority: Pubkey,
     mint: Pubkey,
     destination: Pubkey,
     amount: u64,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
-        AccountMeta::new(authority, true),
+        AccountMeta::new_readonly(registry_pda(&program_id), false),
+        AccountMeta::new(upgrade_authority, true),
         AccountMeta::new(asset_fee_vault_pda(&program_id, &mint), false),
         AccountMeta::new_readonly(asset_authority_pda(&program_id, &mint), false),
         AccountMeta::new(destination, false),
@@ -731,13 +752,14 @@ mod tests {
         assert_eq!(&settle.data[16..24], &50_000u64.to_le_bytes());
         assert_eq!(&settle.data[24..32], &777u64.to_le_bytes());
 
-        // set_kyc_root carries the 32-byte root and references the credit line.
+        // set_kyc_root carries the 32-byte root + references the credit line
+        // (Tier 2 committee signs after the registry proof).
         let root = [42u8; 32];
         let kyc = build_set_kyc_root_ix(ASSET_ENGINE_PROGRAM_ID, Pubkey::new_unique(), institution, root);
         assert_eq!(&kyc.data[..8], &anchor_discriminator("set_kyc_root"));
         assert_eq!(&kyc.data[8..40], &root);
         assert_eq!(
-            kyc.accounts[1].pubkey,
+            kyc.accounts[2].pubkey,
             credit_line_pda(&ASSET_ENGINE_PROGRAM_ID, &institution)
         );
 
@@ -793,6 +815,53 @@ mod tests {
         // decimals byte then bps/capacity args, LP yield split appended last.
         assert_eq!(ix.data[8], USDC_PROFILE.decimals);
         assert_eq!(&ix.data[29..31], &USDC_PROFILE.lp_yield_split_bps.to_le_bytes());
+    }
+
+    #[test]
+    fn governance_builders_bind_each_tier_to_its_scope() {
+        let breaker = Pubkey::new_unique();
+        let committee = Pubkey::new_unique();
+        let council = Pubkey::new_unique();
+        let wsol = Pubkey::new_unique();
+        let usdc = Pubkey::new_unique();
+        let nvsc = Pubkey::new_unique();
+
+        // initialize: Tier-3 council signs; data carries breaker + committee + upgrade keys.
+        let init = build_initialize_ix(ASSET_ENGINE_PROGRAM_ID, council, breaker, committee, wsol, usdc, nvsc);
+        assert!(init.accounts[0].is_signer);
+        assert_eq!(init.accounts[0].pubkey, council);
+        assert_eq!(&init.data[..8], &anchor_discriminator("initialize"));
+        assert_eq!(&init.data[8..40], breaker.as_ref());
+        assert_eq!(&init.data[40..72], committee.as_ref());
+        assert_eq!(&init.data[72..104], council.as_ref());
+        assert_eq!(&init.data[104..136], wsol.as_ref());
+        assert_eq!(&init.data[136..168], usdc.as_ref());
+        assert_eq!(&init.data[168..200], nvsc.as_ref());
+        assert_eq!(init.data.len(), 200);
+
+        // Breaker scope is strictly emergency: pause + freeze carry no other meta.
+        let brk = Pubkey::new_unique();
+        let pause = build_set_paused_ix(ASSET_ENGINE_PROGRAM_ID, brk, false);
+        assert_eq!(pause.accounts[0].pubkey, brk);
+        assert!(pause.accounts[0].is_signer);
+        let freeze = build_set_credit_frozen_ix(ASSET_ENGINE_PROGRAM_ID, brk, Pubkey::new_unique(), true);
+        assert_eq!(freeze.accounts[1].pubkey, brk);
+        assert!(freeze.accounts[1].is_signer);
+
+        // Committee scope is parameter / limit surfaces.
+        let cmt = Pubkey::new_unique();
+        let limit = build_update_credit_limit_ix(ASSET_ENGINE_PROGRAM_ID, cmt, Pubkey::new_unique(), 1_000);
+        assert_eq!(limit.accounts[1].pubkey, cmt);
+        assert!(limit.accounts[1].is_signer);
+        let params = build_update_asset_params_ix(ASSET_ENGINE_PROGRAM_ID, cmt, Pubkey::new_unique(), USDC_PROFILE);
+        assert_eq!(params.accounts[1].pubkey, cmt);
+        assert!(params.accounts[1].is_signer);
+
+        // Upgrade scope is structural: asset registration + fee treasury.
+        let council = Pubkey::new_unique();
+        let fees = build_withdraw_asset_fees_ix(ASSET_ENGINE_PROGRAM_ID, council, Pubkey::new_unique(), Pubkey::new_unique(), 500);
+        assert_eq!(fees.accounts[2].pubkey, council);
+        assert!(fees.accounts[2].is_signer);
     }
 
     #[test]

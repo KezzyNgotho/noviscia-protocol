@@ -475,6 +475,48 @@ The multi-asset engine's borrow side is paired with an ERC-4626-style **share la
 
 **Accounting units.** USDC (6 decimals) → nUSDC stables cash pool; wSOL (9 decimals) → nSOL network liquidity pool; NVSC (9 decimals) → nNVSC native equity capital under strict haircut reserves.
 
+### 3n. Layered Governance Multi-Sig (Three-Tier RBAC)
+
+A multi-million asset pool cannot hang off a retail developer wallet. The engine's authority surface is split into three independent cryptographic control structures (Squads-style multisigs on Solana), each optimized for a different axis: **speed** of emergency response, **regulatory custody** of risk parameters, and **deliberation** for structural protocol change.
+
+```
+                          Noviscia Governance Engine
+                                     │
+        ┌────────────────────────────┼────────────────────────────┐
+        ▼                            ▼                            ▼
+┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
+│  Tier 1: Emergency  │   │  Tier 2: Risk        │   │  Tier 3: Core        │
+│  Risk Guard         │   │  Committee           │   │  Ecosystem Council   │
+│  "The Breaker"      │   │  (Parameter Vault)   │   │  (The Council)       │
+│  1-of-3 Squads      │   │  3-of-5 Squads       │   │  5-of-7 Squads       │
+│  Instant freeze     │   │  Limits · Tiers ·    │   │  Program upgrades ·  │
+│  of credit lines /  │   │  Premium rates · KYC │   │  Treasury allocations│
+│  JIT loop pause     │   │  roots               │   │  (72h timelock)      │
+└──────────────────────┘   └──────────────────────┘   └──────────────────────┘
+```
+
+**On-chain RBAC (enforced before business logic).** `AssetRegistry` stores exactly three authority keys — `breaker_authority`, `risk_committee_authority`, `upgrade_authority` — each expected to be a Squads multisig PDA. Every authority-bearing instruction pins its signer to the matching key via Anchor `has_one`/constraint checks at the account-validation phase. A compromised Tier-1 Breaker key asking to raise a credit ceiling is rejected by the runtime *before* any handler runs. The surface:
+
+| Instruction | Tier | Key checked |
+|---|---|---|
+| `set_paused` (engine-wide pause) | 1 — Breaker (1-of-3) | `breaker_authority` |
+| `set_credit_frozen` (desk freeze) | 1 — Breaker (1-of-3) | `breaker_authority` |
+| `initialize_credit_line` (desk onboarding) | 2 — Risk Committee (3-of-5) | `risk_committee_authority` |
+| `update_credit_limit` | 2 — Risk Committee (3-of-5) | `risk_committee_authority` |
+| `set_kyc_root` (KYB proof root) | 2 — Risk Committee (3-of-5) | `risk_committee_authority` |
+| `update_asset_params` (premium / capacity) | 2 — Risk Committee (3-of-5) | `risk_committee_authority` |
+| `set_asset_support` (asset tier toggle) | 2 — Risk Committee (3-of-5) | `risk_committee_authority` |
+| `initialize` (bootstrap) | 3 — Council (5-of-7) | `upgrade_authority` |
+| `register_asset` (new asset class) | 3 — Council (5-of-7) | `upgrade_authority` |
+| `withdraw_asset_fees` (treasury allocation) | 3 — Council (5-of-7) | `upgrade_authority` |
+| Program upgrades (BPF loader) | 3 — Council (5-of-7) | `upgrade_authority` |
+
+The desk-facing traffic path (`allocate_asset_capacity`, `recredit_asset_capacity`, `settle_daily`) is uninstrumented — it is signed by the desk/trader/treasury directly for 400ms-slot latency and never touches the governance tier.
+
+**72-hour timelock bound.** Tier 3 is hard-bound to a 72h on-chain timelock delay: program upgrades and fee-treasury allocations are queued through the Squads timelock vault, giving institutional LPs a full window to redeem their nUSDC/nSOL/nNVSC shares before any protocol mutation applies. Tier-1 and Tier-2 execute immediately within their *narrowed* scopes so operational risk controls stay fast.
+
+**Multi-sig lifecycle (illustrated).** Proposal → draft in the Tier-2 Squads interface → 3-of-5 hardware wallets sign the payload (Ledger / Fireblocks co-signing) → final signer broadcasts → `update_credit_limit` writes the new ceiling to the `InstitutionalCreditLine` PDA natively on-chain.
+
 ---
 
 ## 4. Revenue Model

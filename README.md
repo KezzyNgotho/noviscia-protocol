@@ -90,7 +90,11 @@ The **institutional asset lifecycle** layers the newer windows on top of that sp
   `withdraw_asset_liquidity` → burn): premium splits 90/10 LP/engine at `settle_daily` so
   the vault **auto-compounds** the 90% LP credit with no manual claim, and every
   redemption is gated by a solvency floor — an LP can never pull idle liquidity below the
-  desk's active credit utilization.
+  desk's active credit utilization. Its authority surface is a **three-tier Layered
+  Governance multi-sig** (Squads on Solana): a 1-of-3 Emergency Risk **Breaker** that can only
+  freeze desks or pause the JIT loop, a 3-of-5 Risk **Committee** that owns limits, premium
+  rates and KYC roots via on-chain RBAC, and a 5-of-7 Core Ecosystem **Council** (72h
+  timelock) that registers assets, moves treasury fees and upgrades the program.
 - `noviscia-permissioned-pool` — provider-agnostic (de-Sumsub) on-chain KYC/AML ring
   gating institutional liquidity.
 

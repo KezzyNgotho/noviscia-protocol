@@ -464,11 +464,19 @@ pub const ASSET_ENGINE_PROGRAM_ID: Pubkey =
 pub const WSOL_MINT: Pubkey =
     anchor_lang::solana_program::pubkey!("So11111111111111111111111111111111111111112");
 
-/// Global asset engine configuration.
+/// Global asset engine configuration — stores the three-tier Layered
+/// Governance multi-sig keys (Squads PDAs) that gate every authority path.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct AssetEngineRegistry {
-    pub authority: Pubkey,
-    pub guard_authority: Pubkey,
+    /// Tier 1 — Emergency Risk Guard ("The Breaker"), 1-of-3 Squads:
+    /// freeze credit lines / pause the allocation loop, and nothing else.
+    pub breaker_authority: Pubkey,
+    /// Tier 2 — Risk Committee ("Parameter Vault"), 3-of-5 Squads:
+    /// credit limits, KYC roots, asset parameters, support tiers.
+    pub risk_committee_authority: Pubkey,
+    /// Tier 3 — Core Ecosystem Council, 5-of-7 Squads (72h timelock):
+    /// register assets, treasury withdrawals, program upgrades.
+    pub upgrade_authority: Pubkey,
     pub wsol_mint: Pubkey,
     pub usdc_mint: Pubkey,
     pub nvsc_mint: Pubkey,
@@ -478,7 +486,7 @@ pub struct AssetEngineRegistry {
 }
 
 impl AssetEngineRegistry {
-    pub const SPACE: usize = 8 + 32 + 32 + 32 + 32 + 32 + 1 + 1 + 1;
+    pub const SPACE: usize = 8 + 32 * 3 + 32 * 3 + 3;
 }
 
 /// Per-mint pool profile: liquidity, premium params, and capacity ceiling.
