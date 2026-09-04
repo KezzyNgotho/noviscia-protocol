@@ -104,6 +104,10 @@ The **institutional asset lifecycle** layers the newer windows on top of that sp
   cross-collateralization on Formal Event of Default). One in-contract bridge table maps every
   clause to its executing instruction and constant — see
   [`docs/MASTER_LOAN_AGREEMENT.md`](./docs/MASTER_LOAN_AGREEMENT.md).
+- Two access flows reach the engine — HFT desks headlessly via the low-latency SDK + Jito
+  atomic bundles (<2ms), LPs via the regulated web dashboard + enterprise custody — one
+  headless pipelines, one human and high-assurance; see
+  [`docs/PARTICIPANT_ACCESS.md`](./docs/PARTICIPANT_ACCESS.md).
 
 The funder (`EWPXT9DdijkWEzmNgmXbcwwTBnWLzaYFomhAsp3MyDv5`) is fed by auto-mint from the
 USDC mint authority. NVSC remains governance utility; staking tiers and the buyback/burn
