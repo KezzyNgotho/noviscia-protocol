@@ -1,0 +1,10 @@
+[package]
+name = "noviscia-types"
+version = "0.1.0"
+edition = "2021"
+description = "Shared types, PDA seeds, and program IDs for the Noviscia protocol."
+license = "Apache-2.0"
+
+[dependencies]
+solana-program = "2"
+anchor-lang = "0.31.1"

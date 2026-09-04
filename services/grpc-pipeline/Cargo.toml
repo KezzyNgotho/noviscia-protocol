@@ -1,0 +1,36 @@
+[package]
+name = "noviscia-grpc-pipeline"
+version = "0.1.0"
+edition = "2021"
+
+# This service is a standalone binary NOT part of the main Anchor workspace.
+# Opt out of the parent workspace so it can build independently.
+[workspace]
+
+[[bin]]
+name = "grpc-pipeline"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+tonic = "0.12"
+prost = "0.13"
+yellowstone-grpc-client = "4"
+yellowstone-grpc-proto = "4"
+solana-sdk = "2"
+solana-program = "2"
+solana-transaction-status = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+redis = { version = "0.25", features = ["tokio-comp", "connection-manager"] }
+dashmap = "5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1"
+chrono = "0.4"
+reqwest = { version = "0.12", features = ["json"] }
+futures = "0.3"
+
+[build-dependencies]
+tonic-build = "0.12"

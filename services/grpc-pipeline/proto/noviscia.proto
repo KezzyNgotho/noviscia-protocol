@@ -1,0 +1,80 @@
+syntax = "proto3";
+package noviscia.pipeline;
+
+service NovisciaStream {
+  rpc GetMarketState (MarketStateRequest) returns (MarketStateResponse);
+  rpc GetPosition (PositionRequest) returns (PositionResponse);
+  rpc GetCreditStatus (CreditStatusRequest) returns (CreditStatusResponse);
+  rpc GetPoolState (PoolStateRequest) returns (PoolStateResponse);
+  rpc StreamEvents (StreamEventsRequest) returns (stream EventEnvelope);
+  rpc SubmitTransaction (SubmitTxRequest) returns (SubmitTxResponse);
+}
+
+message MarketStateRequest { string market = 1; }
+message MarketStateResponse {
+  string market = 1;
+  double price = 2;
+  double confidence = 3;
+  int64 publish_time = 4;
+  double funding_rate = 5;
+  int64 slot = 6;
+}
+
+message PositionRequest { string wallet = 1; string market = 2; }
+message PositionResponse {
+  string wallet = 1;
+  string market = 2;
+  bool is_long = 3;
+  double size_usdc = 4;
+  double entry_price = 5;
+  double unrealized_pnl = 6;
+  double margin_balance = 7;
+  int64 opened_slot = 8;
+}
+
+message CreditStatusRequest { string wallet = 1; }
+message CreditStatusResponse {
+  string wallet = 1;
+  double credit_limit = 2;
+  double outstanding = 3;
+  double utilization_bps = 4;
+  double toll_rate_bps = 5;
+  bool authorized = 6;
+}
+
+message PoolStateRequest { string pool_label = 1; }
+message PoolStateResponse {
+  string pool_label = 1;
+  bool kyc_required = 2;
+  double total_shares = 3;
+  double base_reserve = 4;
+  double quote_reserve = 5;
+  int64 lp_count = 6;
+  bool is_paused = 7;
+}
+
+message StreamEventsRequest {
+  repeated string event_types = 1;
+  string wallet_filter = 2;
+}
+
+message EventEnvelope {
+  string event_type = 1;
+  int64 slot = 2;
+  int64 timestamp = 3;
+  string data = 4;
+  string tx_signature = 5;
+}
+
+message SubmitTxRequest {
+  bytes transaction = 1;
+  bool use_jito = 2;
+  int64 tip_lamports = 3;
+}
+
+message SubmitTxResponse {
+  bool success = 1;
+  string signature = 2;
+  string error = 3;
+  string bundle_id = 4;
+}

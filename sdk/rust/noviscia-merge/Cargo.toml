@@ -1,0 +1,11 @@
+[package]
+name = "noviscia-merge"
+version = "0.1.0"
+edition = "2021"
+description = "Address Lookup Table management for the Noviscia protocol."
+license = "Apache-2.0"
+
+[dependencies]
+solana-sdk = "2"
+solana-program = "2"
+bincode = "1"

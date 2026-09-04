@@ -1,0 +1,13 @@
+[package]
+name = "noviscia-credit"
+version = "0.1.0"
+edition = "2021"
+description = "Credit line instruction builders wrapping noviscia-credit-line-sdk."
+license = "Apache-2.0"
+
+[dependencies]
+solana-sdk = "2"
+solana-program = "2"
+anchor-lang = "0.31.1"
+spl-token = "7"
+noviscia-types = { path = "../noviscia-types" }
