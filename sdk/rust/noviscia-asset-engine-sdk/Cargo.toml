@@ -2,8 +2,16 @@
 name = "noviscia-asset-engine-sdk"
 version = "0.2.0"
 edition = "2021"
-description = "Multi-asset JIT allocation builders & PDA derivation for the Noviscia asset engine."
+description = "Multi-asset JIT allocation, daily clearing, ERC-4626 LP vault builders & PDA derivation for the Noviscia asset engine."
 license = "Apache-2.0"
+repository = "https://github.com/KezzyNgotho/Noviscia-protocal"
+homepage = "https://noviscia.org"
+documentation = "https://docs.rs/noviscia-asset-engine-sdk"
+keywords = ["solana", "defi", "hft", "credit-line", "anchor"]
+categories = ["cryptography::cryptocurrencies", "no-std"]
+
+[lib]
+doctest = false
 
 [dependencies]
 solana-sdk = "2"
