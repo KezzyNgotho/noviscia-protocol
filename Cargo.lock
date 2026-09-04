@@ -3001,7 +3001,7 @@ dependencies = [
 
 [[package]]
 name = "noviscia-asset-engine-sdk"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anchor-lang",
  "noviscia-types",
@@ -3149,7 +3149,7 @@ dependencies = [
 
 [[package]]
 name = "noviscia-types"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anchor-lang",
  "solana-program",

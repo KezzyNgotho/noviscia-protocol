@@ -31,6 +31,8 @@ use noviscia_types::{
 
 pub use noviscia_types::{AssetEngineRegistry, AssetPool, DeskPosition, InstitutionalCreditLine};
 
+pub mod economics;
+
 // ── Anchor Discriminator ───────────────────────────────────────────────────
 
 /// First 8 bytes of `sha256("global:<name>")` — Solana's built-in SHA-256.

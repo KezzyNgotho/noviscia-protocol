@@ -1,6 +1,6 @@
 [package]
 name = "noviscia-asset-engine-sdk"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 description = "Multi-asset JIT allocation, daily clearing, ERC-4626 LP vault builders & PDA derivation for the Noviscia asset engine."
 license = "Apache-2.0"

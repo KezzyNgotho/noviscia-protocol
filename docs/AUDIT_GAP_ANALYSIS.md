@@ -51,6 +51,14 @@ the commit that closed them where applicable.
      (src/jito.test.ts). Remaining: devnet field-test of bundle landing (open item).
      See the SDK palette commit (`sdk/src/jito.ts`).
 
+8. **Quantified Risk Pack & economics model (unit-economics sheet)**
+   - The slot-fee model, $10M reference balance sheet (`$460,800 / $403,888 / $80,777.60 /
+     $323,110.40 / $315,000 / $8,110.40`), tranche split and the 50%-of-junior hard-lock
+     floor are implemented as deterministic integer-cents math in
+     `noviscia-asset-engine-sdk::economics` (Rust, 0.3.0 published) and mirrored in
+     `@noviscia/sdk` → `economics.ts` (0.5.0 published). Spec: `docs/QUANTIFIED_RISK_PACK.md`.
+     Remaining: derive-cap → on-chain command wiring (open item).
+
 ## Open gaps (unchanged from the legacy CCP suite)
 
 1. **Vault reserve math + atomic recall proofs** — ensure `sync_total_assets` and every
@@ -80,6 +88,10 @@ the commit that closed them where applicable.
 5. **Jito bundle field-test on devnet** — the SDK lander is unit-tested offline (mocked fetch);
    a live submission against `devnet.block-engine.jito.wtf` proving bundle landing + tip auction
    acceptance is not yet demonstrated.
+6. **Derived-cap → on-chain wiring** — the quantified economics module derives reference caps
+   (`$6M` aggregate / `$1.5M` desk) for a pool size, but no script provisions them into the
+   deployed devnet asset-engine registry (Tier-2 `update_credit_limit` / per-asset
+   `max_capacity`); see `docs/QUANTIFIED_RISK_PACK.md` §5.
 
 ## Recommended priorities
 

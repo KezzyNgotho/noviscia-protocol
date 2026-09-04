@@ -108,6 +108,10 @@ The **institutional asset lifecycle** layers the newer windows on top of that sp
   atomic bundles (<2ms), LPs via the regulated web dashboard + enterprise custody — one
   headless pipelines, one human and high-assurance; see
   [`docs/PARTICIPANT_ACCESS.md`](./docs/PARTICIPANT_ACCESS.md).
+- The audited unit-economics of the TVV engine (slot-fee model, $10M reference balance
+  sheet, tranche split, tail-risk hard-lock) ship as integer-cents math in
+  `noviscia-asset-engine-sdk::economics` and `@noviscia/sdk` → `economics.ts`, pinned by
+  tests — see [`docs/QUANTIFIED_RISK_PACK.md`](./docs/QUANTIFIED_RISK_PACK.md).
 
 The funder (`EWPXT9DdijkWEzmNgmXbcwwTBnWLzaYFomhAsp3MyDv5`) is fed by auto-mint from the
 USDC mint authority. NVSC remains governance utility; staking tiers and the buyback/burn

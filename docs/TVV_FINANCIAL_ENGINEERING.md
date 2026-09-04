@@ -7,6 +7,12 @@
 > two-engine story see [`NOVISCIA_NARRATIVE.md`](NOVISCIA_NARRATIVE.md); for exactly which
 > §9 claims are wired in code vs design-only see
 > [`TVV_CCP_INTEGRATION_AUDIT.md`](TVV_CCP_INTEGRATION_AUDIT.md).
+>
+> **Quantified economics:** the audited unit-economics of this engine — slot-fee
+> formula, `$10M` reference balance sheet, senior/junior tranche split, and the
+> tail-risk hard-lock floor — are specified and pinned to code in
+> [`QUANTIFIED_RISK_PACK.md`](QUANTIFIED_RISK_PACK.md) (`economics` module in
+> `noviscia-asset-engine-sdk` / `@noviscia/sdk`).
 
 **Status:** Design Phase — the protocol design is settled here before any code is written
 **Date:** 2026-08-27

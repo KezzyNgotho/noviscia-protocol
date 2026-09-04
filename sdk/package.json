@@ -1,7 +1,7 @@
 {
   "name": "@noviscia/sdk",
-  "version": "0.4.0",
-  "description": "Universal Noviscia developer SDK — program IDs + address derivation, anchor program wrappers, the Unified Collateral Gateway, payload translators, a simulate-first sandbox, and Jito Block Engine bundle submission.",
+  "version": "0.5.0",
+  "description": "Universal Noviscia developer SDK — program IDs + address derivation, anchor program wrappers, the Unified Collateral Gateway, payload translators, a simulate-first sandbox, Jito Block Engine bundle submission, and the quantified TVV risk-pack economics.",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
