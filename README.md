@@ -97,6 +97,13 @@ The **institutional asset lifecycle** layers the newer windows on top of that sp
   timelock) that registers assets, moves treasury fees and upgrades the program.
 - `noviscia-permissioned-pool` — provider-agnostic (de-Sumsub) on-chain KYC/AML ring
   gating institutional liquidity.
+- `noviscia-mla` — the Master Loan Agreement (New York law) whose three pillars are bound
+  directly to the engine's on-chain enforcement: facility scope (wSOL/USDC/NVSC up to an
+  NRS-derived limit), 24h atomic-return covenants (86,400s window, exact-asset settlement), and
+  programmatic vs. legal defaults (Overdue soft-lock at maturity, 2h grace, DIF freeze +
+  cross-collateralization on Formal Event of Default). One in-contract bridge table maps every
+  clause to its executing instruction and constant — see
+  [`docs/MASTER_LOAN_AGREEMENT.md`](./docs/MASTER_LOAN_AGREEMENT.md).
 
 The funder (`EWPXT9DdijkWEzmNgmXbcwwTBnWLzaYFomhAsp3MyDv5`) is fed by auto-mint from the
 USDC mint authority. NVSC remains governance utility; staking tiers and the buyback/burn
