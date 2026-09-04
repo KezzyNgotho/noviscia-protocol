@@ -517,6 +517,35 @@ The desk-facing traffic path (`allocate_asset_capacity`, `recredit_asset_capacit
 
 **Multi-sig lifecycle (illustrated).** Proposal → draft in the Tier-2 Squads interface → 3-of-5 hardware wallets sign the payload (Ledger / Fireblocks co-signing) → final signer broadcasts → `update_credit_limit` writes the new ceiling to the `InstitutionalCreditLine` PDA natively on-chain.
 
+### 3o. Master Loan Agreement — The Legal-to-Code Bridge
+
+The Institutional Master Loan Agreement (`docs/MASTER_LOAN_AGREEMENT.md`) is the contract that
+turns the engine's on-chain credit-limit parameter into an enforceable corporate obligation, so
+institutional HFT desks can trade on underwritten credit lines. Its drafting principle is a
+**negotiated split of authority between code and law**: *code governs execution speed (the 400ms
+slot); corporate law governs financial finality (the 24-hour settlement)*. A desk that behaves
+perfectly only ever touches the low-latency SDK; a desk whose clearing systems crash meets a
+binding corporate agreement — not raw code coercion.
+
+The MLA is a three-pillar structure, each pillar binding to a mechanism this engine already
+enforces:
+
+| Pillar | Legal content | On-chain enforcement (already live) |
+|---|---|---|
+| **Clause 1 — Facility Scope & Asset Definitions** | Non-committed revolving facility; draws in wSOL/USDC/NVSC up to the NRS-derived Borrowing Limit; explicit sign-off on real-time oracle **haircuts** | `initialize_credit_line` / `update_credit_limit` (Risk Committee); per-mint `allocate_asset_capacity` against idle pool liquidity; NRS maintained off-chain by the Risk Sentinel |
+| **Clause 2 — Atomic Return & Daily Clearing Covenants** | 86,400-second rolling window from the first slot; principal + micro-premiums due at maturity; **exact-asset settlement** for accounting finality | `WINDOW_SLOTS = 216,000` (× 400ms = 24h); `window_start_slot` stamped at draw; `settle_daily` verifies and zeroes; per-mint vault settlement with no cross-asset netting |
+| **Clause 3 — Programmatic vs. Legal Events of Default** | Soft-lock at 24h (Overdue, no new draws); 2-hour operational grace; Formal Event of Default → freeze DIF / Escrowed Loss Reserves, cross-collateralization seizure, corporate recovery | `WindowOverdue` guard at maturity; `GRACE_SLOTS = 18,000` (× 400ms = 2h) linear late-fee meter `LATE_FEE_BASE = 10,000` × `LATE_FEE_RATE_BPS = 50`; Council-authorized recovery path |
+
+The contract's **Schedule B — Protocol Integration Schedule** is the engineering bridge itself: a
+clause-by-clause table mapping each contractual obligation to its executing instruction and
+exact constant (issue authority, PDA, slot window, fee formula), so counsel and protocol engineers
+read one artifact. Legal meaning wins on conflict; the smart contract is the deterministic
+executor, and on-chain records are adduced as conclusive evidence of the recorded facts.
+
+Governed by New York law, enforced through Tier-2 (credit parameters) and Tier-3 (amendment and
+remedy) governance, the MLA is the compliance wrapper that lets the pools accept real institutional
+capital while keeping the arbitrage-scale trade path purely programmatic.
+
 ---
 
 ## 4. Revenue Model

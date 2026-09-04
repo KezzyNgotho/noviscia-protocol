@@ -1,5 +1,9 @@
 # Noviscia Protocol — Terms & Risk Disclosure (Devnet Beta)
 
+> **Institutional lending legal instrument:** the [Master Loan Agreement (MLA)](./MASTER_LOAN_AGREEMENT.md)
+> governs the underwriting of institutional credit lines for wSOL/USDC/NVSC draws under
+> noviscia-asset-engine. It maps each legal clause to its on-chain enforcement point (Schedule B).
+
 **Last updated:** September 3, 2026 (mechanism descriptions below corrected to match the current protocol design — legal/liability language unchanged)  
 **Scope:** Noviscia CCP — perpetuals (via `position-tracker`), the `nv-usdc-vault` USDC omni-pool, NVSC/veNVSC staking, and the netting engines — and related smart contracts on **Solana devnet** only. Not offered to mainnet users until separately announced.
 
