@@ -2,7 +2,7 @@
 
 A **central counterparty (CCP) clearing house for Solana** — a single on-chain omni-pool that nets offsetting risk across tenants, runs all margin as one yield-bearing vault (nvscUSDC), and absorbs defaults through a funded 5-layer waterfall before LPs are ever touched.
 
-**Status:** Devnet operational · 15 active on-chain programs · revenue spine live (TVV velocity APY 15–35%) · mainnet target Q1 2027 (post-audit)
+**Status:** Devnet operational · 19 active on-chain programs · revenue spine live (TVV velocity APY 15–35%) · mainnet target Q1 2027 (post-audit)
 
 > This is a monorepo. It contains the on-chain programs (Rust/Anchor), the universal integrator SDK (`@noviscia/sdk`), the operational services, the revenue indexer, and the web application (`app/web`).
 
@@ -13,7 +13,7 @@ A **central counterparty (CCP) clearing house for Solana** — a single on-chain
 ```
 Anchor.toml / Cargo.toml     Solana workspace config (programs + archive)
 programs/
-  active/                    The 15 live on-chain programs (Anchor)
+  active/                    The 19 live on-chain programs (Anchor)
   later/                     Archived / "for-later" programs (kept for reference, not built)
 services/                    Operational services (indexer, relayers, oracles, AI…)
 sdk/                         @noviscia/sdk — universal integrator gateway
@@ -26,7 +26,7 @@ target/idl/                  Compiled Anchor IDLs (synced to app + sdk)
 
 ---
 
-## On-chain programs (15 active)
+## On-chain programs (19 active)
 
 | Program | Role |
 |---------|------|
@@ -39,6 +39,10 @@ target/idl/                  Compiled Anchor IDLs (synced to app + sdk)
 | **gateway-auction** | Gateway-auction revenue (premium tips) |
 | **jit-risk** | JIT risk-slot marketplace with `sweepPremiums` (slot-scoped premium accrual) |
 | **noviscia-credit-line** | On-chain credit lines |
+| **noviscia-permissioned-pool** | On-chain KYC/AML ring: verifier-gated, provider-agnostic permissioned liquidity |
+| **noviscia-capacity** | Single-slot clearing & risk engine: Merkle KYC tiers, dynamic premium, capacity ledger, credit freeze |
+| **noviscia-tranche-vault** | Dual-tranche (protected / institutional) yield structuring |
+| **noviscia-asset-engine** | Multi-asset token register & pool layout (SOL/wSOL, USDC, NVSC): per-mint AssetPools with atomic JIT allocation, 24h floating-window taxi-meter premiums, daily Clearing House settlement |
 | **liquidation-vault** | Auto-deleveraging, insurance funding |
 | **yield-router** | Yield deployment & atomic recall for margin calls |
 | **yield-distributor** | Yield distribution & claiming |
@@ -58,10 +62,29 @@ All protocol revenue flows through the `nv-usdc-vault` fee spine. The architectu
 **one balance sheet, two engines** — the CCP core (clearing/netting/risk) and the TVV
 yield engine (idle pooled capital reused as slot-scoped contingent capacity):
 
-- **3 revenue engines** feed the omni-pool NAV:
+- **Revenue engines** feed the omni-pool NAV:
   - `sovereign-netting` — netting rent (`NettingRentPaid`)
   - `gateway-auction` — auctioned execution-slot premium tips (`AuctionSettled`)
   - `jit-risk` — slot-scoped JIT premiums (`SliceRented` / `PremiumSwept`, 400ms contingent capacity)
+
+The **institutional asset lifecycle** layers the newer windows on top of that spine:
+
+- `noviscia-capacity` — desks pre-buy single-slot capacity; the micro-premium leg is
+  sealed into the same Jito bundle (paid or executed — both or neither).
+- `noviscia-tranche-vault` — protected/institutional tranching of pooled yield.
+- `noviscia-asset-engine` — the multi-asset token register (SOL handled as wSOL, plus
+  USDC and NVSC): every mint owns a segregated `AssetPool` with its own capacity
+  ceiling, premium baseline, and vault pair. `allocate_asset_capacity` reserves a
+  block-slot and atomically CPIs the **principal** out of the pool vault to the desk
+  in one transaction (within a Jito bundle). The micro-premium is **accrued, not
+  paid per entry** — a 24h floating KYC window (`InstitutionalCreditLine`) ticks up
+  `accumulated_premiums` like a taxi meter across thousands of slot trades, and the
+  daily Clearing House instruction `settle_daily` verifies the desk treasury's
+  native-asset return (USDC→USDC, SOL→SOL, NVSC→NVSC), resets the ledger, and stamps
+  `last_settlement_timestamp`. Peak utilization streams to the Risk Sentinel via the
+  gRPC `GetDeskStatus` RPC.
+- `noviscia-permissioned-pool` — provider-agnostic (de-Sumsub) on-chain KYC/AML ring
+  gating institutional liquidity.
 
 The funder (`EWPXT9DdijkWEzmNgmXbcwwTBnWLzaYFomhAsp3MyDv5`) is fed by auto-mint from the
 USDC mint authority. NVSC remains governance utility; staking tiers and the buyback/burn
@@ -78,6 +101,11 @@ revenue/clearing primitives the CCP shares across tenants:
 - `JitRiskClient` — incl. `sweepPremiums` (TVV premium sweep)
 - `TenantOnboarding` — register a DEX/GameFi/RWA frontend to route settlement into the CCP
 - `NovisciaClient` + `loadCliWallet` — loads the default CLI wallet (`~/.config/solana/new-id.json`)
+
+Rust-side builders live in the SDK crates under `sdk/rust/` — notably
+`noviscia-capacity-sdk` (capacity purchase, settle, freeze) and the newer
+`noviscia-asset-engine-sdk` (multi-asset `register_asset` / `allocate_asset_capacity`
+builders + per-asset premium math).
 
 ```bash
 npm install @noviscia/sdk
