@@ -8,6 +8,7 @@ service NovisciaStream {
   rpc GetPoolState (PoolStateRequest) returns (PoolStateResponse);
   rpc GetCapacityStatus (CapacityStatusRequest) returns (CapacityStatusResponse);
   rpc GetTrancheState (TrancheStateRequest) returns (TrancheStateResponse);
+  rpc GetDeskStatus (DeskStatusRequest) returns (DeskStatusResponse);
   rpc StreamEvents (StreamEventsRequest) returns (stream EventEnvelope);
   rpc SubmitTransaction (SubmitTxRequest) returns (SubmitTxResponse);
   rpc SubmitBundle (BundleRequest) returns (BundleResponse);
@@ -108,6 +109,18 @@ message TrancheStateResponse {
   int64 share_price = 4;
   int64 loss_cap_bps = 5;
   bool accepts_deposits = 6;
+}
+
+// Asset-engine desk (floating KYC window) — Risk Sentinel peak view.
+message DeskStatusRequest { string institution = 1; string mint = 2; }
+message DeskStatusResponse {
+  string institution = 1;
+  string mint = 2;
+  int64 active_principal = 3;
+  int64 accumulated_premiums = 4;
+  int64 window_start_slot = 5;
+  int64 peak_active_utilization = 6;
+  int64 last_settlement_timestamp = 7;
 }
 
 // Atomic Jito bundle submission: Transaction A (premium/capacity) + Transaction B (trade).

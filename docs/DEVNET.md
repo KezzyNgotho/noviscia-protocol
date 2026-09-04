@@ -26,6 +26,10 @@
 | `gateway_auction` | `HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR` |
 | `noviscia_credit_line` | `8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg` |
 | `noviscia_clearing` | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` |
+| `noviscia_permissioned_pool` | `BNLwfHfWyuPoDVs7LeX6vAep33k7fzhiTiYzW9Th5u2v` |
+| `noviscia_capacity` | `JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc` |
+| `noviscia_tranche_vault` | `9Sk1zLo7uprmtrskoZQS6zf1KFSNv4uTCxMsbqGVMCMb` |
+| `noviscia_asset_engine` | `4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5` |
 
 > **Parked / not live** (in `programs/later/` — deferred, not deployed as live): `bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`. The deleted programs `cross-border` and `tbill-fund` (and the deleted services `liquidation-keeper`, `risk-engine`, `ai-rebalancer`, `mock-pyth-receiver`) are gone from the codebase and are **not** part of the current state.
 

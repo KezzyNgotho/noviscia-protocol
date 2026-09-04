@@ -99,6 +99,22 @@ pub struct TrancheState {
     pub updated_at: Instant,
 }
 
+// ─────────────────── Asset Engine Desk State ────────────────────────
+
+/// Floating-window desk view streamed to the Risk Sentinel: per-mint borrow
+/// mirror + the desk's peak utilization and accrued taxi-meter premiums.
+#[derive(Debug, Clone)]
+pub struct DeskState {
+    pub institution: String,
+    pub mint: String,
+    pub active_principal: u64,
+    pub accumulated_premiums: u64,
+    pub window_start_slot: u64,
+    pub peak_active_utilization: u64,
+    pub last_settlement_timestamp: i64,
+    pub updated_at: Instant,
+}
+
 // ─────────────────────────── State Store ────────────────────────────
 
 /// Thread-safe in-memory state store backed by `DashMap` for lock-free
@@ -111,6 +127,7 @@ pub struct StateStore {
     pools: DashMap<String, PoolState>,
     capacities: DashMap<String, CapacityState>,
     tranches: DashMap<String, TrancheState>,
+    desks: DashMap<String, DeskState>,
 }
 
 impl StateStore {
@@ -122,6 +139,7 @@ impl StateStore {
             pools: DashMap::new(),
             capacities: DashMap::new(),
             tranches: DashMap::new(),
+            desks: DashMap::new(),
         }
     }
 
@@ -186,6 +204,19 @@ impl StateStore {
 
     pub fn get_tranche(&self, tranche_label: &str) -> Option<TrancheState> {
         self.tranches.get(tranche_label).map(|entry| entry.value().clone()).filter(|s| !s.is_stale())
+    }
+
+    // ── Asset engine desk ──
+
+    /// Key is "{institution}:{mint}".
+    pub fn update_desk(&self, state: DeskState) {
+        let key = format!("{}:{}", state.institution, state.mint);
+        self.desks.insert(key, state);
+    }
+
+    pub fn get_desk(&self, institution: &str, mint: &str) -> Option<DeskState> {
+        let key = format!("{institution}:{mint}");
+        self.desks.get(&key).map(|entry| entry.value().clone()).filter(|s| !s.is_stale())
     }
 
     // ── Eviction ──
@@ -435,6 +466,12 @@ impl IsStale for TrancheState {
     }
 }
 
+impl IsStale for DeskState {
+    fn is_stale(&self) -> bool {
+        self.updated_at.elapsed().as_secs() > STALE_TTL_SECS
+    }
+}
+
 // ── Tests ──
 
 #[cfg(test)]
@@ -619,5 +656,27 @@ mod tests {
         let got = store.get_tranche("Protected").expect("should exist");
         assert_eq!(got.nav_usdc, 1_000_000.0);
         assert_eq!(got.loss_cap_bps, 200);
+    }
+
+    #[test]
+    fn desk_update_and_get_is_institution_mint_scoped() {
+        let store = StateStore::new();
+        store.update_desk(DeskState {
+            institution: "desk1".into(),
+            mint: "USDC".into(),
+            active_principal: 150_000_000,
+            accumulated_premiums: 12_500,
+            window_start_slot: 1_234_567,
+            peak_active_utilization: 180_000_000,
+            last_settlement_timestamp: 1_758_000_000,
+            updated_at: Instant::now(),
+        });
+        let got = store.get_desk("desk1", "USDC").expect("should exist");
+        assert_eq!(got.active_principal, 150_000_000);
+        assert_eq!(got.peak_active_utilization, 180_000_000);
+        assert_eq!(got.accumulated_premiums, 12_500);
+        // Wrong mint / wrong institution must not resolve.
+        assert!(store.get_desk("desk1", "SOL").is_none());
+        assert!(store.get_desk("desk2", "USDC").is_none());
     }
 }

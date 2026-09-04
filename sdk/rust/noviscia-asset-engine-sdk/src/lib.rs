@@ -10,7 +10,10 @@
 //!
 //! Flagship builders:
 //! - `build_allocate_asset_capacity_ix` — single-slot JIT allocation that
-//!   atomically CPIs principal + micro-premium.
+//!   verifies Merkle KYC, opens/rolls the 24h floating window, and atomically
+//!   CPIs the **principal** (the micro-premium is accrued, taxi-meter style).
+//! - `build_settle_daily_ix` — daily Clearing House settlement: the desk
+//!   treasury returns the exact native asset and the ledger resets.
 //! - `build_recredit_asset_capacity_ix` — releases unused slot capital back
 //!   into the pool.
 //! - `build_register_asset_ix` — onboards a mint into the token register.
@@ -21,10 +24,10 @@ use solana_sdk::sysvar::rent::ID as RENT_ID;
 
 use noviscia_types::{
     ASSET_AUTHORITY_SEED, ASSET_CREDIT_LINE_SEED, ASSET_ENGINE_PROGRAM_ID, ASSET_FEE_VAULT_SEED,
-    ASSET_POOL_SEED, ASSET_REGISTRY_SEED, ASSET_VAULT_SEED,
+    ASSET_POOL_SEED, ASSET_REGISTRY_SEED, ASSET_VAULT_SEED, DESK_POSITION_SEED,
 };
 
-pub use noviscia_types::{AssetEngineRegistry, AssetPool, InstitutionalCreditLine};
+pub use noviscia_types::{AssetEngineRegistry, AssetPool, DeskPosition, InstitutionalCreditLine};
 
 // ── Anchor Discriminator ───────────────────────────────────────────────────
 
@@ -71,6 +74,15 @@ pub fn asset_authority_pda(program_id: &Pubkey, mint: &Pubkey) -> Pubkey {
 pub fn credit_line_pda(program_id: &Pubkey, institution: &Pubkey) -> Pubkey {
     let (pda, _bump) = Pubkey::find_program_address(
         &[ASSET_CREDIT_LINE_SEED, institution.as_ref()],
+        program_id,
+    );
+    pda
+}
+
+/// Per-mint desk borrow mirror: `[desk-position, institution, mint]`.
+pub fn desk_position_pda(program_id: &Pubkey, institution: &Pubkey, mint: &Pubkey) -> Pubkey {
+    let (pda, _bump) = Pubkey::find_program_address(
+        &[DESK_POSITION_SEED, institution.as_ref(), mint.as_ref()],
         program_id,
     );
     pda
@@ -278,14 +290,18 @@ pub fn build_set_paused_ix(program_id: Pubkey, authority: Pubkey, paused: bool) 
 /// 1. pool_vault (mut)
 /// 2. vault_authority
 /// 3. credit_line (mut)
-/// 4. trader (signer)
-/// 5. trader_token_account (mut)
-/// 6. fee_vault (mut)
-/// 7. token_program
+/// 4. desk_position (mut, init_if_needed)
+/// 5. trader (signer)
+/// 6. trader_token_account (mut)
+/// 7. fee_vault (mut)
+/// 8. token_program
+/// 9. system_program
 ///
 /// `requested_amount` raw lamports (not human decimals). The expected premium
 /// is `principal × base_premium_rate_bps / 10_000`, floored at the pool's
-/// minimum premium.
+/// minimum premium. `expiry` is the KYC leaf timestamp (unix seconds); when the
+/// desk has a root set, `merkle_proof` must validate
+/// `keccak256(institution || expiry_be)` up to that root.
 pub fn build_allocate_asset_capacity_ix(
     program_id: Pubkey,
     mint: Pubkey,
@@ -295,21 +311,30 @@ pub fn build_allocate_asset_capacity_ix(
     requested_amount: u64,
     target_slot: u64,
     expected_premium: u64,
+    expiry: i64,
+    merkle_proof: Vec<[u8; 32]>,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
         AccountMeta::new(asset_vault_pda(&program_id, &mint), false),
         AccountMeta::new_readonly(asset_authority_pda(&program_id, &mint), false),
         AccountMeta::new(credit_line_pda(&program_id, &institution), false),
+        AccountMeta::new(desk_position_pda(&program_id, &institution, &mint), false),
         AccountMeta::new(trader, true),
         AccountMeta::new(trader_token_account, false),
         AccountMeta::new(asset_fee_vault_pda(&program_id, &mint), false),
         AccountMeta::new_readonly(spl_token::ID, false),
+        AccountMeta::new_readonly(solana_program::system_program::ID, false),
     ];
     let mut data = anchor_discriminator("allocate_asset_capacity").to_vec();
     data.extend_from_slice(&requested_amount.to_le_bytes());
     data.extend_from_slice(&target_slot.to_le_bytes());
     data.extend_from_slice(&expected_premium.to_le_bytes());
+    data.extend_from_slice(&expiry.to_le_bytes());
+    data.extend_from_slice(&(merkle_proof.len() as u32).to_le_bytes());
+    for node in merkle_proof {
+        data.extend_from_slice(&node);
+    }
     Instruction { program_id, accounts, data }
 }
 
@@ -326,11 +351,107 @@ pub fn build_recredit_asset_capacity_ix(
         AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
         AccountMeta::new(asset_vault_pda(&program_id, &mint), false),
         AccountMeta::new(credit_line_pda(&program_id, &institution), false),
+        AccountMeta::new(desk_position_pda(&program_id, &institution, &mint), false),
         AccountMeta::new(trader, true),
         AccountMeta::new(trader_token_account, false),
         AccountMeta::new_readonly(spl_token::ID, false),
     ];
     let mut data = anchor_discriminator("recredit_asset_capacity").to_vec();
+    data.extend_from_slice(&amount.to_le_bytes());
+    Instruction { program_id, accounts, data }
+}
+
+/// Build `set_kyc_root` — posts a desk's provider-agnostic Merkle root.
+pub fn build_set_kyc_root_ix(
+    program_id: Pubkey,
+    authority: Pubkey,
+    institution: Pubkey,
+    kyc_merkle_root: [u8; 32],
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new(authority, true),
+        AccountMeta::new(credit_line_pda(&program_id, &institution), false),
+        AccountMeta::new_readonly(institution, false),
+    ];
+    let mut data = anchor_discriminator("set_kyc_root").to_vec();
+    data.extend_from_slice(&kyc_merkle_root);
+    Instruction { program_id, accounts, data }
+}
+
+/// Build `settle_daily` — Phase 3 daily clearing house settlement.
+///
+/// The desk treasury returns the exact native asset:
+/// 0. pool (mut)
+/// 1. pool_vault (mut)
+/// 2. fee_vault (mut)
+/// 3. credit_line (mut)
+/// 4. desk_position (mut)
+/// 5. treasury (signer)
+/// 6. treasury_token_account (mut)
+/// 7. token_program
+pub fn build_settle_daily_ix(
+    program_id: Pubkey,
+    mint: Pubkey,
+    institution: Pubkey,
+    treasury: Pubkey,
+    treasury_token_account: Pubkey,
+    principal_payment: u64,
+    premium_payment: u64,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
+        AccountMeta::new(asset_vault_pda(&program_id, &mint), false),
+        AccountMeta::new(asset_fee_vault_pda(&program_id, &mint), false),
+        AccountMeta::new(credit_line_pda(&program_id, &institution), false),
+        AccountMeta::new(desk_position_pda(&program_id, &institution, &mint), false),
+        AccountMeta::new(treasury, true),
+        AccountMeta::new(treasury_token_account, false),
+        AccountMeta::new_readonly(spl_token::ID, false),
+    ];
+    let mut data = anchor_discriminator("settle_daily").to_vec();
+    data.extend_from_slice(&principal_payment.to_le_bytes());
+    data.extend_from_slice(&premium_payment.to_le_bytes());
+    Instruction { program_id, accounts, data }
+}
+
+/// Build `deposit_asset_liquidity` — LP seeds a pool vault in native asset.
+pub fn build_deposit_asset_liquidity_ix(
+    program_id: Pubkey,
+    mint: Pubkey,
+    provider: Pubkey,
+    provider_token_account: Pubkey,
+    amount: u64,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
+        AccountMeta::new(asset_vault_pda(&program_id, &mint), false),
+        AccountMeta::new(provider, true),
+        AccountMeta::new(provider_token_account, false),
+        AccountMeta::new_readonly(spl_token::ID, false),
+    ];
+    let mut data = anchor_discriminator("deposit_asset_liquidity").to_vec();
+    data.extend_from_slice(&amount.to_le_bytes());
+    Instruction { program_id, accounts, data }
+}
+
+/// Build `withdraw_asset_liquidity` — engine/guard authority returns idle PDP capital.
+pub fn build_withdraw_asset_liquidity_ix(
+    program_id: Pubkey,
+    authority: Pubkey,
+    mint: Pubkey,
+    destination: Pubkey,
+    amount: u64,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new(registry_pda(&program_id), false),
+        AccountMeta::new(authority, true),
+        AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
+        AccountMeta::new(asset_vault_pda(&program_id, &mint), false),
+        AccountMeta::new_readonly(asset_authority_pda(&program_id, &mint), false),
+        AccountMeta::new(destination, false),
+        AccountMeta::new_readonly(spl_token::ID, false),
+    ];
+    let mut data = anchor_discriminator("withdraw_asset_liquidity").to_vec();
     data.extend_from_slice(&amount.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
@@ -403,20 +524,82 @@ mod tests {
         let institution = Pubkey::new_unique();
         let trader = Pubkey::new_unique();
         let ata = Pubkey::new_unique();
+        let proof = vec![[7u8; 32], [9u8; 32]];
         let ix = build_allocate_asset_capacity_ix(
-            ASSET_ENGINE_PROGRAM_ID, mint, institution, trader, ata, 500_000_000, 123, 600_000,
+            ASSET_ENGINE_PROGRAM_ID, mint, institution, trader, ata, 500_000_000, 123, 600_000, 1_758_000_000,
+            proof.clone(),
         );
         assert_eq!(ix.program_id, ASSET_ENGINE_PROGRAM_ID);
-        assert_eq!(ix.accounts.len(), 8);
-        // 0 = pool, 4 = trader (signer), 7 = token program
+        assert_eq!(ix.accounts.len(), 10);
+        // 0 = pool, 4 = desk_position, 5 = trader (signer), 8 = token program, 9 = system
         assert_eq!(ix.accounts[0].pubkey, asset_pool_pda(&ASSET_ENGINE_PROGRAM_ID, &mint));
-        assert_eq!(ix.accounts[4].pubkey, trader);
-        assert!(ix.accounts[4].is_signer);
-        assert_eq!(ix.accounts[7].pubkey, spl_token::ID);
-        // requested_amount + target_slot + expected_premium (LE)
+        assert_eq!(
+            ix.accounts[4].pubkey,
+            desk_position_pda(&ASSET_ENGINE_PROGRAM_ID, &institution, &mint)
+        );
+        assert_eq!(ix.accounts[5].pubkey, trader);
+        assert!(ix.accounts[5].is_signer);
+        assert_eq!(ix.accounts[8].pubkey, spl_token::ID);
+        assert_eq!(ix.accounts[9].pubkey, solana_program::system_program::ID);
+        // requested_amount + target_slot + expected_premium + expiry (LE),
+        // then u32 proof length + two proof nodes.
         assert_eq!(&ix.data[8..16], &500_000_000u64.to_le_bytes());
         assert_eq!(&ix.data[16..24], &123u64.to_le_bytes());
         assert_eq!(&ix.data[24..32], &600_000u64.to_le_bytes());
+        assert_eq!(&ix.data[32..40], &1_758_000_000i64.to_le_bytes());
+        assert_eq!(&ix.data[40..44], &2u32.to_le_bytes());
+        assert_eq!(&ix.data[44..76], &proof[0]);
+        assert_eq!(&ix.data[76..108], &proof[1]);
+    }
+
+    #[test]
+    fn lifecycle_builders_cover_the_daily_clearing_flow() {
+        let mint = Pubkey::new_unique();
+        let institution = Pubkey::new_unique();
+
+        // Desk position PDA is institution × mint scoped.
+        assert_ne!(
+            desk_position_pda(&ASSET_ENGINE_PROGRAM_ID, &institution, &mint),
+            asset_pool_pda(&ASSET_ENGINE_PROGRAM_ID, &mint)
+        );
+
+        // settle_daily lays out pool → vaults → line → position → treasury.
+        let treasury = Pubkey::new_unique();
+        let tta = Pubkey::new_unique();
+        let settle = build_settle_daily_ix(
+            ASSET_ENGINE_PROGRAM_ID, mint, institution, treasury, tta, 1_000_000_000, 50_000,
+        );
+        assert_eq!(&settle.data[..8], &anchor_discriminator("settle_daily"));
+        assert_eq!(settle.accounts.len(), 8);
+        assert_eq!(settle.accounts[0].pubkey, asset_pool_pda(&ASSET_ENGINE_PROGRAM_ID, &mint));
+        assert_eq!(settle.accounts[4].pubkey, desk_position_pda(&ASSET_ENGINE_PROGRAM_ID, &institution, &mint));
+        assert_eq!(settle.accounts[5].pubkey, treasury);
+        assert!(settle.accounts[5].is_signer);
+
+        // set_kyc_root carries the 32-byte root and references the credit line.
+        let root = [42u8; 32];
+        let kyc = build_set_kyc_root_ix(ASSET_ENGINE_PROGRAM_ID, Pubkey::new_unique(), institution, root);
+        assert_eq!(&kyc.data[..8], &anchor_discriminator("set_kyc_root"));
+        assert_eq!(&kyc.data[8..40], &root);
+        assert_eq!(
+            kyc.accounts[1].pubkey,
+            credit_line_pda(&ASSET_ENGINE_PROGRAM_ID, &institution)
+        );
+
+        // Liquidity builders hit the vault pair + change the idle ledger.
+        let depositor = Pubkey::new_unique();
+        let pool_ata = Pubkey::new_unique();
+        let dep = build_deposit_asset_liquidity_ix(
+            ASSET_ENGINE_PROGRAM_ID, mint, depositor, pool_ata, 2_000_000_000,
+        );
+        assert_eq!(dep.accounts[1].pubkey, asset_vault_pda(&ASSET_ENGINE_PROGRAM_ID, &mint));
+        assert_eq!(dep.accounts.len(), 5);
+
+        let wd = build_withdraw_asset_liquidity_ix(
+            ASSET_ENGINE_PROGRAM_ID, Pubkey::new_unique(), mint, Pubkey::new_unique(), 1_000,
+        );
+        assert_eq!(wd.accounts[0].pubkey, registry_pda(&ASSET_ENGINE_PROGRAM_ID));
+        assert_eq!(wd.accounts.len(), 7);
     }
 
     #[test]

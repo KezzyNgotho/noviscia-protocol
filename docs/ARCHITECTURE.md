@@ -431,6 +431,22 @@ All three accrue into the `nv-usdc-vault` 5-authority `accumulate_protocol_fees`
 
 ---
 
+### 3l. Multi-Asset Engine — Institutional Asset Lifecycle
+
+**Program ID:** `4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5`
+
+**Role:** Per-mint token register (SOL/wSOL, USDC, NVSC) with segregated vaults, aggregate institutional credit lines, provider-agnostic Keccak-Merkle KYC, and the **daily Clearing House** settlement for HFT desks that borrow and return capital inside single 400ms blocks.
+
+**Phase 1 — single-slot borrow (inside the 400ms block).** `allocate_asset_capacity` verifies the desk's Merkle KYC proof against `credit_line.kyc_merkle_root`, checks pool liquidity (USDC: 1,000,000; SOL: 5,000; NVSC profile ceiling), enforces per-asset ceiling + aggregate credit ceiling, then atomically CPIs the principal from the segregated pool vault out to the desk's trading ATA — all in one Jito bundle. Any failure reverts the entire block. The window opens (`window_start_slot`) on the first borrow and `peak_active_utilization` is rolled.
+
+**Phase 2 — 24h floating credit stacking.** Bounded by `WINDOW_SLOTS` (216,000 ≈ 24h @ 400ms). Thousands of slot trades accrue onto a single credit line. The micro-premium is **accrued, not paid per entry**: `accumulated_premiums` ticks like a taxi meter on both the credit line and the per-mint `DeskPosition` mirror. No per-entry fee transfers. `peak_active_utilization` is streamed to the off-chain Risk Sentinel via the gRPC `GetDeskStatus` RPC.
+
+**Phase 3 — Daily Clearing House process.** When the window matures, the Auto-Clearer invoices `Total Capital Utilized + Accumulated Micro-Premiums`. The desk's custody treasury (Fireblocks/Anchorage) returns the exact native asset — USDC settles USDC, SOL settles SOL, NVSC settles NVSC. `settle_daily` verifies `principal_payment == active_principal` and `premium_payment == accumulated_premiums`, transfers principal back into the pool vault and premiums into the per-asset fee vault, re-credits `total_idle_capital`, resets the position + taxi meter to zero, increments `settled_invoices`, and stamps `last_settlement_timestamp`.
+
+**Ledger accounts.** `AssetRegistry` (global config) → `AssetPool` (per-mint params + vault pair) → `InstitutionalCreditLine` (aggregate ceiling + window + meter) → `DeskPosition` (per institution × mint mirror). Liquidity providers seed pools via `deposit_asset_liquidity`; the engine/guard authority can return idle capital via `withdraw_asset_liquidity`; fees are swept per-mint via `withdraw_asset_fees`.
+
+---
+
 ## 4. Revenue Model
 
 ### 4a. Fee Collection Points

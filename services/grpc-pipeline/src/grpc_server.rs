@@ -211,6 +211,31 @@ impl NovisciaStream for NovisciaGrpcServer {
         }))
     }
 
+    // ── Unary RPC: Asset-Engine Desk Status (Risk Sentinel) ──
+
+    async fn get_desk_status(
+        &self,
+        request: Request<DeskStatusRequest>,
+    ) -> Result<Response<DeskStatusResponse>, Status> {
+        let req = request.into_inner();
+        let desk = self.state.get_desk(&req.institution, &req.mint).ok_or_else(|| {
+            Status::not_found(format!(
+                "desk '{}:{}' not found or stale",
+                req.institution, req.mint
+            ))
+        })?;
+
+        Ok(Response::new(DeskStatusResponse {
+            institution: desk.institution,
+            mint: desk.mint,
+            active_principal: desk.active_principal as i64,
+            accumulated_premiums: desk.accumulated_premiums as i64,
+            window_start_slot: desk.window_start_slot as i64,
+            peak_active_utilization: desk.peak_active_utilization as i64,
+            last_settlement_timestamp: desk.last_settlement_timestamp,
+        }))
+    }
+
     // ── Server-streaming RPC ──
 
     type StreamEventsStream = tokio_stream::wrappers::ReceiverStream<Result<EventEnvelope, Status>>;

@@ -2995,6 +2995,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "rustc-hex",
+ "sha3",
  "solana-program",
 ]
 

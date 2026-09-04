@@ -442,6 +442,10 @@ pub const ASSET_FEE_VAULT_SEED: &[u8] = b"asset-fees";
 pub const ASSET_AUTHORITY_SEED: &[u8] = b"asset-authority";
 /// Institutional credit line PDA seed.
 pub const ASSET_CREDIT_LINE_SEED: &[u8] = b"credit-line";
+/// Per-desk per-mint borrow mirror PDA seed.
+pub const DESK_POSITION_SEED: &[u8] = b"desk-position";
+/// Floating KYC/allocation window length (~24h @ 400ms blocks).
+pub const WINDOW_SLOTS: u64 = 216_000;
 
 /// On-chain program ID for `noviscia-asset-engine` (devnet).
 pub const ASSET_ENGINE_PROGRAM_ID: Pubkey =
@@ -490,19 +494,47 @@ impl AssetPool {
     pub const SPACE: usize = 8 + 32 + 1 + 32 + 32 + 32 + 1 + 1 + 8 + 8 + 2 + 2 + 8 + 8;
 }
 
-/// Aggregate institutional multi-asset credit ceiling.
+/// Aggregate institutional multi-asset credit ceiling + 24h floating window.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct InstitutionalCreditLine {
     pub institution: Pubkey,
     pub authority: Pubkey,
     pub total_credit_limit: u64,
     pub active_utilization: u64,
+    /// Provider-agnostic Merkle KYC root for this desk (keccak leaves).
+    pub kyc_merkle_root: [u8; 32],
+    /// Slot that opened the current 24h floating window (0 = none open).
+    pub window_start_slot: u64,
+    /// Highest active_utilization reached during the current window.
+    pub peak_active_utilization: u64,
+    /// Running micro-premium taxi meter (accrued, settled at window close).
+    pub accumulated_premiums: u64,
+    /// Unix timestamp of the last daily settlement (ledger reset).
+    pub last_settlement_timestamp: i64,
     pub frozen: bool,
     pub bump: u8,
 }
 
 impl InstitutionalCreditLine {
-    pub const SPACE: usize = 8 + 32 + 32 + 8 + 8 + 1 + 1;
+    pub const SPACE: usize = 8 + 32 + 32 + 8 + 8 + 32 + 8 + 8 + 8 + 8 + 1 + 1;
+}
+
+/// Per-desk borrow mirror for one mint — principal out + settled premiums.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct DeskPosition {
+    pub institution: Pubkey,
+    pub mint: Pubkey,
+    /// Principal currently checked out of this mint's pool vault.
+    pub active_principal: u64,
+    /// Premium accrued this window in this mint (native-asset settlement).
+    pub accumulated_premiums: u64,
+    /// Daily invoices settled to date.
+    pub settled_invoices: u64,
+    pub bump: u8,
+}
+
+impl DeskPosition {
+    pub const SPACE: usize = 8 + 32 + 32 + 8 + 8 + 8 + 1;
 }
 
 // ── Tranche Vault (noviscia-tranche-vault) ─────────────────────────────────
