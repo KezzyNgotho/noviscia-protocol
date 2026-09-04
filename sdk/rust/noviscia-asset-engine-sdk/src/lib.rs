@@ -24,7 +24,8 @@ use solana_sdk::sysvar::rent::ID as RENT_ID;
 
 use noviscia_types::{
     ASSET_AUTHORITY_SEED, ASSET_CREDIT_LINE_SEED, ASSET_ENGINE_PROGRAM_ID, ASSET_FEE_VAULT_SEED,
-    ASSET_POOL_SEED, ASSET_REGISTRY_SEED, ASSET_VAULT_SEED, DESK_POSITION_SEED,
+    ASSET_POOL_SEED, ASSET_REGISTRY_SEED, ASSET_VAULT_SEED, BPS, DESK_POSITION_SEED,
+    GRACE_SLOTS, LATE_FEE_BASE, LATE_FEE_RATE_BPS, WINDOW_SLOTS,
 };
 
 pub use noviscia_types::{AssetEngineRegistry, AssetPool, DeskPosition, InstitutionalCreditLine};
@@ -380,7 +381,13 @@ pub fn build_set_kyc_root_ix(
 
 /// Build `settle_daily` — Phase 3 daily clearing house settlement.
 ///
-/// The desk treasury returns the exact native asset:
+/// The desk treasury returns the exact native asset. `late_fee_payment` is the
+/// deterministic per-block default interest during the 2h grace phase
+/// (`compute_late_fee(desk_position.active_principal, overdue_blocks)`); pass
+/// `0` while the 24h window is still open. After the grace window the program
+/// refuses settlement (status "Breached" → off-chain Master Loan Agreement).
+///
+/// Account order mirrors the on-chain `SettleDaily` context:
 /// 0. pool (mut)
 /// 1. pool_vault (mut)
 /// 2. fee_vault (mut)
@@ -397,6 +404,7 @@ pub fn build_settle_daily_ix(
     treasury_token_account: Pubkey,
     principal_payment: u64,
     premium_payment: u64,
+    late_fee_payment: u64,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
@@ -411,6 +419,7 @@ pub fn build_settle_daily_ix(
     let mut data = anchor_discriminator("settle_daily").to_vec();
     data.extend_from_slice(&principal_payment.to_le_bytes());
     data.extend_from_slice(&premium_payment.to_le_bytes());
+    data.extend_from_slice(&late_fee_payment.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
 
@@ -495,6 +504,45 @@ pub fn compute_premium(principal: u64, base_premium_rate_bps: u16, min_premium_l
     (bps_premium as u64).max(min_premium_lamports)
 }
 
+/// Per-block default-interest meter for the 2h grace phase (mirrors the
+/// on-chain formula exactly). `overdue_blocks` counts slots past the 24h
+/// maturity; zero once the window is still open.
+pub fn compute_late_fee(principal: u64, overdue_blocks: u64) -> u64 {
+    if overdue_blocks == 0 {
+        return 0;
+    }
+    let accrued = (principal as u128)
+        .checked_mul(LATE_FEE_RATE_BPS as u128)
+        .and_then(|x| x.checked_mul(overdue_blocks as u128))
+        .unwrap_or(0)
+        / (BPS as u128 * LATE_FEE_BASE as u128);
+    accrued as u64
+}
+
+/// Deterministic posture of the desk's 24h floating window at `current_slot`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WindowPosture {
+    NoWindow,
+    Open,
+    Overdue,
+    Breached,
+}
+
+pub fn window_posture(window_start_slot: u64, current_slot: u64) -> WindowPosture {
+    if window_start_slot == 0 {
+        return WindowPosture::NoWindow;
+    }
+    let mature = window_start_slot.saturating_add(WINDOW_SLOTS);
+    if current_slot < mature {
+        return WindowPosture::Open;
+    }
+    if current_slot < mature.saturating_add(GRACE_SLOTS) {
+        WindowPosture::Overdue
+    } else {
+        WindowPosture::Breached
+    }
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -507,6 +555,25 @@ mod tests {
         assert_eq!(compute_premium(1_000_000, 30, 0), 3_000);
         assert_eq!(compute_premium(1_000_000, 12, 0), 1_200);
         assert_eq!(compute_premium(1_000, 12, 500), 500); // min premium floor
+    }
+
+    #[test]
+    fn late_fee_and_window_posture_mirror_onchain_safeguards() {
+        // 0 overdue blocks => no penalty.
+        assert_eq!(compute_late_fee(1_000_000_000, 0), 0);
+        // 50 micro-bps per slot => 5 lamports per slot per 1e9 borrowed bucket.
+        assert_eq!(compute_late_fee(1_000_000_000, 200), 100_000);
+        assert_eq!(compute_late_fee(1_000_000_000, 18_000), 9_000_000);
+
+        let start = 1_000;
+        assert_eq!(window_posture(start, 999), WindowPosture::Open);
+        let mature = start + WINDOW_SLOTS;
+        assert_eq!(window_posture(start, mature - 1), WindowPosture::Open);
+        assert_eq!(window_posture(start, mature), WindowPosture::Overdue);
+        assert_eq!(window_posture(start, mature + GRACE_SLOTS - 1), WindowPosture::Overdue);
+        assert_eq!(window_posture(start, mature + GRACE_SLOTS), WindowPosture::Breached);
+        // No window open yet.
+        assert_eq!(window_posture(0, 5), WindowPosture::NoWindow);
     }
 
     #[test]
@@ -568,6 +635,7 @@ mod tests {
         let tta = Pubkey::new_unique();
         let settle = build_settle_daily_ix(
             ASSET_ENGINE_PROGRAM_ID, mint, institution, treasury, tta, 1_000_000_000, 50_000,
+            777,
         );
         assert_eq!(&settle.data[..8], &anchor_discriminator("settle_daily"));
         assert_eq!(settle.accounts.len(), 8);
@@ -575,6 +643,10 @@ mod tests {
         assert_eq!(settle.accounts[4].pubkey, desk_position_pda(&ASSET_ENGINE_PROGRAM_ID, &institution, &mint));
         assert_eq!(settle.accounts[5].pubkey, treasury);
         assert!(settle.accounts[5].is_signer);
+        // principal, premium, then late-fee lamports appended in order.
+        assert_eq!(&settle.data[8..16], &1_000_000_000u64.to_le_bytes());
+        assert_eq!(&settle.data[16..24], &50_000u64.to_le_bytes());
+        assert_eq!(&settle.data[24..32], &777u64.to_le_bytes());
 
         // set_kyc_root carries the 32-byte root and references the credit line.
         let root = [42u8; 32];

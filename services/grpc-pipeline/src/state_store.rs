@@ -4,6 +4,11 @@ use dashmap::DashMap;
 /// Default TTL (in seconds) before cached state is considered stale.
 const STALE_TTL_SECS: u64 = 30;
 
+/// Mirrors the on-chain 24h floating window (~400ms slots).
+const WINDOW_SLOTS: u64 = 216_000;
+/// Mirrors the on-chain 2h hard-escalation grace window.
+const GRACE_SLOTS: u64 = 18_000;
+
 // ─────────────────────────── Market State ───────────────────────────
 
 #[derive(Debug, Clone)]
@@ -102,7 +107,33 @@ pub struct TrancheState {
 // ─────────────────── Asset Engine Desk State ────────────────────────
 
 /// Floating-window desk view streamed to the Risk Sentinel: per-mint borrow
-/// mirror + the desk's peak utilization and accrued taxi-meter premiums.
+/// mirror + the desk's peak utilization, accrued taxi-meter premiums, and the
+/// deterministic posture that drives the Phase-2 soft lock / Phase-3 breach
+/// escalation wall.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeskPosture {
+    NoWindow,
+    Open,
+    Overdue,
+    Breached,
+}
+
+impl DeskState {
+    pub fn window_posture(&self, current_slot: u64) -> DeskPosture {
+        if self.window_start_slot == 0 {
+            return DeskPosture::NoWindow;
+        }
+        let mature = self.window_start_slot.saturating_add(WINDOW_SLOTS);
+        if current_slot < mature {
+            DeskPosture::Open
+        } else if current_slot < mature.saturating_add(GRACE_SLOTS) {
+            DeskPosture::Overdue
+        } else {
+            DeskPosture::Breached
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct DeskState {
     pub institution: String,
@@ -678,5 +709,32 @@ mod tests {
         // Wrong mint / wrong institution must not resolve.
         assert!(store.get_desk("desk1", "SOL").is_none());
         assert!(store.get_desk("desk2", "USDC").is_none());
+    }
+
+    #[test]
+    fn desk_posture_tracks_soft_lock_grace_and_breach() {
+        let desk = DeskState {
+            institution: "desk1".into(),
+            mint: "USDC".into(),
+            active_principal: 150_000_000,
+            accumulated_premiums: 12_500,
+            window_start_slot: 1_000_000,
+            peak_active_utilization: 180_000_000,
+            last_settlement_timestamp: 0,
+            updated_at: Instant::now(),
+        };
+        assert_eq!(desk.window_posture(1_000_000), DeskPosture::Open);
+        let mature = 1_000_000 + WINDOW_SLOTS;
+        assert_eq!(desk.window_posture(mature - 1), DeskPosture::Open);
+        assert_eq!(desk.window_posture(mature), DeskPosture::Overdue);
+        assert_eq!(desk.window_posture(mature + GRACE_SLOTS - 1), DeskPosture::Overdue);
+        assert_eq!(desk.window_posture(mature + GRACE_SLOTS), DeskPosture::Breached);
+
+        // A desk that has never borrowed reports no-window.
+        let fresh = DeskState {
+            window_start_slot: 0,
+            ..desk
+        };
+        assert_eq!(fresh.window_posture(99_999_999), DeskPosture::NoWindow);
     }
 }

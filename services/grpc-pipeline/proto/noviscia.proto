@@ -112,7 +112,19 @@ message TrancheStateResponse {
 }
 
 // Asset-engine desk (floating KYC window) — Risk Sentinel peak view.
-message DeskStatusRequest { string institution = 1; string mint = 2; }
+message DeskStatusRequest {
+  string institution = 1;
+  string mint = 2;
+  // Slot observed by the caller driving the deterministic posture outcome.
+  int64 current_slot = 3;
+}
+// Deterministic window posture: no-window / open / overdue (grace) / breached.
+enum DeskPosture {
+  DESK_POSTURE_NO_WINDOW = 0;
+  DESK_POSTURE_OPEN = 1;
+  DESK_POSTURE_OVERDUE = 2;
+  DESK_POSTURE_BREACHED = 3;
+}
 message DeskStatusResponse {
   string institution = 1;
   string mint = 2;
@@ -121,6 +133,7 @@ message DeskStatusResponse {
   int64 window_start_slot = 5;
   int64 peak_active_utilization = 6;
   int64 last_settlement_timestamp = 7;
+  DeskPosture posture = 8;
 }
 
 // Atomic Jito bundle submission: Transaction A (premium/capacity) + Transaction B (trade).

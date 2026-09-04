@@ -7,7 +7,7 @@ use tracing::{error, info, warn};
 
 use crate::event_parser::ParsedEvent;
 use crate::jito::JitoClient;
-use crate::state_store::StateStore;
+use crate::state_store::{DeskPosture, StateStore};
 
 // Include the generated protobuf code.
 pub mod pipeline {
@@ -225,6 +225,13 @@ impl NovisciaStream for NovisciaGrpcServer {
             ))
         })?;
 
+        let posture = match desk.window_posture(req.current_slot as u64) {
+            DeskPosture::NoWindow => pipeline::DeskPosture::NoWindow,
+            DeskPosture::Open => pipeline::DeskPosture::Open,
+            DeskPosture::Overdue => pipeline::DeskPosture::Overdue,
+            DeskPosture::Breached => pipeline::DeskPosture::Breached,
+        };
+
         Ok(Response::new(DeskStatusResponse {
             institution: desk.institution,
             mint: desk.mint,
@@ -233,6 +240,7 @@ impl NovisciaStream for NovisciaGrpcServer {
             window_start_slot: desk.window_start_slot as i64,
             peak_active_utilization: desk.peak_active_utilization as i64,
             last_settlement_timestamp: desk.last_settlement_timestamp,
+            posture: posture.into(),
         }))
     }
 

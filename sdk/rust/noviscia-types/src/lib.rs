@@ -446,6 +446,11 @@ pub const ASSET_CREDIT_LINE_SEED: &[u8] = b"credit-line";
 pub const DESK_POSITION_SEED: &[u8] = b"desk-position";
 /// Floating KYC/allocation window length (~24h @ 400ms blocks).
 pub const WINDOW_SLOTS: u64 = 216_000;
+/// Hard-escalation grace window (~2h @ 400ms blocks) before a desk "Breaches".
+pub const GRACE_SLOTS: u64 = 18_000;
+/// Micro-bps per overdue slot for the per-block late-fee taxi meter.
+pub const LATE_FEE_RATE_BPS: u64 = 50;
+pub const LATE_FEE_BASE: u64 = 10_000;
 
 /// On-chain program ID for `noviscia-asset-engine` (devnet).
 pub const ASSET_ENGINE_PROGRAM_ID: Pubkey =
