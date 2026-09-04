@@ -1,11 +1,12 @@
 [package]
 name = "noviscia-types"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Shared types, PDA seeds, and program IDs for the Noviscia protocol."
 license = "Apache-2.0"
+readme = "README.md"
 repository = "https://github.com/KezzyNgotho/Noviscia-protocal"
-homepage = "https://noviscia.org"
+homepage = "https://noviscia.com"
 documentation = "https://docs.rs/noviscia-types"
 keywords = ["solana", "defi", "clearing-house", "anchor", "noviscia"]
 categories = ["cryptography::cryptocurrencies", "no-std"]
