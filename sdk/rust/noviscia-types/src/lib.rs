@@ -428,6 +428,83 @@ impl SlotLedger {
     pub const SPACE: usize = 8 + 32 + 8 + 8 + 8 + 8 + 1 + 1;
 }
 
+// ── Asset Engine (noviscia-asset-engine) ───────────────────────────────────
+
+/// Global engine registry PDA seed.
+pub const ASSET_REGISTRY_SEED: &[u8] = b"asset-registry";
+/// Per-asset pool PDA seed.
+pub const ASSET_POOL_SEED: &[u8] = b"asset-pool";
+/// Per-asset principal vault token-account PDA seed.
+pub const ASSET_VAULT_SEED: &[u8] = b"asset-vault";
+/// Per-asset premium fee vault token-account PDA seed.
+pub const ASSET_FEE_VAULT_SEED: &[u8] = b"asset-fees";
+/// PDA authorizing per-asset vault transfers.
+pub const ASSET_AUTHORITY_SEED: &[u8] = b"asset-authority";
+/// Institutional credit line PDA seed.
+pub const ASSET_CREDIT_LINE_SEED: &[u8] = b"credit-line";
+
+/// On-chain program ID for `noviscia-asset-engine` (devnet).
+pub const ASSET_ENGINE_PROGRAM_ID: Pubkey =
+    anchor_lang::solana_program::pubkey!("4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5");
+
+/// Wrap-SOL mint (native-interop profile for SOL exposure).
+pub const WSOL_MINT: Pubkey =
+    anchor_lang::solana_program::pubkey!("So11111111111111111111111111111111111111112");
+
+/// Global asset engine configuration.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct AssetEngineRegistry {
+    pub authority: Pubkey,
+    pub guard_authority: Pubkey,
+    pub wsol_mint: Pubkey,
+    pub usdc_mint: Pubkey,
+    pub nvsc_mint: Pubkey,
+    pub supported_count: u8,
+    pub paused: bool,
+    pub bump: u8,
+}
+
+impl AssetEngineRegistry {
+    pub const SPACE: usize = 8 + 32 + 32 + 32 + 32 + 32 + 1 + 1 + 1;
+}
+
+/// Per-mint pool profile: liquidity, premium params, and capacity ceiling.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct AssetPool {
+    pub mint: Pubkey,
+    pub pool_bump: u8,
+    pub vault: Pubkey,
+    pub fee_vault: Pubkey,
+    pub vault_authority: Pubkey,
+    pub decimals: u8,
+    pub supported: bool,
+    pub total_idle_capital: u64,
+    pub active_credit_utilization: u64,
+    pub base_premium_rate_bps: u16,
+    pub premium_cap_bps: u16,
+    pub min_premium_lamports: u64,
+    pub max_capacity: u64,
+}
+
+impl AssetPool {
+    pub const SPACE: usize = 8 + 32 + 1 + 32 + 32 + 32 + 1 + 1 + 8 + 8 + 2 + 2 + 8 + 8;
+}
+
+/// Aggregate institutional multi-asset credit ceiling.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct InstitutionalCreditLine {
+    pub institution: Pubkey,
+    pub authority: Pubkey,
+    pub total_credit_limit: u64,
+    pub active_utilization: u64,
+    pub frozen: bool,
+    pub bump: u8,
+}
+
+impl InstitutionalCreditLine {
+    pub const SPACE: usize = 8 + 32 + 32 + 8 + 8 + 1 + 1;
+}
+
 // ── Tranche Vault (noviscia-tranche-vault) ─────────────────────────────────
 
 /// Dual-tranche vault config PDA seed.
