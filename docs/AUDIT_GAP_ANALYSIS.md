@@ -35,6 +35,22 @@ the commit that closed them where applicable.
      (§3m), governance (§3n), and the MLA legal bridge (§3o). Gap-closure pointers tracked
      here.
 
+6. **crates.io + npm publishing (sdk delivery path)**
+   - `noviscia-types` 0.2.0 and `noviscia-asset-engine-sdk` 0.2.0 published to crates.io
+     (dependency order: types → asset-engine-sdk); `@noviscia/sdk` 0.4.0 published to npm
+     with the new `jito` module. Prep commits `41a012f`, `808a1ac`, `3185102`, `2d01e16`;
+     publish itself is registry-side (no commit).
+
+7. **Jito Block Engine tip submission (borrower flow)**
+   - `sdk/src/jito.ts` closes the previously-open lander gap: `assembleVersionedTransactions`
+     compiles the atomic pull → venue trade → repay sequence into one-blockhash
+     `VersionedTransaction`s with the conditional leader tip (`SystemProgram.transfer` to a
+     rotated tip account) appended to transaction 0; `JitoBundleClient` submits base64 bundles
+     via the Block Engine JSON-RPC (`sendBundle`, `getTipAccounts`, `getBundleTipLimits`,
+     `getBundleStatuses`) with `JitoRpcError` handling. Verified by 14 mocked-network tests
+     (src/jito.test.ts). Remaining: devnet field-test of bundle landing (open item).
+     See the SDK palette commit (`sdk/src/jito.ts`).
+
 ## Open gaps (unchanged from the legacy CCP suite)
 
 1. **Vault reserve math + atomic recall proofs** — ensure `sync_total_assets` and every
@@ -53,13 +69,17 @@ the commit that closed them where applicable.
 1. **Asset engine on live devnet** — the program (ID `4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5`)
    is fully unit-tested (27) but rollout/verification against devnet and configuration of the
    deployed three-tier Squads keys is open; see `docs/DEVNET.md` for the deploy runbook.
-2. **TS SDK parity verification against the on-chain program** — `@noviscia/sdk` 0.3.0 exposes
-   the asset-engine builders + PDA derivations + LP-share math (64 tests), but no devnet-facing
-   integration test proves the TS builders interact with a deployed program byte-for-byte.
+2. **TS SDK parity verification against the on-chain program** — `@noviscia/sdk` 0.4.0 exposes
+   the asset-engine builders + PDA derivations + LP-share math + the Jito bundle path (78 tests),
+   but no devnet-facing integration test proves the TS builders interact with a deployed program
+   byte-for-byte.
 3. **Cross-tier evidence tooling** — a single script/test that proves RBAC tier mapping
    (breaker/committee/upgrade) purely from the on-chain registry without trusting the SDK.
 4. **Gateway bridge for the asset engine** — the Unified Collateral Gateway does not yet route
    institutional asset-engine intents; the engine is reachable via SDK builders only.
+5. **Jito bundle field-test on devnet** — the SDK lander is unit-tested offline (mocked fetch);
+   a live submission against `devnet.block-engine.jito.wtf` proving bundle landing + tip auction
+   acceptance is not yet demonstrated.
 
 ## Recommended priorities
 
@@ -68,3 +88,4 @@ the commit that closed them where applicable.
 3. Netting floor enforcement + consolidate relayer (medium-high)
 4. CCP lifecycle expiry & sweep (medium)
 5. Gateway production auth + asset-engine intent bridge (medium)
+6. Jito bundle field-test on devnet (borrower path E2E)

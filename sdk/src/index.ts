@@ -96,3 +96,18 @@ export {
   type AssetPool,
   type WindowPosture,
 } from './assetEngine';
+export {
+  JitoBundleClient,
+  JitoRpcError,
+  assembleVersionedTransactions,
+  buildTipInstruction,
+  selectTipAccount,
+  resolveBundleTipLamports,
+  JITO_BLOCK_ENGINE_URLS,
+  KNOWN_JITO_TIP_ACCOUNTS,
+  BUNDLE_MAX_TRANSACTIONS,
+  DEFAULT_TIP_LAMPORTS,
+  type BundleTipLimits,
+  type JitoBundleStatus,
+  type AssembleBundleOptions,
+} from './jito';

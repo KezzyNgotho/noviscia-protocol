@@ -68,10 +68,13 @@ and routes them to the Jito Block Engine.
    micro-premium) is placed directly ahead of **Transaction B** (the desk's private arbitrage
    trade) — same block, same slot, atomic.
 
-5. **Block execution.** The compiled bundle is sent to the validator. The trade completes inside
-   the 400ms block window, risk dissolves at block close, and capital returns to the pool's idle
-   base. The borrower never manually holds or manages the loan; execution is automated via code
-   constraints.
+5. **Block execution.** The compiled bundle — signed by the desk and the tip payer, carrying the
+   conditional leader tip — is POSTed to the Block Engine over base64 (`JitoBundleClient.sendBundle`)
+   and lands atomically via the Jito leader: the desk's trade executes only if the engine's
+   allocation instructions succeed, and the tip settles only if the allocation assertions passed.
+   The trade completes inside the 400ms block window, risk dissolves at block close, and capital
+   returns to the pool's idle base. The borrower never manually holds or manages the loan;
+   execution is automated via code constraints.
 
 ### What exists in the repo today
 
@@ -81,7 +84,7 @@ and routes them to the Jito Block Engine.
 | Persistent gRPC / Yellowstone feed | `services/grpc-pipeline/src/yellowstone_subscriber.rs` — Geyser gRPC subscription over Noviscia program IDs with reconnect/backoff |
 | Atomic bundle assembly | `sdk/src/creditLine.ts` → `buildCreditBundle` (single-block `[pull, repay]` with venue swaps spliced in); Rust reference: `sdk/rust/noviscia-credit-line/examples/single_block_arb_bundle.rs` |
 | On-chain execution | `noviscia-asset-engine` (`allocate_asset_capacity` → `settle_daily`) and `noviscia-credit-line` |
-| Jito tip submission / lander | **go-live wiring**: bundle *assembly* is implemented; tip-payer routing into the Jito Block Engine is the remaining integration (see gap analysis) |
+| Jito tip submission / lander | **Implemented** — `sdk/src/jito.ts`: `assembleVersionedTransactions` (one blockhash across txns, tip `SystemProgram.transfer` to a rotated tip account appended to txn 0 so the tip pays only when the credit-allocation assertions pass) + `JitoBundleClient` (`sendBundle` over base64 → `/api/v1/bundles`, `getTipAccounts`, `getBundleTipLimits`, `getBundleStatuses`). Shipped in `@noviscia/sdk` 0.4.0. Devnet field-test of bundle landing is the remaining step (gap analysis) |
 
 ---
 
