@@ -4,9 +4,9 @@ import { PublicKey } from '@solana/web3.js';
 import { PROGRAM_IDS, USDC_MINT, NVSC_MINT, NVSCUSDC_MINT, TREASURY_ID } from './ids';
 
 describe('ids', () => {
-  it('exports 17 program IDs', () => {
+  it('exports 18 program IDs', () => {
     const keys = Object.keys(PROGRAM_IDS);
-    assert.equal(keys.length, 17, `expected 17 programs, got ${keys.length}: ${keys.join(', ')}`);
+    assert.equal(keys.length, 18, `expected 18 programs, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('every program ID is a valid PublicKey', () => {
@@ -24,6 +24,7 @@ describe('ids', () => {
     assert.equal(PROGRAM_IDS.escrow.toBase58(), '2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ');
     assert.equal(PROGRAM_IDS.jitRisk.toBase58(), '3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh');
     assert.equal(PROGRAM_IDS.creditLine.toBase58(), '8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg');
+    assert.equal(PROGRAM_IDS.assetEngine.toBase58(), '4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5');
   });
 
   it('mint constants are valid PublicKeys', () => {
