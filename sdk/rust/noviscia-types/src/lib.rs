@@ -325,3 +325,177 @@ mod tests {
         assert_eq!(Borrower::default().try_to_vec().unwrap().len(), 50);
     }
 }
+
+// ── Capacity Engine (noviscia-capacity) ────────────────────────────────────
+
+/// Capacity engine config PDA seed.
+pub const CAPACITY_SEED: &[u8] = b"capacity";
+/// Congestion oracle PDA seed.
+pub const CONGESTION_SEED: &[u8] = b"congestion";
+/// Client account PDA seed.
+pub const CLIENT_SEED: &[u8] = b"client";
+/// Per-slot ledger PDA seed.
+pub const SLOT_LEDGER_SEED: &[u8] = b"slot-ledger";
+/// Treasury token account PDA seed.
+pub const TREASURY_SEED: &[u8] = b"treasury";
+/// Treasury authority PDA seed (owner of the token account).
+pub const TREASURY_AUTH_SEED: &[u8] = b"treasury-auth";
+
+/// On-chain program ID for `noviscia-capacity` (devnet).
+pub const CAPACITY_PROGRAM_ID: Pubkey =
+    anchor_lang::solana_program::pubkey!("JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc");
+
+/// Institutional client tier.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Hash, Debug, Default)]
+#[repr(u8)]
+pub enum ClientTier {
+    #[default]
+    TierOne = 0,
+    TierTwo = 1,
+}
+
+/// Global capacity engine configuration.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct CapacityConfig {
+    pub authority: Pubkey,
+    pub guard_authority: Pubkey,
+    pub usdc_mint: Pubkey,
+    pub kyc_merkle_root: [u8; 32],
+    pub base_premium_bps: u64,
+    pub premium_cap_bps: u64,
+    pub congestion_multiplier_bps: u64,
+    pub min_premium_lamports: u64,
+    pub paused: bool,
+    pub bump: u8,
+}
+
+impl CapacityConfig {
+    pub const SPACE: usize = 8 + 32 + 32 + 32 + 32 + 8 + 8 + 8 + 8 + 1 + 1;
+}
+
+/// Network congestion oracle feeding the dynamic premium model.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct CongestionOracle {
+    pub load_ratio_bps: u64,
+    pub cu_consumed: u64,
+    pub cu_capacity: u64,
+    pub updated_slot: u64,
+    pub bump: u8,
+}
+
+impl CongestionOracle {
+    pub const SPACE: usize = 8 + 8 + 8 + 8 + 8 + 1;
+}
+
+/// Registered institutional client.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct ClientAccount {
+    pub operator: Pubkey,
+    pub authority: Pubkey,
+    pub tier: ClientTier,
+    pub premium_multiplier_bps: u64,
+    pub credit_limit: u64,
+    pub active_utilization: u64,
+    pub available_balance: u64,
+    pub margin_posted: u64,
+    pub frozen: bool,
+    pub bump: u8,
+}
+
+impl ClientAccount {
+    pub const SPACE: usize = 8 + 32 + 32 + 1 + 8 + 8 + 8 + 8 + 8 + 1 + 1;
+
+    pub fn capacity_budget(&self) -> u64 {
+        self.credit_limit
+            .saturating_add(self.margin_posted)
+            .saturating_sub(self.active_utilization)
+    }
+}
+
+/// Per-slot capacity ledger.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct SlotLedger {
+    pub client: Pubkey,
+    pub slot: u64,
+    pub capacity_granted: u64,
+    pub utilized: u64,
+    pub premium_paid: u64,
+    pub settled: bool,
+    pub bump: u8,
+}
+
+impl SlotLedger {
+    pub const SPACE: usize = 8 + 32 + 8 + 8 + 8 + 8 + 1 + 1;
+}
+
+// ── Tranche Vault (noviscia-tranche-vault) ─────────────────────────────────
+
+/// Dual-tranche vault config PDA seed.
+pub const TRANCHES_SEED: &[u8] = b"tranches";
+/// Protected tranche ledger/vault seeds.
+pub const PROTECTED_VAULT_SEED: &[u8] = b"protected-vault";
+/// Institutional tranche ledger/vault seeds.
+pub const INSTI_VAULT_SEED: &[u8] = b"insti-vault";
+/// Tranche position PDA seed.
+pub const TRANCHE_POSITION_SEED: &[u8] = b"position";
+
+/// On-chain program ID for `noviscia-tranche-vault` (devnet).
+pub const TRANCHE_VAULT_PROGRAM_ID: Pubkey =
+    anchor_lang::solana_program::pubkey!("9Sk1zLo7uprmtrskoZQS6zf1KFSNv4uTCxMsbqGVMCMb");
+
+/// Tranche discriminator.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Hash, Debug, Default)]
+#[repr(u8)]
+pub enum Tranche {
+    #[default]
+    Protected = 0,
+    Institutional = 1,
+}
+
+/// Per-tranche NAV ledger.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct TrancheVault {
+    pub tranche: Tranche,
+    pub nav_usdc: u64,
+    pub total_shares: u64,
+    pub last_accrual_ts: i64,
+    pub bump: u8,
+}
+
+impl TrancheVault {
+    pub const SPACE: usize = 8 + 1 + 8 + 8 + 8 + 1;
+}
+
+/// LP position inside a tranche.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct TranchePosition {
+    pub owner: Pubkey,
+    pub tranche: Tranche,
+    pub shares: u64,
+    pub bump: u8,
+}
+
+impl TranchePosition {
+    pub const SPACE: usize = 8 + 32 + 1 + 8 + 1;
+}
+
+#[cfg(test)]
+mod capacity_tests {
+    use super::*;
+
+    #[test]
+    fn capacity_client_space_matches_constant() {
+        assert_eq!(ClientAccount::SPACE, 8 + 32 + 32 + 1 + 8 + 8 + 8 + 8 + 8 + 1 + 1);
+    }
+
+    #[test]
+    fn capacity_budget_accounts_margin() {
+        let c = ClientAccount {
+            credit_limit: 500_000_000,
+            margin_posted: 100_000_000,
+            active_utilization: 200_000_000,
+            ..ClientAccount::default()
+        };
+        assert_eq!(c.capacity_budget(), 400_000_000);
+    }
+}

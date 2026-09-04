@@ -2989,6 +2989,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61807f77802ff30975e01f4f071c8ba10c022052f98b3294119f3e615d13e5be"
 
 [[package]]
+name = "noviscia-capacity"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "sha3",
+ "solana-program",
+ "solana-security-txt",
+]
+
+[[package]]
+name = "noviscia-capacity-sdk"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "noviscia-types",
+ "sha3",
+ "solana-program",
+ "solana-sdk",
+ "spl-token",
+]
+
+[[package]]
 name = "noviscia-clearing"
 version = "0.1.0"
 dependencies = [
@@ -3007,6 +3030,7 @@ name = "noviscia-client"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "noviscia-capacity-sdk",
  "noviscia-types",
  "reqwest 0.12.28",
  "serde",
@@ -3089,6 +3113,16 @@ dependencies = [
  "solana-program",
  "solana-sdk",
  "spl-token",
+]
+
+[[package]]
+name = "noviscia-tranche-vault"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "solana-program",
+ "solana-security-txt",
 ]
 
 [[package]]

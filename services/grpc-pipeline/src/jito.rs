@@ -35,9 +35,26 @@ impl JitoClient {
     pub async fn submit_bundle(
         &self,
         transaction_bytes: &[u8],
+        tip_lamports: u64,
+    ) -> Result<String> {
+        self.submit_bundle_many(&[transaction_bytes.to_vec()], tip_lamports)
+            .await
+    }
+
+    /// Submit an atomic multi-transaction bundle (Transaction A + Transaction
+    /// B + any settlement legs). Every transaction lands in the same slot or
+    /// none do — this is how the premium and the desk trade are sealed.
+    pub async fn submit_bundle_many(
+        &self,
+        transactions: &[Vec<u8>],
         _tip_lamports: u64,
     ) -> Result<String> {
         let endpoint = format!("{}/api/v1/bundles", self.block_engine_url);
+
+        let encoded: Vec<String> = transactions
+            .iter()
+            .map(|tx| base64_encode(tx))
+            .collect();
 
         let payload = serde_json::json!({
             "jsonrpc": "2.0",
@@ -45,9 +62,7 @@ impl JitoClient {
             "method": "sendBundle",
             "params": [
                 {
-                    "transactions": [
-                        base64_encode(transaction_bytes)
-                    ],
+                    "transactions": encoded,
                     "encoding": "base64"
                 }
             ]
@@ -280,5 +295,24 @@ mod tests {
             err: String::new(),
         };
         assert!(!status.is_landed());
+    }
+
+    #[test]
+    fn submit_payload_encodes_many_transactions() {
+        // Shield the JSON layout: multiple transactions must all be in the
+        // `transactions` array so Jito treats them as one atomic bundle.
+        let payload = serde_json::json!({
+            "jsonrpc": "2.0",
+            "params": [{
+                "transactions": [base64_encode(&[1u8, 2, 3]), base64_encode(&[4u8, 5, 6])],
+                "encoding": "base64"
+            }]
+        });
+        let txs = payload["params"][0]["transactions"]
+            .as_array()
+            .expect("transactions array");
+        assert_eq!(txs.len(), 2);
+        assert_eq!(txs[0].as_str(), Some("AQID"));
+        assert_eq!(txs[1].as_str(), Some("BAUG"));
     }
 }

@@ -145,6 +145,72 @@ impl NovisciaStream for NovisciaGrpcServer {
         }))
     }
 
+    // ── Unary RPC: Capacity Engine Status ──
+
+    async fn get_capacity_status(
+        &self,
+        request: Request<CapacityStatusRequest>,
+    ) -> Result<Response<CapacityStatusResponse>, Status> {
+        let req = request.into_inner();
+        let cap = self
+            .state
+            .get_capacity(&req.operator)
+            .ok_or_else(|| {
+                Status::not_found(format!(
+                    "capacity status for operator '{}' not found or stale",
+                    req.operator
+                ))
+            })?;
+
+        Ok(Response::new(CapacityStatusResponse {
+            operator: cap.operator.clone(),
+            credit_limit: cap.credit_limit as i64,
+            active_utilization: cap.active_utilization as i64,
+            available_balance: cap.available_balance() as i64,
+            margin_posted: cap.margin_posted as i64,
+            tier: cap.tier as i32,
+            premium_multiplier_bps: cap.premium_multiplier_bps as i64,
+            frozen: cap.frozen,
+            kyc_verified: cap.kyc_verified,
+            slot: cap.updated_at.elapsed().as_secs() as i64,
+            current_premium_bps: cap.current_premium_bps as i64,
+            load_ratio_bps: cap.load_ratio_bps as i64,
+        }))
+    }
+
+    // ── Unary RPC: Tranche State ──
+
+    async fn get_tranche_state(
+        &self,
+        request: Request<TrancheStateRequest>,
+    ) -> Result<Response<TrancheStateResponse>, Status> {
+        let req = request.into_inner();
+        let tranche = self
+            .state
+            .get_tranche(&req.tranche_label)
+            .ok_or_else(|| {
+                Status::not_found(format!(
+                    "tranche '{}' not found or stale",
+                    req.tranche_label
+                ))
+            })?;
+
+        let share_price = if tranche.total_shares > 0.0 {
+            tranche.nav_usdc / tranche.total_shares
+        } else {
+            1.0
+        };
+
+        Ok(Response::new(TrancheStateResponse {
+            tranche_label: tranche.tranche_label,
+            nav_usdc: tranche.nav_usdc as i64,
+            total_shares: tranche.total_shares as i64,
+            share_price: (share_price * 1e6) as i64,
+            loss_cap_bps: tranche.loss_cap_bps as i64,
+            accepts_deposits: tranche.accepts_deposits,
+        }))
+    }
+
     // ── Server-streaming RPC ──
 
     type StreamEventsStream = tokio_stream::wrappers::ReceiverStream<Result<EventEnvelope, Status>>;
@@ -286,6 +352,88 @@ impl NovisciaStream for NovisciaGrpcServer {
             error: String::new(),
             bundle_id: String::new(),
         }))
+    }
+
+    // ── Unary RPC: Atomic Bundle Submission ──
+
+    async fn submit_bundle(
+        &self,
+        request: Request<BundleRequest>,
+    ) -> Result<Response<BundleResponse>, Status> {
+        let req = request.into_inner();
+
+        if req.transactions.is_empty() {
+            return Ok(Response::new(BundleResponse {
+                success: false,
+                bundle_id: String::new(),
+                status: "rejected".into(),
+                error: "empty bundle: Transaction A and B must be pre-signed".into(),
+            }));
+        }
+
+        // Reserve capacity against the risk engine the moment the bundle is
+        // accepted for relay.
+        if !req.operator.is_empty() {
+            let cap = self.state.get_capacity(&req.operator);
+            let mut state = cap.unwrap_or(crate::state_store::CapacityState {
+                operator: req.operator.clone(),
+                credit_limit: req.desired_capacity as u64,
+                active_utilization: 0,
+                available_balance: 0,
+                margin_posted: 0,
+                tier: 1,
+                premium_multiplier_bps: 100,
+                frozen: false,
+                kyc_verified: false,
+                current_premium_bps: 0,
+                load_ratio_bps: 0,
+                updated_at: std::time::Instant::now(),
+            });
+            state.active_utilization =
+                state.active_utilization.saturating_add(req.desired_capacity.max(0) as u64);
+            state.available_balance = state.available_balance();
+            state.kyc_verified = true;
+            state.updated_at = std::time::Instant::now();
+            self.state.update_capacity(state);
+
+            info!(
+                operator = %req.operator,
+                desired_capacity = req.desired_capacity,
+                "capacity reserved for atomic bundle submission"
+            );
+        }
+
+        let tip = if req.tip_lamports > 0 {
+            req.tip_lamports as u64
+        } else {
+            self.jito.estimate_tip_lamports().await.unwrap_or(10_000)
+        };
+
+        match self.jito.submit_bundle_many(&req.transactions, tip).await {
+            Ok(bundle_id) => {
+                info!(bundle_id = %bundle_id, legs = req.transactions.len(), "atomic bundle submitted");
+                // Surface the initial on-relay status for observability.
+                let status = match self.jito.get_bundle_status(&bundle_id).await {
+                    Ok(s) => s.confirmation_status,
+                    Err(_) => "pending".to_string(),
+                };
+                Ok(Response::new(BundleResponse {
+                    success: true,
+                    bundle_id,
+                    status,
+                    error: String::new(),
+                }))
+            }
+            Err(e) => {
+                error!(error = %e, "atomic bundle submission failed");
+                Ok(Response::new(BundleResponse {
+                    success: false,
+                    bundle_id: String::new(),
+                    status: "rejected".into(),
+                    error: format!("jito bundle rejected: {e}"),
+                }))
+            }
+        }
     }
 }
 

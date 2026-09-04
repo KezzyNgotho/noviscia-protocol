@@ -15,3 +15,4 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 bincode = "1"
 noviscia-types = { path = "../noviscia-types" }
+noviscia-capacity-sdk = { path = "../noviscia-capacity-sdk" }

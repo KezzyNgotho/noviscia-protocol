@@ -17,6 +17,8 @@ members = [
     "programs/active/gateway-auction",
     "programs/active/noviscia-credit-line",
     "programs/active/noviscia-permissioned-pool",
+    "programs/active/noviscia-capacity",
+    "programs/active/noviscia-tranche-vault",
     "programs/later/burn-engine",
     "programs/later/spot-dex",
     "programs/later/bug-bounty",
@@ -28,6 +30,7 @@ members = [
     "sdk/rust/noviscia-credit",
     "sdk/rust/noviscia-pool",
     "sdk/rust/noviscia-merge",
+    "sdk/rust/noviscia-capacity-sdk",
     "vendor/wormhole-core-bridge-solana",
     "vendor/pyth-solano-receiver",
 ]

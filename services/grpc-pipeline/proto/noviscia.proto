@@ -6,8 +6,11 @@ service NovisciaStream {
   rpc GetPosition (PositionRequest) returns (PositionResponse);
   rpc GetCreditStatus (CreditStatusRequest) returns (CreditStatusResponse);
   rpc GetPoolState (PoolStateRequest) returns (PoolStateResponse);
+  rpc GetCapacityStatus (CapacityStatusRequest) returns (CapacityStatusResponse);
+  rpc GetTrancheState (TrancheStateRequest) returns (TrancheStateResponse);
   rpc StreamEvents (StreamEventsRequest) returns (stream EventEnvelope);
   rpc SubmitTransaction (SubmitTxRequest) returns (SubmitTxResponse);
+  rpc SubmitBundle (BundleRequest) returns (BundleResponse);
 }
 
 message MarketStateRequest { string market = 1; }
@@ -77,4 +80,48 @@ message SubmitTxResponse {
   string signature = 2;
   string error = 3;
   string bundle_id = 4;
+}
+
+// Capacity engine (single-slot clearing & risk) status.
+message CapacityStatusRequest { string operator = 1; }
+message CapacityStatusResponse {
+  string operator = 1;
+  int64 credit_limit = 2;
+  int64 active_utilization = 3;
+  int64 available_balance = 4;
+  int64 margin_posted = 5;
+  int32 tier = 6;
+  int64 premium_multiplier_bps = 7;
+  bool frozen = 8;
+  bool kyc_verified = 9;
+  int64 slot = 10;
+  int64 current_premium_bps = 11;
+  int64 load_ratio_bps = 12;
+}
+
+// Dual-tranche vault state.
+message TrancheStateRequest { string tranche_label = 1; }
+message TrancheStateResponse {
+  string tranche_label = 1;
+  int64 nav_usdc = 2;
+  int64 total_shares = 3;
+  int64 share_price = 4;
+  int64 loss_cap_bps = 5;
+  bool accepts_deposits = 6;
+}
+
+// Atomic Jito bundle submission: Transaction A (premium/capacity) + Transaction B (trade).
+message BundleRequest {
+  repeated bytes transactions = 1;
+  int64 tip_lamports = 2;
+  string operator = 3;
+  int64 desired_capacity = 4;
+  int64 expiry = 5;
+  repeated bytes merkle_proof = 6;
+}
+message BundleResponse {
+  bool success = 1;
+  string bundle_id = 2;
+  string status = 3;
+  string error = 4;
 }

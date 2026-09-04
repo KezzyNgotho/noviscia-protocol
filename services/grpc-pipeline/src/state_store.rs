@@ -59,6 +59,46 @@ pub struct PoolState {
     pub updated_at: Instant,
 }
 
+// ───────────────────────── Capacity Engine State ────────────────────
+
+/// Single-slot clearing & risk engine view for a registered operator.
+#[derive(Debug, Clone)]
+pub struct CapacityState {
+    pub operator: String,
+    pub credit_limit: u64,
+    pub active_utilization: u64,
+    pub available_balance: u64,
+    pub margin_posted: u64,
+    pub tier: u8,
+    pub premium_multiplier_bps: u64,
+    pub frozen: bool,
+    pub kyc_verified: bool,
+    pub current_premium_bps: u64,
+    pub load_ratio_bps: u64,
+    pub updated_at: Instant,
+}
+
+impl CapacityState {
+    pub fn available_balance(&self) -> u64 {
+        self.credit_limit
+            .saturating_add(self.margin_posted)
+            .saturating_sub(self.active_utilization)
+    }
+}
+
+// ─────────────────────────── Tranche State ──────────────────────────
+
+/// Dual-tranche vault NAV view.
+#[derive(Debug, Clone)]
+pub struct TrancheState {
+    pub tranche_label: String,
+    pub nav_usdc: f64,
+    pub total_shares: f64,
+    pub loss_cap_bps: u64,
+    pub accepts_deposits: bool,
+    pub updated_at: Instant,
+}
+
 // ─────────────────────────── State Store ────────────────────────────
 
 /// Thread-safe in-memory state store backed by `DashMap` for lock-free
@@ -69,6 +109,8 @@ pub struct StateStore {
     positions: DashMap<String, PositionState>,
     credits: DashMap<String, CreditState>,
     pools: DashMap<String, PoolState>,
+    capacities: DashMap<String, CapacityState>,
+    tranches: DashMap<String, TrancheState>,
 }
 
 impl StateStore {
@@ -78,6 +120,8 @@ impl StateStore {
             positions: DashMap::new(),
             credits: DashMap::new(),
             pools: DashMap::new(),
+            capacities: DashMap::new(),
+            tranches: DashMap::new(),
         }
     }
 
@@ -124,6 +168,26 @@ impl StateStore {
         self.pools.get(pool_label).map(|entry| entry.value().clone()).filter(|s| !s.is_stale())
     }
 
+    // ── Capacity engine ──
+
+    pub fn update_capacity(&self, state: CapacityState) {
+        self.capacities.insert(state.operator.clone(), state);
+    }
+
+    pub fn get_capacity(&self, operator: &str) -> Option<CapacityState> {
+        self.capacities.get(operator).map(|entry| entry.value().clone()).filter(|s| !s.is_stale())
+    }
+
+    // ── Tranche vault ──
+
+    pub fn update_tranche(&self, state: TrancheState) {
+        self.tranches.insert(state.tranche_label.clone(), state);
+    }
+
+    pub fn get_tranche(&self, tranche_label: &str) -> Option<TrancheState> {
+        self.tranches.get(tranche_label).map(|entry| entry.value().clone()).filter(|s| !s.is_stale())
+    }
+
     // ── Eviction ──
 
     /// Remove entries older than `STALE_TTL_SECS`. Call periodically (e.g. every 10s).
@@ -132,6 +196,8 @@ impl StateStore {
         self.positions.retain(|_, v| !v.is_stale());
         self.credits.retain(|_, v| !v.is_stale());
         self.pools.retain(|_, v| !v.is_stale());
+        self.capacities.retain(|_, v| !v.is_stale());
+        self.tranches.retain(|_, v| !v.is_stale());
     }
 
     /// Apply a parsed event to update the appropriate state bucket.
@@ -357,12 +423,23 @@ impl IsStale for PoolState {
     }
 }
 
+impl IsStale for CapacityState {
+    fn is_stale(&self) -> bool {
+        self.updated_at.elapsed().as_secs() > STALE_TTL_SECS
+    }
+}
+
+impl IsStale for TrancheState {
+    fn is_stale(&self) -> bool {
+        self.updated_at.elapsed().as_secs() > STALE_TTL_SECS
+    }
+}
+
 // ── Tests ──
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::thread;
 
     fn market(market: &str, price: f64, slot: u64) -> MarketState {
         MarketState {
@@ -504,5 +581,43 @@ mod tests {
         // Should not be findable with swapped args.
         assert!(store.get_position("ETH-PERP", "abc").is_none());
         assert!(store.get_position("abc", "ETH-PERP").is_some());
+    }
+
+    #[test]
+    fn capacity_update_and_get() {
+        let store = StateStore::new();
+        store.update_capacity(CapacityState {
+            operator: "desk1".into(),
+            credit_limit: 500_000,
+            active_utilization: 200_000,
+            available_balance: 0,
+            margin_posted: 100_000,
+            tier: 1,
+            premium_multiplier_bps: 100,
+            frozen: false,
+            kyc_verified: true,
+            current_premium_bps: 25,
+            load_ratio_bps: 5_000,
+            updated_at: Instant::now(),
+        });
+        let got = store.get_capacity("desk1").expect("should exist");
+        assert_eq!(got.credit_limit, 500_000);
+        assert_eq!(got.available_balance(), 400_000);
+    }
+
+    #[test]
+    fn tranche_update_and_get() {
+        let store = StateStore::new();
+        store.update_tranche(TrancheState {
+            tranche_label: "Protected".into(),
+            nav_usdc: 1_000_000.0,
+            total_shares: 1_000_000.0,
+            loss_cap_bps: 200,
+            accepts_deposits: true,
+            updated_at: Instant::now(),
+        });
+        let got = store.get_tranche("Protected").expect("should exist");
+        assert_eq!(got.nav_usdc, 1_000_000.0);
+        assert_eq!(got.loss_cap_bps, 200);
     }
 }

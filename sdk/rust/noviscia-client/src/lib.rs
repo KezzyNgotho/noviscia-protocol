@@ -8,6 +8,12 @@ use serde::{Deserialize, Serialize};
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::transaction::VersionedTransaction;
 
+pub mod block_engine;
+pub mod bundle_engine;
+
+pub use block_engine::{BlockEngineRelay, BlockEngineRegistry, SharedBlockEngineRegistry};
+pub use bundle_engine::{AtomicBundle, build_atomic_bundle};
+
 // ── Jito Tip Accounts ──────────────────────────────────────────────────────
 
 /// Jito tip recipient accounts. A random one is selected per bundle.
@@ -117,6 +123,8 @@ pub struct NovisciaClient {
     pub jito_endpoint: String,
     /// Optional secondary Jito endpoint for failover.
     pub jito_backup_endpoint: Option<String>,
+    /// Multi-relay MEV registry for health-aware failover.
+    pub relay_registry: SharedBlockEngineRegistry,
 }
 
 impl NovisciaClient {
@@ -126,6 +134,7 @@ impl NovisciaClient {
             rpc: RpcClient::new(rpc_url.to_string()),
             jito_endpoint: jito_endpoint.to_string(),
             jito_backup_endpoint: None,
+            relay_registry: SharedBlockEngineRegistry::new(BlockEngineRegistry::default()),
         }
     }
 
@@ -139,14 +148,83 @@ impl NovisciaClient {
             rpc: RpcClient::new(rpc_url.to_string()),
             jito_endpoint: jito_endpoint.to_string(),
             jito_backup_endpoint: Some(jito_backup_endpoint.to_string()),
+            relay_registry: SharedBlockEngineRegistry::new(BlockEngineRegistry::default()),
         }
     }
 
     /// Send a Jito bundle to the block engine.
     ///
     /// Encodes each transaction as base-58, selects a tip account, and POSTs
-    /// the bundle to the Jito block engine endpoint.
+    /// the bundle to the Jito block engine endpoint. On transport errors the
+    /// bundle is re-attempted against the backup endpoint and any healthy
+    /// relays in the registry.
     pub async fn send_jito_bundle(&self, bundle: &JitoBundle) -> Result<String, ClientError> {
+        let mut endpoints = vec![self.jito_endpoint.clone()];
+        if let Some(backup) = &self.jito_backup_endpoint {
+            endpoints.push(backup.clone());
+        }
+        for relay in self.relay_registry.0.lock().unwrap().healthy_urls() {
+            if !endpoints.contains(&relay) {
+                endpoints.push(relay);
+            }
+        }
+        self.send_bundle_failover(bundle, &endpoints).await
+    }
+
+    /// Submit a bundle across a list of endpoints, failing over on transport
+    /// errors. A deterministic `BundleRejected` aborts immediately.
+    pub async fn send_bundle_failover(
+        &self,
+        bundle: &JitoBundle,
+        endpoints: &[String],
+    ) -> Result<String, ClientError> {
+        let mut last_transport_err: Option<ClientError> = None;
+        for endpoint in endpoints {
+            match self.send_bundle_to(endpoint, bundle).await {
+                Ok(bundle_id) => return Ok(bundle_id),
+                Err(ClientError::Http(_)) | Err(ClientError::Json(_)) => {
+                    self.relay_registry
+                        .0
+                        .lock()
+                        .unwrap()
+                        .mark_unhealthy(endpoint);
+                    last_transport_err = Some(ClientError::BundleRejected(format!(
+                        "relay {endpoint} unreachable"
+                    )));
+                }
+                Err(e) => {
+                    // Rejection is deterministic on this bundle — do not retry.
+                    return Err(e);
+                }
+            }
+        }
+        Err(last_transport_err.unwrap_or(ClientError::BundleRejected(
+            "no block engine relays available".to_string(),
+        )))
+    }
+
+    /// Submit an atomic bundle by serializing each leg and forwarding to Jito.
+    pub async fn send_atomic_bundle(
+        &self,
+        bundle: &AtomicBundle,
+    ) -> Result<String, ClientError> {
+        let txs: Vec<Vec<u8>> = bundle
+            .transactions
+            .iter()
+            .map(|tx| bincode::serialize(tx).unwrap_or_default())
+            .collect();
+        let jito = JitoBundle {
+            transactions: txs,
+            tip_lamports: bundle.tip_lamports,
+        };
+        self.send_jito_bundle(&jito).await
+    }
+
+    async fn send_bundle_to(
+        &self,
+        endpoint: &str,
+        bundle: &JitoBundle,
+    ) -> Result<String, ClientError> {
         let encoded_txs: Vec<String> = bundle
             .transactions
             .iter()
@@ -168,7 +246,7 @@ impl NovisciaClient {
 
         let client = reqwest::Client::new();
         let resp = client
-            .post(&self.jito_endpoint)
+            .post(endpoint)
             .json(&request)
             .send()
             .await?;
@@ -176,9 +254,7 @@ impl NovisciaClient {
         let body: serde_json::Value = resp.json().await?;
 
         if let Some(error) = body.get("error") {
-            return Err(ClientError::BundleRejected(
-                error.to_string(),
-            ));
+            return Err(ClientError::BundleRejected(error.to_string()));
         }
 
         let bundle_id = body
@@ -186,6 +262,12 @@ impl NovisciaClient {
             .and_then(|v| v.as_str())
             .unwrap_or_default()
             .to_string();
+
+        if bundle_id.is_empty() {
+            return Err(ClientError::BundleRejected(
+                "empty bundle id from block engine".to_string(),
+            ));
+        }
 
         Ok(bundle_id)
     }
