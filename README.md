@@ -82,7 +82,10 @@ The **institutional asset lifecycle** layers the newer windows on top of that sp
   daily Clearing House instruction `settle_daily` verifies the desk treasury's
   native-asset return (USDC→USDC, SOL→SOL, NVSC→NVSC), resets the ledger, and stamps
   `last_settlement_timestamp`. Peak utilization streams to the Risk Sentinel via the
-  gRPC `GetDeskStatus` RPC.
+  gRPC `GetDeskStatus` RPC. Default is structurally impossible: a **soft lock** freezes
+  all new borrows at 24h maturity (outstanding debt can only shrink), a **2h grace wall**
+  meters a deterministic per-block late fee, and past that the desk is **Breached** and
+  cleared offline under the Master Loan Agreement.
 - `noviscia-permissioned-pool` — provider-agnostic (de-Sumsub) on-chain KYC/AML ring
   gating institutional liquidity.
 
