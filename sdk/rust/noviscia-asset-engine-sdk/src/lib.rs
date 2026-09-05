@@ -32,6 +32,7 @@ use noviscia_types::{
 pub use noviscia_types::{AssetEngineRegistry, AssetPool, DeskPosition, InstitutionalCreditLine};
 
 pub mod economics;
+pub mod velocity;
 
 // ── Anchor Discriminator ───────────────────────────────────────────────────
 

@@ -87,6 +87,7 @@
 |---|---|---|---|
 | [`TOKENOMICS.md`](TOKENOMICS.md) | 181 | Devnet | nvscUSDC (vault shares) vs NVSC (governance) + staking/burn |
 | [`QUANTIFIED_RISK_PACK.md`](QUANTIFIED_RISK_PACK.md) | 159 | v1.0 | Audited unit-economics: $10M pool, slot math, tranche split, circuit breakers (Rust + TS pinned) |
+| [`TVV_SPEC_SHEET.md`](TVV_SPEC_SHEET.md) | — | Live (Module 2) | Velocity metrics: turnover, per-slot premium, daily power, APY formulas + drags (TS + Rust pinned) |
 | [`INSOLVENCY_POLICY.md`](INSOLVENCY_POLICY.md) | 80 | On-chain enforcement | Terminal-layer 5-tier loss waterfall; socialized loss; emergency powers |
 | [`MASTER_LOAN_AGREEMENT.md`](MASTER_LOAN_AGREEMENT.md) | 331 | v1.0 | Binding institutional MLA (NY law) — clause ↔ on-chain instruction bridge table |
 

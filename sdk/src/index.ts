@@ -138,3 +138,23 @@ export {
   SECONDS_PER_YEAR,
   type TvvParams,
 } from './economics';
+export {
+  FIXED_1E18,
+  SLOTS_PER_SECOND_NUM,
+  SLOTS_PER_SECOND_DEN,
+  SLOTS_PER_DAY,
+  COMPOUNDING_PERIODS_PER_YEAR,
+  capitalTurnoverPerYear,
+  slotPremiumScalingFactor,
+  perTurnPremiumMicroUsd,
+  aggregatedPremiumBps,
+  dailyTransactionalPowerUsdCents,
+  dailyVolumeVelocityUsd,
+  grossApyTenthsBps,
+  grossApyTenthsBpsAtActiveVolume,
+  perSlotRevenueUsdCents,
+  formulaDReconciles,
+  jitoGapBps,
+  jitoTipSlippageUsdCents,
+  compoundedApyTenthsBps,
+} from './velocity';

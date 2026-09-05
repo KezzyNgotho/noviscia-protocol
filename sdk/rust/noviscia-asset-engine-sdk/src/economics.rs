@@ -107,7 +107,7 @@ impl TvvParams {
 }
 
 /// Flooring `n × m / d`, exact over u128.
-fn mul_div(n: u64, m: u64, d: u64) -> u64 {
+pub fn mul_div(n: u64, m: u64, d: u64) -> u64 {
     (n as u128 * m as u128 / d as u128) as u64
 }
 

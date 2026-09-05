@@ -5,7 +5,7 @@
 > *documentation* gaps.
 >
 > **Method:** Computed 2026-09 by (a) inventoring all 31 pre-existing `docs/` files + `README.md` +
-> `sdk/README.md` (29 pre-existing + 8 created under these gaps), (b) scanning for incompleteness
+> `sdk/README.md` (29 pre-existing + 9 created under these gaps), (b) scanning for incompleteness
 > signals (`TODO`/`TBD`/`not yet`/`placeholder`/missing headings), (c) checking the entrypoint
 > navigation, and (d) checking cross-doc link health.
 >
@@ -15,8 +15,8 @@
 
 ## TL;DR
 
-The corpus is unusually strong for a pre-mainnet protocol (~5,970 lines across 29 pre-existing docs
-plus 8 gap-closing docs, zero dangling links, **100%** of docs carry status/date headers). All eleven
+The corpus is unusually strong for a pre-mainnet protocol (~6,120 lines across 29 pre-existing docs
+plus 9 gap-closing docs, zero dangling links, **100%** of docs carry status/date headers). All eleven
 gaps are **closed** (D1–D12, with only D7 🟡 Partial); the backlog below is empty.
 
 ---
@@ -49,9 +49,9 @@ the canonical navigation hub and is linked from `README.md` §Documentation.
 |---|---|
 | Inter-doc relative links checked | 34 |
 | Dangling links | **0** |
-| Docs with date/status header | 37 / 37 (100%) |
-| Docs with `TODO`/`TBD`/`placeholder`/`not yet` signals | 7 / 37 |
-| Corpus size | ~5,970 lines (29 pre-existing + 8 created under D1–D12) |
+| Docs with date/status header | 38 / 38 (100%) |
+| Docs with `TODO`/`TBD`/`placeholder`/`not yet` signals | 7 / 38 |
+| Corpus size | ~6,120 lines (29 pre-existing + 9 created under D1–D12) |
 
 Known content inconsistencies to fix during review:
 

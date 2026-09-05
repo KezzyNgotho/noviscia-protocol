@@ -91,7 +91,7 @@ export function defaultTvvParams(): TvvParams {
 }
 
 /** Flooring `n × m / d`, exact over bigint. */
-function mulDiv(n: bigint, m: bigint, d: bigint): bigint {
+export function mulDiv(n: bigint, m: bigint, d: bigint): bigint {
   return (n * m) / d;
 }
 
