@@ -57,18 +57,44 @@ the commit that closed them where applicable.
      floor are implemented as deterministic integer-cents math in
      `noviscia-asset-engine-sdk::economics` (Rust, 0.3.0 published) and mirrored in
      `@noviscia/sdk` → `economics.ts` (0.5.0 published). Spec: `docs/QUANTIFIED_RISK_PACK.md`.
-     Remaining: derive-cap → on-chain command wiring (open item).
+     Cap wiring delivered via `scripts/e2e/e2e-asset-engine-capwire-devnet.ts` (on-chain apply
+     gated on deployment, see current-state gap 1).
 
-## Open gaps (unchanged from the legacy CCP suite)
+9. **Vault reserve math + atomic recall proofs**
+   - `sync_total_assets`/`update_total_assets` NAV and every redeem/withdraw guard subtract
+     `non_lp_reserves(cfg)` (insurance backstop + default fund + CCP equity). The NAV formula was
+     extracted to a pure, unit-tested helper `compute_lp_nav` (vault balance + yield receivables −
+     reserves − unrealized trader PnL), both instructions now delegate to it, and the previously
+     **orphaned `src/tests.rs` was wired in** (`mod tests`) and rewritten to cover the real
+     helpers (`compute_mint_shares`, `compute_redeem_usdc`, `compute_ccp_alloc`,
+     `compute_fee_insurance_split`, `non_lp_reserves`, `lp_owned_assets`, `compute_lp_nav`,
+     `accrue_slot_yield`) — `nv-usdc-vault` now runs 50 tests, all green. Atomic recall proofs
+     remain in `position-tracker/tests/atomic_recall_e2e.rs`.
 
-1. **Vault reserve math + atomic recall proofs** — ensure `sync_total_assets` and every
-   redeem/withdraw guard in `nv-usdc-vault` subtract `non_lp_reserves(cfg)`; add reserve-aware
-   unit tests and helpers (`non_lp_reserves`, `lp_owned_assets`).
-2. **Netting floor enforcement** — add forward tests in `position-tracker/tests` and a relayer
-   (cron) to run `consolidate` permissionlessly.
-3. **CCP lifecycle expiry & residual sweep** — `claimed_at` timestamp exists; implement
-   `sweep_expired_claims` / `sweep_residuals` instructions + tests.
-4. **Gateway production auth** — `sdk/gateway` supports WalletAdapter signing + sandbox, but
+10. **CCP lifecycle expiry & residual sweep**
+    - `sweep_residuals` already routed dust to the vault NAV. The missing piece —
+    `sweep_expired_claims` — is now implemented in `noviscia-clearing`: a permissionless batch
+    sweep (`remaining_accounts`) of expired, unclaimed *winning* positions past the 30-day
+    `CLAIM_EXPIRY_SECS` window. Each batch account is seed-validated + owner-checked and
+    deduplicated, the summed `potential_return` moves market_vault → fee-staging → vault NAV via
+    `accumulate_protocol_fees` (market PDA + clr-config PDA sign, `expire_claim` alone had only
+    flipped the claimed flag, leaving payouts frozen), then each position is marked claimed with a
+    chained state hash. Expiry predicate extracted as unit-tested `claim_expiry_reached`
+    (4 new tests; `noviscia-clearing` now 48 green). Instruction-level batch CPI remains covered
+    only at the unit level; an end-to-end program test of the sweep is a follow-up nice-to-have.
+
+## Open gaps (from the legacy CCP suite)
+
+1. **Netting floor enforcement (forward coverage)**
+   - `open_position_jit` applies `netting_venue_margin_floor`, and the netting engine's
+     cross-margin D-3 floor (30% of the uncrossed requirement, `CROSS_MARGIN_FLOOR_BPS`) is
+     unit-tested (`cross_margin_floor_binds`, `compute_cross_margin`). A permissionless
+     `consolidate` relayer is implemented at `services/netting-relayer` (verified: permissionless
+     `consolidate` call, health endpoint, Dockerfile) and wired into `docker-compose.yml`
+     (`netting-relayer` service). Remaining: a forward integration test in
+     `position-tracker/tests` proving a consolidated netting set's `margin_required` → house-book
+     `default_fund_target_usdc` round-trip.
+2. **Gateway production auth** — `sdk/gateway` supports WalletAdapter signing + sandbox, but
    tenant authentication, server-side auth middleware, and HSM/remote-signer adapters are not
    implemented.
 
@@ -98,9 +124,10 @@ the commit that closed them where applicable.
 
 ## Recommended priorities
 
-1. Vault reserve math + atomic recall proofs (high risk)
-2. Asset-engine devnet rollout + Squads key standing-up (institutional readiness)
-3. Netting floor enforcement + consolidate relayer (medium-high)
-4. CCP lifecycle expiry & sweep (medium)
+1. Asset-engine devnet rollout + Squads key standing-up (institutional readiness; unblocks the cap
+   wire's `--apply`)
+2. Jito bundle field-test on devnet (borrower path E2E)
+3. Netting floor forward integration test in `position-tracker/tests` (relayer itself delivered)
+4. CCP `sweep_expired_claims` end-to-end program test (instruction + unit tests delivered)
 5. Gateway production auth + asset-engine intent bridge (medium)
-6. Jito bundle field-test on devnet (borrower path E2E)
+6. Cross-tier RBAC evidence script (breaker/committee/upgrade purely from on-chain registry)
