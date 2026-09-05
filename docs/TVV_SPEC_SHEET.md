@@ -137,6 +137,61 @@ same integer cents/e-6 scale.
 
 ---
 
+## 6. The copy-pasteable Excel/CSV workbook (cell map)
+
+The institutional sheet is a **two-layer artifact**, generated from — never independent of — the
+SDK economics:
+
+| Artifact | Path |
+|---|---|
+| CSV cell map (paste into Excel cell A1) | [`scripts/financial-model/tvv-institutional-model.csv`](../scripts/financial-model/tvv-institutional-model.csv) |
+| Generator script | [`scripts/financial-model/generate-workbook-csv.ts`](../scripts/financial-model/generate-workbook-csv.ts) |
+| Typed twin (cell model + stress tests) | `sdk/src/spreadsheet.ts`, `sdk/src/spreadsheet.test.ts` |
+
+Cell architecture (strict **Parameters B2:B13** → **Formulas B16:B26** → **Tranches B29:B34**):
+
+| Cell | Metric | Reference value | Source function |
+|---|---|---|---|
+| B2 | Total Pool Size (P) | `$10,000,000` | input |
+| B5 | Systemic Aggregate Cap % | `0.60` → `$6.0M` | `systemicCapUsdCents` |
+| B6 | Single-Desk Cap % | `0.15` → `$1.5M` | `deskCapUsdCents` |
+| B7 | Average Active Slot Utilization % | `0.40` → `$2.4M` | `activeUtilizationUsdCents` |
+| B16 | Total Network Slots / Year | `78,840,000` | `totalSlotsPerYear` |
+| B17 | Eligible Trading Slots / Year | `63,072,000` | `eligibleSlots` |
+| B21 | Micro-Premium Fee / Slot | `≈ $0.0073059` | `slotFeeMicroUsd` |
+| B22 | Gross Annualized Revenue | `$460,800.00` | `grossRevenueUsdCents` |
+| B23 | Jito Auction Tip Expense | `$6,912.00` | `jitoTipSlippageUsdCents` |
+| B24 | Net Revenue Before Reserves | `$403,888.00` | `netRevenueUsdCents` |
+| B25 | DIF Fund Annual Allocation | `$80,777.60` | `difAllocationUsdCents` |
+| B26 | Total Residual LP Payout Pool | `$323,110.40` | `totalLpYieldUsdCents` |
+| B29 | Senior Tranche Principal | `$7,000,000` | `seniorTrancheUsdCents` |
+| B30 | Junior Tranche Principal | `$3,000,000` | `juniorTrancheUsdCents` |
+| B31 | Senior LP Annual Return | `$315,000` | `seniorYieldUsdCents` |
+| B32 | Senior LP Net APY | `4.5000%` | `B31/B29` |
+| B33 | Junior LP Annual Return | `$8,110.40` | `B26−B31` |
+| B34 | Junior LP Net APY | `0.2703%` | `B33/B30` |
+
+Every B-cell is recomputed by `computeWorkbook()` from the audited integer functions — editing an
+input cell in the sheet propagates identically in the code path. The workbook round-trips through
+`buildWorkbookCsv()` and is pinned by `spreadsheet.test.ts` (9 assertions).
+
+### Stress-testing the sheet (replaces the ⚠️ blurb with real math)
+
+`stressTestSpreadsheet()` re-evaluates the whole waterfall under input overrides:
+
+- **90% network drop** (`B8 = 0.10`): `B22 = $57,600`, `B24 = $6,736` — net revenue still clears
+  the `$50,000` hardware line, but only barely; the breakeven B8 is **≈ 8.81%** (below it the
+  pool stops covering infra).
+- **100% utilization** (`B7 = 1.00`, active volume → `$6,000,000` cap): `B22 = $1,152,000`,
+  `B24 = $1,084,720`, junior residual `$552,776` → junior APY **18.43%**.
+
+> ⚠️ **Discrepancy pinned:** the pasted marketing blurb claims **19.11%** for the full-utilization
+> junior APY. The workbook's own formulas — and the audited SDK — compute **18.4259%**
+> (`junior residual $552,776 / $3,000,000`). The spreadsheet artifact implements the formula; the
+> 19.11% figure is not reproducible from this model and is treated as a rounding/display artifact.
+
+---
+
 ## Cross-references
 
 - Tranche split, waterfall, circuit breaker (the other side of the sheet): [`QUANTIFIED_RISK_PACK.md`](QUANTIFIED_RISK_PACK.md)

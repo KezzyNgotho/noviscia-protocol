@@ -158,3 +158,41 @@ export {
   jitoTipSlippageUsdCents,
   compoundedApyTenthsBps,
 } from './velocity';
+export {
+  ACCELERATION,
+  REAL_SLOTS_PER_DAY,
+  REAL_GRACE_SLOTS,
+  WINDOW_SANDBOX_SLOTS,
+  GRACE_SANDBOX_SLOTS,
+  SANDBOX_CADENCE_MS,
+  realToSandboxSlots,
+  sandboxToRealSlots,
+  postureAt,
+  Posture as SandboxPosture,
+  windowWallClockSeconds,
+} from './sandboxClock';
+export {
+  describePosture,
+  frozenDesks,
+  anyFrozen,
+  sandboxSlotsToWallMs,
+  type FrozenDesk,
+} from './sandboxAccelerator';
+export {
+  DEFAULT_INPUTS,
+  inputsToParams,
+  computeWorkbook,
+  referenceWorkbook,
+  stressTestSpreadsheet,
+  buildWorkbookCsv,
+  excelSlotsPerYear,
+  excelEligibleSlots,
+  excelActiveVolume,
+  excelMicroPremium,
+  excelGrossRevenue,
+  excelNetRevenue,
+  excelLpPayout,
+  type SpreadsheetInputs,
+  type Workbook,
+  type StressResult,
+} from './spreadsheet';

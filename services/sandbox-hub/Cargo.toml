@@ -1,0 +1,27 @@
+[package]
+name = "noviscia-sandbox-hub"
+version = "0.1.0"
+edition = "2021"
+description = "Noviscia Institutional Sandbox Hub — Tier 2 mock gRPC Geyser-style stream + Tier 3 Jito bundle emulator (atomic rollback)."
+
+# Standalone binary, NOT part of the Anchor workspace (mirrors grpc-pipeline).
+[workspace]
+
+[[bin]]
+name = "sandbox-hub"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["sync", "net"] }
+tonic = "0.12"
+prost = "0.13"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dashmap = "5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1"
+
+[build-dependencies]
+tonic-build = "0.12"

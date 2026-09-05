@@ -1,0 +1,32 @@
+Section,Parameter/Metric,Cell,Value,Format,Description
+INPUTS,Total Pool Size (P),B2,10000000,Currency,Reference Pool Size
+INPUTS,Senior LP Share %,B3,0.7,Percentage,Senior Tranche Allocation
+INPUTS,Junior LP Share %,B4,0.3,Percentage,Junior / First-Loss layer
+INPUTS,Systemic Aggregate Cap %,B5,0.6,Percentage,Max borrow capacity ceiling
+INPUTS,Single-Desk Cap %,B6,0.15,Percentage,Max exposure per counterparty
+INPUTS,Average Active Slot Utilization %,B7,0.4,Percentage,Continuous utilization of the cap
+INPUTS,Eligible Jito Landing Rate,B8,0.8,Percentage,Excludes non-Jito validator blocks
+INPUTS,Implied Base Annualized Rate,B9,0.24,Percentage,Base borrowing facility spread
+INPUTS,Jito MEV Bundle Tip Drag %,B10,0.015,Percentage,Priority tip to win auctions
+INPUTS,DIF/Protocol Reserve Cut %,B11,0.2,Percentage,Share of net revenue → safety fund
+INPUTS,Bare-Metal Infrastructure Cost,B12,50000,Currency,Annual node + gRPC overhead
+INPUTS,Senior LP Fixed Hurdle Rate,B13,0.045,Percentage,Contractually guaranteed Senior APY
+,,,,,
+LOGIC,Total Network Slots / Year,B16,78840000,Integer,Solana 400ms block clock
+LOGIC,Eligible Trading Slots / Year,B17,63072000,Integer,Sustained Jito-enabled blocks
+LOGIC,Max System Capacity Limit ($),B18,6000000,Currency,Maximum deployable capital
+LOGIC,Max Single-Desk Exposure ($),B19,1500000,Currency,Maximum capital room per desk
+LOGIC,Average Active Borrow Volume,B20,2400000,Currency,Continuous operational turnover
+LOGIC,Micro-Premium Fee Per Slot ($),B21,0.007305,Currency,Toll per 400ms block window
+LOGIC,Gross Annualized Revenue ($),B22,460800,Currency,Total fees over active slots
+LOGIC,Jito Auction Tip Expense ($),B23,6912,Currency,Total annualized tip drag
+LOGIC,Net Revenue Before Reserves ($),B24,403888,Currency,After hardware & MEV overhead
+LOGIC,DIF Fund Annual Allocation ($),B25,80777.6,Currency,Capital → Insurance Vault
+LOGIC,Total Residual LP Payout Pool,B26,323110.4,Currency,Net yield → LP tranches
+,,,,,
+TRANCHES,Senior Tranche Principal Size,B29,7000000,Currency,Total Senior LP Capital
+TRANCHES,Junior Tranche Principal Size,B30,3000000,Currency,Total Junior First-Loss Capital
+TRANCHES,Senior LP Annual Return ($),B31,315000,Currency,Fixed return to Senior LPs
+TRANCHES,Senior LP Actual Net APY,B32,0.045,Percentage,Realized Senior yield
+TRANCHES,Junior LP Annual Return ($),B33,8110.4,Currency,Upside to First-Loss Layer
+TRANCHES,Junior LP Actual Net APY,B34,0.002703,Percentage,Realized Junior LP yield

@@ -16,8 +16,8 @@
 ## TL;DR
 
 The corpus is unusually strong for a pre-mainnet protocol (~6,120 lines across 29 pre-existing docs
-plus 9 gap-closing docs, zero dangling links, **100%** of docs carry status/date headers). All eleven
-gaps are **closed** (D1–D12, with only D7 🟡 Partial); the backlog below is empty.
+plus 10 gap-closing docs, zero dangling links, **100%** of docs carry status/date headers). All twelve
+gaps are **closed** (D1–D13, with only D7 🟡 Partial); the backlog below is empty.
 
 ---
 
@@ -42,6 +42,7 @@ the canonical navigation hub and is linked from `README.md` §Documentation.
 | D10 | **Low** | No SLOs / SLIs defined; `MONITORING.md` says on-chain stack "needs setup" and logging is centralized-but-absent | `MONITORING.md` | **[`SLO_OBSERVABILITY.md`](SLO_OBSERVABILITY.md)** — service + on-chain SLOs, error budgets, observance prereqs | ✅ Closed |
 | D11 | **Low** | `SYSTEM_DIAGRAMS.md` missing 5 flows (liquidation, netting, credit-line, staking, TVV slice lifecycle) | `SYSTEM_DIAGRAMS.md` §notes | §§6–10 added (grounded in real instruction names); program count 15 → 19 | ✅ Closed |
 | D12 | **Low** | 5 docs lack status/date headers (`ARCHITECTURE.md`, `AUDIT_GAP_ANALYSIS.md`, `DOMAIN.md`, `LIGHT_MODE_DESIGN.md`, `MONITORING.md`); `CCP_CURRENT_STATE.md` is stale (2026-08-24) | header scan | Headers added to all 5; `CCP_CURRENT_STATE.md` banner refreshed (2026-09-05, asset-engine + RBAC + Jito field-test) | ✅ Closed |
+| D13 | **Low** | No local sandbox (other than the SDK's simulate-first dry-run) for the institutional capacity engine — 3-tier blueprint (validator / geyser stream / Jito) was specified but unimplemented, and the 4-test institutional verification checklist had no runnable session | Module 3 spec (sandbox hub) | **`services/sandbox-hub/`** (Tier 2 mock gRPC stream + Tier 3 Jito emulator, Rust, shared proto + 14 unit tests) · **`scripts/sandbox/provision-local-ledger.ts`** (Tier 1) · **`sdk/src/sandboxClock.ts` + `sandboxAccelerator.ts`** (1,440× clock, 7 tests) · **[`SANDBOX_HUB.md`](SANDBOX_HUB.md)** · `scripts/sandbox/e2e-sandbox-verification.ts` (harness: 19/19 off-network, 20/20 vs live emulator) | ✅ Closed |
 
 ## 3. Quality signals
 
@@ -51,7 +52,7 @@ the canonical navigation hub and is linked from `README.md` §Documentation.
 | Dangling links | **0** |
 | Docs with date/status header | 38 / 38 (100%) |
 | Docs with `TODO`/`TBD`/`placeholder`/`not yet` signals | 7 / 38 |
-| Corpus size | ~6,120 lines (29 pre-existing + 9 created under D1–D12) |
+| Corpus size | ~6,120 lines (29 pre-existing + 10 created under D1–D13) |
 
 Known content inconsistencies to fix during review:
 
@@ -59,10 +60,13 @@ Known content inconsistencies to fix during review:
   `ARCHITECTURE.md` + `ACCOUNT_MAP.md`). `SYSTEM_DIAGRAMS.md` now also says 19.
 - `CODE_OF_CONDUCT.md` (Q1 2026) and `PRIVACY_POLICY.md` (2026-07) are older than the September
   update cadence — review for staleness before mainnet.
+- `TVV_FINANCIAL_ENGINEERING.md` (Design Phase) and `WHITEPAPER.md` predate the Module 2 velocity
+  spec — `TVV_SPEC_SHEET.md` is the canonical velocity math, so both are candidates for a follow-up
+  alignment pass.
 
 ## 4. Remaining documentation work (suggested backlog)
 
-All items D1–D12 are closed. Remaining work is *maintenance-only* and covered by the corpus rules
+All items D1–D13 are closed. Remaining work is *maintenance-only* and covered by the corpus rules
 (§5) and the readiness gate in `MAINNET_READINESS.md`:
 
 1. Re-review `CODE_OF_CONDUCT.md` and `PRIVACY_POLICY.md` staleness (flagged §3).

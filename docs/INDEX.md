@@ -73,6 +73,7 @@
 | [`DEVNET.md`](DEVNET.md) | 322 | Live | Devnet runbook: program IDs, deploy flow, troubleshooting, RPC, e2e verification, cap-wiring |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | 96 | Live (mainnet = placeholder) | Deploy & maintenance: frontend, programs, services, troubleshooting |
 | [`E2E_TEST.md`](E2E_TEST.md) | 55 | Live | Scripted e2e proofs (`scripts/e2e/*`) + UI flow checklist |
+| [`SANDBOX_HUB.md`](SANDBOX_HUB.md) | — | Live (Module 3) | 3-tier sandbox: local ledger, mock gRPC stream, Jito bundle emulator + 4-test institutional verification |
 
 ## 6. Integration surfaces
 
@@ -87,7 +88,7 @@
 |---|---|---|---|
 | [`TOKENOMICS.md`](TOKENOMICS.md) | 181 | Devnet | nvscUSDC (vault shares) vs NVSC (governance) + staking/burn |
 | [`QUANTIFIED_RISK_PACK.md`](QUANTIFIED_RISK_PACK.md) | 159 | v1.0 | Audited unit-economics: $10M pool, slot math, tranche split, circuit breakers (Rust + TS pinned) |
-| [`TVV_SPEC_SHEET.md`](TVV_SPEC_SHEET.md) | — | Live (Module 2) | Velocity metrics: turnover, per-slot premium, daily power, APY formulas + drags (TS + Rust pinned) |
+| [`TVV_SPEC_SHEET.md`](TVV_SPEC_SHEET.md) | — | Live (Module 2) | Velocity metrics: turnover, per-slot premium, daily power, APY formulas + drags (TS + Rust pinned); Excel/CSV cell map (`scripts/financial-model/tvv-institutional-model.csv`) + stress tests |
 | [`INSOLVENCY_POLICY.md`](INSOLVENCY_POLICY.md) | 80 | On-chain enforcement | Terminal-layer 5-tier loss waterfall; socialized loss; emergency powers |
 | [`MASTER_LOAN_AGREEMENT.md`](MASTER_LOAN_AGREEMENT.md) | 331 | v1.0 | Binding institutional MLA (NY law) — clause ↔ on-chain instruction bridge table |
 
