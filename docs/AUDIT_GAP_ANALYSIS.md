@@ -71,7 +71,19 @@ the commit that closed them where applicable.
      `accrue_slot_yield`) — `nv-usdc-vault` now runs 50 tests, all green. Atomic recall proofs
      remain in `position-tracker/tests/atomic_recall_e2e.rs`.
 
-10. **CCP lifecycle expiry & residual sweep**
+10. **Netting-floor forward integration test**
+    - A `cargo test-sbf` integration test (`netting_engine::tests::floor_forward`) now boots the
+      netting engine, registers two perps venues, runs a fully offsetting long/short (2 USDC × 2
+      legs, net 0 / gross 4 USDC), and consolidates the 2-leg netting set. The test proves
+      end-to-end that: (a) the raw correlation-netted margin (12,000) is below the D-3 floor
+      (48,000); (b) `cross_margin_requirement` returns the floor (floor BINDS, netting is a boost,
+      never a substitute); (c) `consolidate` mirrors `margin_required_usdc` into
+      `house_book.default_fund_target_usdc` (CPMI-IOSCO: default fund sized off the largest
+      netting-set requirement); (d) a superseding larger netting set re-sizes the default-fund
+      target upward. The netting relayer itself (`services/netting-relayer`) was already wired into
+      `docker-compose.yml` and verified as a permissionless crank.
+
+11. **CCP lifecycle expiry & residual sweep**
     - `sweep_residuals` already routed dust to the vault NAV. The missing piece —
     `sweep_expired_claims` — is now implemented in `noviscia-clearing`: a permissionless batch
     sweep (`remaining_accounts`) of expired, unclaimed *winning* positions past the 30-day
@@ -85,16 +97,7 @@ the commit that closed them where applicable.
 
 ## Open gaps (from the legacy CCP suite)
 
-1. **Netting floor enforcement (forward coverage)**
-   - `open_position_jit` applies `netting_venue_margin_floor`, and the netting engine's
-     cross-margin D-3 floor (30% of the uncrossed requirement, `CROSS_MARGIN_FLOOR_BPS`) is
-     unit-tested (`cross_margin_floor_binds`, `compute_cross_margin`). A permissionless
-     `consolidate` relayer is implemented at `services/netting-relayer` (verified: permissionless
-     `consolidate` call, health endpoint, Dockerfile) and wired into `docker-compose.yml`
-     (`netting-relayer` service). Remaining: a forward integration test in
-     `position-tracker/tests` proving a consolidated netting set's `margin_required` → house-book
-     `default_fund_target_usdc` round-trip.
-2. **Gateway production auth** — `sdk/gateway` supports WalletAdapter signing + sandbox, but
+1. **Gateway production auth** — `sdk/gateway` supports WalletAdapter signing + sandbox, but
    tenant authentication, server-side auth middleware, and HSM/remote-signer adapters are not
    implemented.
 
@@ -126,8 +129,7 @@ the commit that closed them where applicable.
 
 1. Asset-engine devnet rollout + Squads key standing-up (institutional readiness; unblocks the cap
    wire's `--apply`)
-2. Jito bundle field-test on devnet (borrower path E2E)
-3. Netting floor forward integration test in `position-tracker/tests` (relayer itself delivered)
-4. CCP `sweep_expired_claims` end-to-end program test (instruction + unit tests delivered)
-5. Gateway production auth + asset-engine intent bridge (medium)
-6. Cross-tier RBAC evidence script (breaker/committee/upgrade purely from on-chain registry)
+2. CCP `sweep_expired_claims` end-to-end program test (instruction + unit tests delivered)
+3. Jito bundle field-test on devnet (borrower path E2E)
+4. Gateway production auth + asset-engine intent bridge (medium)
+5. Cross-tier RBAC evidence script (breaker/committee/upgrade purely from on-chain registry)

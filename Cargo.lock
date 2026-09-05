@@ -2944,7 +2944,10 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "solana-program",
+ "solana-program-test",
+ "solana-sdk",
  "sovereign-netting",
+ "tokio",
 ]
 
 [[package]]
