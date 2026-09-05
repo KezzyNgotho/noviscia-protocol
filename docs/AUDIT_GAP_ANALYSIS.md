@@ -129,7 +129,14 @@ the commit that closed them where applicable.
 
 1. Asset-engine devnet rollout + Squads key standing-up (institutional readiness; unblocks the cap
    wire's `--apply`)
-2. CCP `sweep_expired_claims` end-to-end program test (instruction + unit tests delivered)
+2. ~~CCP `sweep_expired_claims` end-to-end program test~~ **CLOSED** — forward e2e in
+   `tests/sweep_expired_claims.rs` passes (market_vault → fee_staging → vault NAV split via
+   `compute_fee_insurance_split`, positions hash-chained to claimed) plus four negative probes
+   (mismatched outcome / duplicate-in-batch / already-claimed / empty batch). Fixes landed:
+   `seeds::program = nv_usdc_vault::ID` on the three clearing vault_config PDAs and an 8-byte
+   discriminator overrun in `save_position_to_info`. Latent follow-up: `ClaimUserFunds` still
+   derives `vault_config`/`vault_authority` against the clearing program id (adding
+   `seeds::program` currently overflows the SBF stack frame — needs a struct split).
 3. Jito bundle field-test on devnet (borrower path E2E)
 4. Gateway production auth + asset-engine intent bridge (medium)
 5. Cross-tier RBAC evidence script (breaker/committee/upgrade purely from on-chain registry)
