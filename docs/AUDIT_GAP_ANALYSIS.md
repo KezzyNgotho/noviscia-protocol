@@ -110,8 +110,12 @@ the commit that closed them where applicable.
    the asset-engine builders + PDA derivations + LP-share math + the Jito bundle path (82 tests),
    but no devnet-facing integration test proves the TS builders interact with a deployed program
    byte-for-byte.
-3. **Cross-tier evidence tooling** — a single script/test that proves RBAC tier mapping
-   (breaker/committee/upgrade) purely from the on-chain registry without trusting the SDK.
+3. **Cross-tier evidence tooling** — **DELIVERED** (`scripts/e2e/e2e-rbac-tier-evidence-devnet.ts`):
+   proves RBAC tier mapping (breaker/committee/upgrade) purely from the on-chain registry without
+   trusting the SDK. Trust-free: recomputes `sha256("account:AssetRegistry")[0..8]` locally, raw
+   decodes the three keys at struct offsets, checks nonzero/pairwise-distinct, and cross-validates
+   every tiered SDK builder's signer against the raw keys. Offline proof green (`--self-test`, exit
+   0); the on-chain run is gated on the program actually being deployed at `4FP4…BwUQ5` (gap 1).
 4. **Gateway bridge for the asset engine** — the Unified Collateral Gateway does not yet route
    institutional asset-engine intents; the engine is reachable via SDK builders only.
 5. **Jito bundle field-test on devnet** — the SDK lander is unit-tested offline (mocked fetch);
@@ -139,4 +143,9 @@ the commit that closed them where applicable.
    `seeds::program` currently overflows the SBF stack frame — needs a struct split).
 3. Jito bundle field-test on devnet (borrower path E2E)
 4. Gateway production auth + asset-engine intent bridge (medium)
-5. Cross-tier RBAC evidence script (breaker/committee/upgrade purely from on-chain registry)
+5. ~~Cross-tier RBAC evidence script (breaker/committee/upgrade purely from on-chain registry)~~
+   **PARTIALLY CLOSED** — `scripts/e2e/e2e-rbac-tier-evidence-devnet.ts` shipped with
+   `--self-test` (offline pipeline: discriminator recompute, raw key decode, distinct-authority
+   check, all tiered-SDK-builder signer cross-validation, plus anti-drift/oracle-teeth negative
+   probes). Remaining: run against the live devnet registry once the engine is deployed
+   (priority 1).
