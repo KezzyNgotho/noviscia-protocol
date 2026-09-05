@@ -116,8 +116,16 @@ assert!(hard_lock_triggered(&p, 150_000_000));  // $1,500,000.00 → HARD LOCK
 > $10M pool. On-chain, these are **administrable ceilings** — Tier-2 Risk
 > Committee sets `total_credit_limit` / `max_capacity`; the economics module
 > derives the exact USD figures (`systemic_cap_usd_cents`, `desk_cap_usd_cents`)
-> a committee should configure for a given pool size. Wiring the derived caps
-> into the deployed devnet registry is tracked in `docs/AUDIT_GAP_ANALYSIS.md`.
+> a committee should configure for a given pool size.
+>
+> **Provisioning:** `scripts/e2e/e2e-asset-engine-capwire-devnet.ts` derives the
+> `$6M` / `$1.5M` caps from this module and provisions them into the devnet
+> asset-engine registry (cold-start `initialize`/`register_asset`, then Tier-2
+> `update_credit_limit` / per-asset `max_capacity`) — dry-run by default, `--apply`
+> to send. On-chain apply is gated on the engine being deployed at
+> `4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5` (tracked in
+> `docs/AUDIT_GAP_ANALYSIS.md`). The institutional web page also surfaces the
+> derived caps on `/institutional/asset-lifecycle`.
 
 ## 6. Code ↔ Doc Mapping
 

@@ -77,8 +77,8 @@ the commit that closed them where applicable.
 1. **Asset engine on live devnet** — the program (ID `4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5`)
    is fully unit-tested (27) but rollout/verification against devnet and configuration of the
    deployed three-tier Squads keys is open; see `docs/DEVNET.md` for the deploy runbook.
-2. **TS SDK parity verification against the on-chain program** — `@noviscia/sdk` 0.4.0 exposes
-   the asset-engine builders + PDA derivations + LP-share math + the Jito bundle path (78 tests),
+2. **TS SDK parity verification against the on-chain program** — `@noviscia/sdk` 0.5.0 exposes
+   the asset-engine builders + PDA derivations + LP-share math + the Jito bundle path (82 tests),
    but no devnet-facing integration test proves the TS builders interact with a deployed program
    byte-for-byte.
 3. **Cross-tier evidence tooling** — a single script/test that proves RBAC tier mapping
@@ -89,9 +89,12 @@ the commit that closed them where applicable.
    a live submission against `devnet.block-engine.jito.wtf` proving bundle landing + tip auction
    acceptance is not yet demonstrated.
 6. **Derived-cap → on-chain wiring** — the quantified economics module derives reference caps
-   (`$6M` aggregate / `$1.5M` desk) for a pool size, but no script provisions them into the
-   deployed devnet asset-engine registry (Tier-2 `update_credit_limit` / per-asset
-   `max_capacity`); see `docs/QUANTIFIED_RISK_PACK.md` §5.
+   (`$6M` aggregate / `$1.5M` desk) for a pool size, and
+   `scripts/e2e/e2e-asset-engine-capwire-devnet.ts` now provisions them (cold-start `initialize` +
+   `register_asset` + Tier-2 `update_credit_limit` / per-asset `update_asset_params` `max_capacity`,
+   dry-run by default). The on-chain apply is gated on the program actually being deployed at
+   `4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5` (open gap 1 above); see `docs/DEVNET.md` §
+   "Asset engine cap-wiring".
 
 ## Recommended priorities
 

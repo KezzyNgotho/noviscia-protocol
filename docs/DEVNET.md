@@ -188,6 +188,52 @@ See [`app/web/.env.example`](../app/web/.env.example) — it's the maintained so
 
 ---
 
+## Asset engine cap-wiring
+
+The `noviscia_asset_engine` (`4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5`) is the
+institutional asset-lifecycle program (per-asset `AssetPool` vaults, aggregate credit lines,
+three-tier RBAC). It is **not yet deployed** on devnet — deployment requires the program keypair
+that matches the canonical ID (`target/deploy/noviscia_asset_engine-keypair.json`), because the
+binary's `declare_id!` anchors every PDA it creates to `4FP4…BwUQ5`. Until that keypair is
+available the engine stays in "provisioned on demand" state and CI/dry-runs skip all sends.
+
+Once deployed, the derived caps from the Quantified Risk Pack & Economics module (reference
+`$10,000,000` pool) are provisioned with a single idempotent script:
+
+```bash
+npx tsx scripts/e2e/e2e-asset-engine-capwire-devnet.ts             # dry-run (prints plan, sends nothing)
+npx tsx scripts/e2e/e2e-asset-engine-capwire-devnet.ts --apply      # cold-start provision + wire caps
+```
+
+What it does, in order (every step re-reads on-chain state so a re-run only fills real gaps):
+
+| Step | Instruction | Tier | Value |
+|------|-------------|------|-------|
+| A | `initialize` (pins wSOL/USDC/NVSC + three-tier keys; cold-start = deployer) | Tier 3 | registry |
+| B | `register_asset` wSOL/USDC/NVSC with `max_capacity` = raw desk cap | Tier 3 | per-asset |
+| C | `set_asset_support` × 3 | Tier 2 | true |
+| D | `initialize_credit_line` + `update_credit_limit` = `C_sys` | Tier 2 | `$6,000,000` |
+| E | `update_asset_params` per-mint `max_capacity` = `C_desk` | Tier 2 | `$1,500,000` |
+
+Derived cap table (60% systemic / 15% desk of the `$10M` reference pool — see
+`docs/QUANTIFIED_RISK_PACK.md`): `C_sys` = `$6,000,000.00` (`systemicCapUsdCents`), `C_desk` =
+`$1,500,000.00` (`deskCapUsdCents`). Caps are stored on-chain in **raw token units**, so the desk
+cap converts at a documented price basis (defaults: USDC `$1.00`, wSOL `$150.00`, NVSC `$1.00`)
+→ `max_capacity` = `1,500,000` USDC / `10,000` wSOL / `1,500,000` NVSC, and the aggregate credit
+line = `6,000,000,000,000` raw USDC (6-dec).
+
+Signer resolution and overrides:
+
+- Deployer/admin keypair: `ADMIN_KEYPAIR_PATH` → `ANCHOR_WALLET` → `~/.config/solana/new-id.json`
+  (`pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA`).
+- Desk institution (defaults to the deployer in cold start; set `AE_INSTITUTION_KEYPAIR_PATH` to
+  provision a distinct desk as the credit-line holder).
+- `SOLANA_RPC_DEVNET` to point at a premium RPC (see RPC requirements above).
+- Price basis is a committee assumption and is printed loudly before any send — audit it before
+  `--apply` against a live pool.
+
+---
+
 ## Verifying a deployment
 
 ```bash
