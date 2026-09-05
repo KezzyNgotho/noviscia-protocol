@@ -186,12 +186,16 @@ cd app/web && npm run type-check && npm run lint
 
 ## Documentation
 
+- **[`docs/INDEX.md`](./docs/INDEX.md)** — documentation navigation hub (start here)
 - [`docs/WHITEPAPER.md`](./docs/WHITEPAPER.md) — protocol design & current state
 - [`docs/TOKENOMICS.md`](./docs/TOKENOMICS.md) — nvscUSDC vs NVSC
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — complete system architecture
+- Engineering references: [`docs/ACCOUNT_MAP.md`](./docs/ACCOUNT_MAP.md) (PDA/account registry), [`docs/ERROR_REFERENCE.md`](./docs/ERROR_REFERENCE.md) (error codes)
+- Security & risk: [`docs/SECURITY.md`](./docs/SECURITY.md), [`docs/THREAT_MODEL.md`](./docs/THREAT_MODEL.md), [`docs/ONCALL_RUNBOOK.md`](./docs/ONCALL_RUNBOOK.md), [`docs/KEY_MANAGEMENT_GOVERNANCE.md`](./docs/KEY_MANAGEMENT_GOVERNANCE.md)
+- Audit gap tracking: [`docs/AUDIT_GAP_ANALYSIS.md`](./docs/AUDIT_GAP_ANALYSIS.md), [`docs/DOC_GAPS.md`](./docs/DOC_GAPS.md)
 - [`docs/DEVNET.md`](./docs/DEVNET.md), [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md), [`docs/MONITORING.md`](./docs/MONITORING.md)
 - [`docs/API.md`](./docs/API.md), [`sdk/README.md`](./sdk/README.md)
-- Security & legal: [`docs/SECURITY.md`](./docs/SECURITY.md), [`docs/LEGAL.md`](./docs/LEGAL.md), [`docs/COMPLIANCE.md`](./docs/COMPLIANCE.md)
+- Legal: [`docs/LEGAL.md`](./docs/LEGAL.md), [`docs/COMPLIANCE.md`](./docs/COMPLIANCE.md)
 
 ---
 
