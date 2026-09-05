@@ -90,6 +90,51 @@ console.log(result.summary); // "execution long 50,000,000 USDC SOL"
 console.log(digest(result.payload!)); // SHA-256 of wire payload
 ```
 
+### Jito Bundles
+
+Build one-slot-atomic bundles and submit to the Jito Block Engine with `jtRisk`/credit-bundle flows:
+
+```ts
+import {
+  JitoBundleClient, assembleVersionedTransactions,
+  resolveBundleTipLamports, selectTipAccount,
+} from '@noviscia/sdk';
+
+const engine = new JitoBundleClient(); // defaults to mainnet engine
+const tipAccount = selectTipAccount(); // random pick from the 8 live tip accounts
+
+const txs = assembleVersionedTransactions(
+  [groupOfInstructions],           // one array of instructions per bundle tx (max 5)
+  {
+    feePayer,
+    recentBlockhash,
+    tip: {
+      tipAccount,
+      tipPayer,
+      lamports: resolveBundleTipLamports(await engine.getBundleTipLimits(), DEFAULT_TIP_LAMPORTS),
+    },
+  },
+);
+// sign each tx, then:
+const bundleId = await engine.sendBundle(txs); // { bundle_id }
+const status = await engine.getBundleStatuses([bundleId]); // 'Pending' | 'Landed' | 'Rejected'
+```
+
+Operational notes (from the September 2026 devnet field-test, `scripts/e2e/e2e-jito-devnet-probe.ts`):
+
+- **Devnet engine is decommissioned** (`devnet.block-engine.jito.wtf` → NXDOMAIN); `JitoBundleClient`
+  defaults to the **mainnet** engine. Unit-test bundle assembly against `fetch` mocks (`jito.test.ts`).
+- Tip accounts **rotate** — do not hard-pin. Fresh picks use the live `getTipAccounts` RPC; the built-in
+  `KNOWN_JITO_TIP_ACCOUNTS` constant is an offline fallback and is only current as of its last edit.
+  Rotate it whenever the mainnet set changes.
+- The shared public mainnet engine rate-limits `sendBundle`/`getBundleTipLimits` HTTP to **~1 req/s per
+  IP without an API key** (HTTP 429 / `-32097`). Treat `getBundleTipLimits` as optional — when it is not
+  exposed or fails, fall back to the `DEFAULT_TIP_LAMPORTS` floor, and back off on 429.
+- The tip transfer is appended to the **first** transaction, so it only pays if that transaction's
+  intra-bundle assertions pass ("tip goes through conditionally"). Its payer must sign the first tx.
+
+See `PARTICIPANT_ACCESS.md` for governance of bundle building in production.
+
 ## Environment Variables
 
 All program IDs can be overridden via environment variables:

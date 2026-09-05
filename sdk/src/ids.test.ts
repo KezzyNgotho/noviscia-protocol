@@ -24,7 +24,7 @@ describe('ids', () => {
     assert.equal(PROGRAM_IDS.escrow.toBase58(), '2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ');
     assert.equal(PROGRAM_IDS.jitRisk.toBase58(), '3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh');
     assert.equal(PROGRAM_IDS.creditLine.toBase58(), '8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg');
-    assert.equal(PROGRAM_IDS.assetEngine.toBase58(), '4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5');
+    assert.equal(PROGRAM_IDS.assetEngine.toBase58(), '5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb');
   });
 
   it('mint constants are valid PublicKeys', () => {

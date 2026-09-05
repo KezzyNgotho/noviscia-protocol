@@ -122,8 +122,8 @@ assert!(hard_lock_triggered(&p, 150_000_000));  // $1,500,000.00 → HARD LOCK
 > `$6M` / `$1.5M` caps from this module and provisions them into the devnet
 > asset-engine registry (cold-start `initialize`/`register_asset`, then Tier-2
 > `update_credit_limit` / per-asset `max_capacity`) — dry-run by default, `--apply`
-> to send. On-chain apply is gated on the engine being deployed at
-> `4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5` (tracked in
+> to send. **DONE (Sep 5 2026):** `--apply` green, on-chain wins at
+> `5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb` (tracked in
 > `docs/AUDIT_GAP_ANALYSIS.md`). The institutional web page also surfaces the
 > derived caps on `/institutional/asset-lifecycle`.
 

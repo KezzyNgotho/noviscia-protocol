@@ -29,7 +29,7 @@
 | `noviscia_permissioned_pool` | `BNLwfHfWyuPoDVs7LeX6vAep33k7fzhiTiYzW9Th5u2v` |
 | `noviscia_capacity` | `JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc` |
 | `noviscia_tranche_vault` | `9Sk1zLo7uprmtrskoZQS6zf1KFSNv4uTCxMsbqGVMCMb` |
-| `noviscia_asset_engine` | `4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5` |
+| `noviscia_asset_engine` | `5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb` |
 
 > **Parked / not live** (in `programs/later/` — deferred, not deployed as live): `bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`. The deleted programs `cross-border` and `tbill-fund` (and the deleted services `liquidation-keeper`, `risk-engine`, `ai-rebalancer`, `mock-pyth-receiver`) are gone from the codebase and are **not** part of the current state.
 
@@ -190,15 +190,27 @@ See [`app/web/.env.example`](../app/web/.env.example) — it's the maintained so
 
 ## Asset engine cap-wiring
 
-The `noviscia_asset_engine` (`4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5`) is the
+The `noviscia_asset_engine` (`5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb`) is the
 institutional asset-lifecycle program (per-asset `AssetPool` vaults, aggregate credit lines,
-three-tier RBAC). It is **not yet deployed** on devnet — deployment requires the program keypair
-that matches the canonical ID (`target/deploy/noviscia_asset_engine-keypair.json`), because the
-binary's `declare_id!` anchors every PDA it creates to `4FP4…BwUQ5`. Until that keypair is
-available the engine stays in "provisioned on demand" state and CI/dry-runs skip all sends.
+three-tier RBAC). **Deployed and cap-wired on devnet** (Sep 5 2026, slot 493611446, ~483 KB):
+owner `BPFLoaderUpgradeab1e11111111111111111111111`, upgrade authority = deployer
+(`pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA`). The program keypair that must match the
+canonical ID lives at `target/deploy/noviscia_asset_engine-keypair.json` (gitignored, never
+committed) — the binary's `declare_id!` anchors every PDA it creates to `5qpo…ZrMKb`.
 
-Once deployed, the derived caps from the Quantified Risk Pack & Economics module (reference
-`$10,000,000` pool) are provisioned with a single idempotent script:
+Re-deploy / upgrade after a source change (fees paid by `~/.config/solana/new-id.json`):
+
+```bash
+cargo build-sbf --manifest-path programs/active/noviscia-asset-engine/Cargo.toml --tools-version v1.52
+cp target/sbf-solana-solana/release/noviscia_asset_engine.so target/deploy/
+solana program deploy target/deploy/noviscia_asset_engine.so \
+  --program-id target/deploy/noviscia_asset_engine-keypair.json \
+  --keypair ~/.config/solana/new-id.json --url devnet
+```
+
+The derived caps from the Quantified Risk Pack & Economics module (reference `$10,000,000` pool)
+are provisioned with a single idempotent script (re-runs fill only real gaps — registry, credit
+line, and pools all re-read from chain):
 
 ```bash
 npx tsx scripts/e2e/e2e-asset-engine-capwire-devnet.ts             # dry-run (prints plan, sends nothing)

@@ -33,7 +33,7 @@
 | noviscia-permissioned-pool | (see `docs/DEVNET.md` §Program IDs) |
 | noviscia-capacity | (see `docs/DEVNET.md` §Program IDs) |
 | noviscia-tranche-vault | (see `docs/DEVNET.md` §Program IDs) |
-| noviscia-asset-engine | `4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5` |
+| noviscia-asset-engine | `5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb` |
 | liquidation-vault | `Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz` |
 | yield-router | `FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4` |
 | yield-distributor | `CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw` |

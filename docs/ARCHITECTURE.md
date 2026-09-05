@@ -1,5 +1,7 @@
 # Noviscia Protocol — Complete System Architecture
 
+> **Status:** Living architecture document. **Last updated:** September 5, 2026.
+
 ---
 
 ## 1. System Overview
@@ -433,7 +435,7 @@ All three accrue into the `nv-usdc-vault` 5-authority `accumulate_protocol_fees`
 
 ### 3l. Multi-Asset Engine — Institutional Asset Lifecycle
 
-**Program ID:** `4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5`
+**Program ID:** `5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb`
 
 **Role:** Per-mint token register (SOL/wSOL, USDC, NVSC) with segregated vaults, aggregate institutional credit lines, provider-agnostic Keccak-Merkle KYC, and the **daily Clearing House** settlement for HFT desks that borrow and return capital inside single 400ms blocks.
 

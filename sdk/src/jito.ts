@@ -33,19 +33,21 @@ import {
 export const BUNDLE_MAX_TRANSACTIONS = 5;
 
 /**
- * One of the 8 canonical Jito tip accounts (from `getTipAccounts`). Kept as a
- * static constant so the sub-2ms borrower path can skip the tip RPC round-trip;
- * use `selectTipAccount` and rotate per submission to reduce contention.
+ * Offline fallback of the canonical Jito tip accounts (snapshot from the live
+ * mainnet engine, Sep 2026). Tip accounts rotate — ALWAYS resolve live via
+ * `getTipAccounts` (`selectTipAccount`) before submitting; never hard-code a
+ * frozen set into the borrower path. Kept only so the sub-2ms path can avoid
+ * the RPC round-trip as a *cache* that is refreshed periodically.
  */
 export const KNOWN_JITO_TIP_ACCOUNTS: PublicKey[] = [
-  new PublicKey('9n3d1K5YD2vECAbRFhFFGYNNjiXtHXJWn9F31t89vsAV'),
-  new PublicKey('aTtUk2DHgLhKZRDjePq6eiHRKC1XXFMBiSUfQ2JNDbN'),
-  new PublicKey('B1mrQSpdeMU9gCvkJ6VsXVVoYjRGkNA7TtjMyqxrhecH'),
-  new PublicKey('9ttgPBBhRYFuQccdR1DSnb7hydsWANoDsV3P9kaGMCEh'),
-  new PublicKey('4xgEmT58RwTNsF5xm2RMYCnR1EVukdK8a1i2qFjnJFu3'),
-  new PublicKey('EoW3SUQap7ZeynXQ2QJ847aerhxbPVr843uMeTfc9dxM'),
-  new PublicKey('E2eSqe33tuhAHKTrwky5uEjaVqnb2T9ns6nHHUrN8588'),
-  new PublicKey('ARTtviJkLLt6cHGQDydfo1Wyk6M4VGZdKZ2ZhdnJL336'),
+  new PublicKey('ADaUMid9yfUytqMBgopwjb2DTLSokTSzL1zt6iGPaS49'),
+  new PublicKey('Cw8CFyM9FkoMi7K7Crf6HNQqf4uEMzpKw6QNghXLvLkY'),
+  new PublicKey('DttWaMuVvTiduZRnguLF7jNxTgiMBZ1hyAumKUiL2KRL'),
+  new PublicKey('96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5'),
+  new PublicKey('3AVi9Tg9Uo68tJfuvoKvqKNWKkC5wPdSSdeBnizKZ6jT'),
+  new PublicKey('DfXygSm4jCyNCybVYYK6DwvWqjKee8pbDmJGcLWNDXjh'),
+  new PublicKey('HFqU5x63VTqvQss8hp11i4wVV8bD44PvwucfZ2bU7gRe'),
+  new PublicKey('ADuUkR4vqLUMWXxW9gh6D6L8pMSawimctcNZ5pGwDcEt'),
 ];
 
 /** Region-distributed Block Engine HTTP endpoints. */
@@ -58,6 +60,7 @@ export const JITO_BLOCK_ENGINE_URLS = {
     'https://ny.mainnet.block-engine.jito.wtf',
     'https://tokyo.mainnet.block-engine.jito.wtf',
   ],
+  /** decommissioned — `devnet.block-engine.jito.wtf` is NXDOMAIN; kept for SDK compat only */
   devnet: ['https://devnet.block-engine.jito.wtf'],
 } as const;
 
@@ -204,7 +207,11 @@ export function assembleVersionedTransactions(
  * construction; every method issues a POST to `<baseUrl>/api/v1/bundles`.
  */
 export class JitoBundleClient {
-  constructor(readonly baseUrl: string = JITO_BLOCK_ENGINE_URLS.devnet[0]) {}
+  /**
+   * Defaults to the mainnet engine — the devnet block engine is decommissioned
+   * (NXDOMAIN), so devnet work must mock `fetch` (see jito.test.ts).
+   */
+  constructor(readonly baseUrl: string = JITO_BLOCK_ENGINE_URLS.mainnet[0]) {}
 
   private async rpc<T>(method: string, params: unknown): Promise<T> {
     let httpStatus: number | undefined;

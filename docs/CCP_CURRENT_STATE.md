@@ -1,4 +1,4 @@
-# Noviscia — As It Is Today (devnet, 2026-08-24)
+# Noviscia — As It Is Today (devnet, 2026-09-05)
 
 > **Framing:** this document is the operational/state snapshot of the CCP clearing core.
 > For how the CCP core and the TVV (jit-risk) yield engine share one balance sheet, see
@@ -9,6 +9,13 @@
 in place on devnet (slots 483247186–483249477; netting-engine deploys at
 483273207), IDLs synced to
 `app/web/app/idl/` and live on-chain.
+
+**Update (2026-09-05):** the **asset-engine** is now deployed and provisioned on devnet at
+`5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb` (upgrade authority `pm2tUw…`; cap-wire `--apply`
+→ 15/15 checks pass: three pools registered, institutional credit line `C_sys` = $6M). RBAC tier
+evidence replay passes 19/20 (sole failure = cold-start pairwise-distinct, expected). Jito devnet
+field-test green (mainnet block-engine live, tip accounts rotate, 1/s shared rate limit; devnet
+engine NXDOMAIN/decommissioned). See `DEVNET.md`, `ACCOUNT_MAP.md`, `AUDIT_GAP_ANALYSIS.md`.
 
 **Update (2026-08-15):** Ran `scripts/deploy/sync-idls.sh` to copy freshly built
 IDLs into `app/web/app/idl/`. Uploaded (on-chain) IDLs for `position-tracker`

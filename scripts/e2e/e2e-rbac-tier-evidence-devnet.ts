@@ -54,7 +54,7 @@ const RPC = process.env.SOLANA_RPC_DEVNET || 'https://api.devnet.solana.com';
 // ── Hardcoded program constant (independent of the SDK ids module) ─────────────
 // Mirrors `declare_id!` in noviscia-asset-engine/src/lib.rs. If these drift,
 // the registry-PDA recomputation below will fail loudly.
-const PROGRAM_ID = new PublicKey('4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5');
+const PROGRAM_ID = new PublicKey('5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb');
 const REGISTRY_SEED = Buffer.from('asset-registry');
 
 // ── Anchor primitives, recomputed locally ───────────────────────────────────────
@@ -320,7 +320,7 @@ async function main() {
   check(
     'asset-engine program deployed on devnet',
     !!programInfo,
-    programInfo ? `owner=${programInfo.owner.toBase58()}` : 'MISSING — deploy first (needs the 4FP4…BwUQ5 program keypair)'
+    programInfo ? `owner=${programInfo.owner.toBase58()}` : 'MISSING — deploy first (needs the 5qpo…ZrMKb program keypair)'
   );
 
   // 2. Registry presence + discriminator + ownership.

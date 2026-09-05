@@ -28,12 +28,12 @@ export const PROGRAM_IDS = {
   jitRisk: pk('JIT_RISK_PROGRAM_ID', '3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh'),
   creditLine: pk('NEXT_PUBLIC_CREDIT_LINE_PROGRAM_ID', '8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg'),
   // Institutional asset lifecycle (noviscia-asset-engine)
-  assetEngine: pk('ASSET_ENGINE_PROGRAM_ID', '4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5'),
+  assetEngine: pk('ASSET_ENGINE_PROGRAM_ID', '5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb'),
 };
 
 export const USDC_MINT = pk('NEXT_PUBLIC_USDC_MINT', 'Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5');
 export const NVSC_MINT = pk('NEXT_PUBLIC_NVSC_MINT', '4BXiDT5o9J6aQdJNd36QE1L2YvQqedEKSP1wuQdSgJkg');
 export const NVSCUSDC_MINT = pk('NEXT_PUBLIC_NVSCUSDC_MINT', '2TmaUey4Hh2om1kFR77Vw1RDh8H69qcW6UAACVidJeVk');
-export const ASSET_ENGINE_PROGRAM_ID = pk('ASSET_ENGINE_PROGRAM_ID', '4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5');
+export const ASSET_ENGINE_PROGRAM_ID = pk('ASSET_ENGINE_PROGRAM_ID', '5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb');
 
 export const TREASURY_ID = 0;

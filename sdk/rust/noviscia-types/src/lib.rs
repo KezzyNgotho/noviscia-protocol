@@ -458,7 +458,7 @@ pub const LATE_FEE_BASE: u64 = 10_000;
 
 /// On-chain program ID for `noviscia-asset-engine` (devnet).
 pub const ASSET_ENGINE_PROGRAM_ID: Pubkey =
-    anchor_lang::solana_program::pubkey!("4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5");
+    anchor_lang::solana_program::pubkey!("5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb");
 
 /// Wrap-SOL mint (native-interop profile for SOL exposure).
 pub const WSOL_MINT: Pubkey =

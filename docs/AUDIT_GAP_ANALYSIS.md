@@ -1,5 +1,7 @@
 # Audit Gap Analysis — Current vs Architecture Graph
 
+> **Status:** Living; refreshed after each protocol delivery. **Last updated:** September 5, 2026.
+
 This audit-gap note lists missing pieces or partial areas relative to the architecture graph
 and recommended priorities. It is refreshed after each protocol delivery. Items are tracked to
 the commit that closed them where applicable.
@@ -103,36 +105,42 @@ the commit that closed them where applicable.
 
 ## Current-state gaps in the institutional stack
 
-1. **Asset engine on live devnet** — the program (ID `4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5`)
-   is fully unit-tested (27) but rollout/verification against devnet and configuration of the
-   deployed three-tier Squads keys is open; see `docs/DEVNET.md` for the deploy runbook.
-2. **TS SDK parity verification against the on-chain program** — `@noviscia/sdk` 0.5.0 exposes
-   the asset-engine builders + PDA derivations + LP-share math + the Jito bundle path (82 tests),
-   but no devnet-facing integration test proves the TS builders interact with a deployed program
-   byte-for-byte.
+1. **Asset engine on live devnet** — **CLOSED** (Sep 5 2026). The program
+   (`5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb`) is deployed at ~483 KB (owner
+   BPFLoaderUpgradeable, upgrade authority = deployer) and fully cap-wired on devnet; the matching
+   program keypair lives at `target/deploy/noviscia_asset_engine-keypair.json` (gitignored). Cold
+   start pins all three tiers to the deployer — Squads standing-up for breaker/committee/upgrade
+   separation remains for production-readiness; see `docs/DEVNET.md` for the run runbook.
+2. **TS SDK parity verification against the on-chain program** — **PRIMARILY CLOSED**: the cap-wire
+   `--apply` executed the TS builders against the deployed program on-chain (initialize, 3×
+   `register_asset`, `set_asset_support`, `initialize_credit_line`); 15/15 on-chain verification
+   checks passed including per-mint `max_capacity` equality with the derived caps. Remaining gap:
+   the LP deposit / JIT allocation closed-loop on-chain.
 3. **Cross-tier evidence tooling** — **DELIVERED** (`scripts/e2e/e2e-rbac-tier-evidence-devnet.ts`):
    proves RBAC tier mapping (breaker/committee/upgrade) purely from the on-chain registry without
    trusting the SDK. Trust-free: recomputes `sha256("account:AssetRegistry")[0..8]` locally, raw
    decodes the three keys at struct offsets, checks nonzero/pairwise-distinct, and cross-validates
-   every tiered SDK builder's signer against the raw keys. Offline proof green (`--self-test`, exit
-   0); the on-chain run is gated on the program actually being deployed at `4FP4…BwUQ5` (gap 1).
+   every tiered SDK builder's signer against the raw keys. Offline proof green; **on-chain run green
+   (19/20)** against the live program — the single failure (`pairwise distinct`) is the documented
+   cold-start state where all three tiers equal the deployer key.
 4. **Gateway bridge for the asset engine** — the Unified Collateral Gateway does not yet route
    institutional asset-engine intents; the engine is reachable via SDK builders only.
-5. **Jito bundle field-test on devnet** — the SDK lander is unit-tested offline (mocked fetch);
-   a live submission against `devnet.block-engine.jito.wtf` proving bundle landing + tip auction
-   acceptance is not yet demonstrated.
-6. **Derived-cap → on-chain wiring** — the quantified economics module derives reference caps
-   (`$6M` aggregate / `$1.5M` desk) for a pool size, and
-   `scripts/e2e/e2e-asset-engine-capwire-devnet.ts` now provisions them (cold-start `initialize` +
-   `register_asset` + Tier-2 `update_credit_limit` / per-asset `update_asset_params` `max_capacity`,
-   dry-run by default). The on-chain apply is gated on the program actually being deployed at
-   `4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5` (open gap 1 above); see `docs/DEVNET.md` §
-   "Asset engine cap-wiring".
+5. **Jito bundle field-test** — **FIELD-TESTED** (`scripts/e2e/e2e-jito-devnet-probe.ts`). Findings:
+   `devnet.block-engine.jito.wtf` is decommissioned (NXDOMAIN) so a devnet bundle *submission* is
+   impossible; the mainnet engine is live (`getTipAccounts`, 8 rotating accounts in sync with the
+   SDK constant) and the shared public engine rate-limits txn-requests to 1/s per IP without an API
+   key (HTTP 429). The client must rotate tips live and back off; see sdk README § Jito.
+6. **Derived-cap → on-chain wiring** — **CLOSED**: the quantified economics module derives reference
+   caps (`$6M` aggregate / `$1.5M` desk), and `scripts/e2e/e2e-asset-engine-capwire-devnet.ts`
+   provisioned them on devnet at `5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb` (cold-start
+   `initialize` + `register_asset` + Tier-2 `update_credit_limit` / per-asset `update_asset_params`
+   `max_capacity`); 15/15 check pass, on-chain `C_sys` = `$6,000,000`, per-asset `C_desk` exact.
+   See `docs/DEVNET.md` § "Asset engine cap-wiring".
 
 ## Recommended priorities
 
-1. Asset-engine devnet rollout + Squads key standing-up (institutional readiness; unblocks the cap
-   wire's `--apply`)
+1. Asset-engine Squads key standing-up (production-ready separation of breaker/committee/upgrade —
+   cold start on devnet pins all three to the deployer; rollout itself is **DONE**)
 2. ~~CCP `sweep_expired_claims` end-to-end program test~~ **CLOSED** — forward e2e in
    `tests/sweep_expired_claims.rs` passes (market_vault → fee_staging → vault NAV split via
    `compute_fee_insurance_split`, positions hash-chained to claimed) plus four negative probes
@@ -141,11 +149,12 @@ the commit that closed them where applicable.
    discriminator overrun in `save_position_to_info`. Latent follow-up: `ClaimUserFunds` still
    derives `vault_config`/`vault_authority` against the clearing program id (adding
    `seeds::program` currently overflows the SBF stack frame — needs a struct split).
-3. Jito bundle field-test on devnet (borrower path E2E)
+3. ~~Jito bundle field-test~~ **DONE** — `scripts/e2e/e2e-jito-devnet-probe.ts` green (transport +
+   live tip-account rotation verified against mainnet; devnet block engine is decommissioned →
+   NXDOMAIN). Remaining: a funded bundle *submission* once the borrower path is exercised.
 4. Gateway production auth + asset-engine intent bridge (medium)
 5. ~~Cross-tier RBAC evidence script (breaker/committee/upgrade purely from on-chain registry)~~
-   **PARTIALLY CLOSED** — `scripts/e2e/e2e-rbac-tier-evidence-devnet.ts` shipped with
-   `--self-test` (offline pipeline: discriminator recompute, raw key decode, distinct-authority
-   check, all tiered-SDK-builder signer cross-validation, plus anti-drift/oracle-teeth negative
-   probes). Remaining: run against the live devnet registry once the engine is deployed
-   (priority 1).
+   **CLOSED** — `scripts/e2e/e2e-rbac-tier-evidence-devnet.ts` self-test is green and the
+   on-chain run against the live devnet registry passes 19/20; the single failure (`pairwise
+   distinct`) is the documented cold-start state (all three tiers = deployer key), which the
+   priority-1 Squads standing-up resolves.

@@ -1,5 +1,7 @@
 # Custom domain — noviscia.com
 
+> **Status:** Setup runbook. **Last updated:** September 5, 2026.
+
 Canonical production URL: **https://noviscia.com**
 
 ## Vercel (recommended)

@@ -1,5 +1,7 @@
 # Light Mode — Color System & Design Guide
 
+> **Status:** Active design guide. **Last updated:** September 5, 2026.
+>
 > Artifact of the light-mode overhaul. Defines the teal-accent palette, the
 > token mechanism that switches gold↔teal per theme, and the rules for using it.
 

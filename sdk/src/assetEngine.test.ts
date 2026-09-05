@@ -51,7 +51,7 @@ const le64 = (v: bigint): Buffer => {
 
 describe('assetEngine', () => {
   it('exposes the deployed program ID', () => {
-    assert.equal(ASSET_ENGINE_PROGRAM_ID.toBase58(), '4FP4vWmTxnRHPkZGu5q74EVhk792PMVhpEVRBo3BwUQ5');
+    assert.equal(ASSET_ENGINE_PROGRAM_ID.toBase58(), '5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb');
   });
 
   it('uses the Anchor sha256 global discriminator prefix', () => {
@@ -101,8 +101,8 @@ describe('assetEngine', () => {
     assert.equal(ix.keys[3].pubkey.toBase58(), assetPoolPDA(mint).toBase58());
     assert.equal(ix.keys[4].pubkey.toBase58(), assetVaultPDA(mint).toBase58());
     assert.equal(ix.keys[5].pubkey.toBase58(), assetFeeVaultPDA(mint).toBase58());
-    assert.equal(ix.keys[6].pubkey.toBase58(), assetAuthorityPDA(mint).toBase58());
-    assert.equal(ix.keys[7].pubkey.toBase58(), assetLpMintPDA(mint).toBase58());
+    assert.equal(ix.keys[6].pubkey.toBase58(), assetLpMintPDA(mint).toBase58());
+    assert.equal(ix.keys[7].pubkey.toBase58(), assetAuthorityPDA(mint).toBase58());
     assert.equal(ix.keys[8].pubkey.toBase58(), SystemProgram.programId.toBase58());
     assert.equal(ix.keys[9].pubkey.toBase58(), TOKEN_PROGRAM_ID.toBase58());
     assert.equal(ix.keys[10].pubkey.toBase58(), SYSVAR_RENT_PUBKEY.toBase58());

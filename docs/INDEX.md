@@ -29,7 +29,7 @@
 |---|---|---|---|
 | [`README.md`](../README.md) | 200 | Live | Repo layout, program roster, docs navigation, development quick start |
 | [`DOMAIN.md`](DOMAIN.md) | 48 | Live | Custom-domain / Vercel / email / staging configuration |
-| [`CCP_CURRENT_STATE.md`](CCP_CURRENT_STATE.md) | 261 | live snapshot (2026-08-24) | What is actually on-chain on devnet today; loss waterfall; topology gaps |
+| [`CCP_CURRENT_STATE.md`](CCP_CURRENT_STATE.md) | 268 | live snapshot (2026-09-05) | What is actually on-chain on devnet today; loss waterfall; topology gaps |
 
 ## 2. Protocol & architecture
 
@@ -37,8 +37,8 @@
 |---|---|---|---|
 | [`WHITEPAPER.md`](WHITEPAPER.md) | 264 | v4.1 | Protocol whitepaper: problem, solution, architecture, tokenomics, roadmap |
 | [`NOVISCIA_NARRATIVE.md`](NOVISCIA_NARRATIVE.md) | 146 | Canonical narrative | "One balance sheet, two engines" — CCP clearing + TVV yield reconciliation |
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | 1,173 | Live (no date header) | Full system architecture: token design, all 19 programs, revenue model, oracles, risk, funding, off-chain infra, security |
-| [`SYSTEM_DIAGRAMS.md`](SYSTEM_DIAGRAMS.md) | 120 | Live | Mermaid diagrams: system structure, trade flow, yield flow, deployment, AI layer |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | 1,173 | Live | Full system architecture: token design, all 19 programs, revenue model, oracles, risk, funding, off-chain infra, security |
+| [`SYSTEM_DIAGRAMS.md`](SYSTEM_DIAGRAMS.md) | 215 | Live | Mermaid diagrams: system structure, trade flow, yield flow, deployment, AI layer, liquidation, netting, credit-line, staking, TVV slices |
 | [`TVV_FINANCIAL_ENGINEERING.md`](TVV_FINANCIAL_ENGINEERING.md) | 637 | Design Phase | Financial engineering spec for the JIT time-slice marketplace (slot math, premium pricing, risk register) |
 | [`TVV_CCP_INTEGRATION_AUDIT.md`](TVV_CCP_INTEGRATION_AUDIT.md) | 154 | Closed 2026-09-02 | Code-level truth table: which TVV–CCP integration claims are wired on-chain |
 
@@ -60,7 +60,9 @@
 |---|---|---|---|
 | [`SECURITY.md`](SECURITY.md) | 154 | Devnet, unaudited | Security best practices, CCP model, admin gates, permissionless cranks, audit status |
 | [`ONCALL_RUNBOOK.md`](ONCALL_RUNBOOK.md) | — | Working | Incident response + emergency breaker playbook operationalizing the three-tier governance |
+| [`IR_DR_DRILL.md`](IR_DR_DRILL.md) | — | Working | Extended-halt, state-reseed & quarterly-drill runbook tying ONCALL to rollback/degradation tiers |
 | [`MONITORING.md`](MONITORING.md) | 82 | Live (on-chain stack "needs setup") | Sentry, on-chain metrics, incident response outline, log aggregation |
+| [`SLO_OBSERVABILITY.md`](SLO_OBSERVABILITY.md) | — | Working | SLOs/SLIs + error budgets for indexer, RPC fallback, cranks, on-chain cadence |
 | [`KEY_MANAGEMENT_GOVERNANCE.md`](KEY_MANAGEMENT_GOVERNANCE.md) | — | Working | Key custody, rotation, multi-sig ceremony, and the tiered upgrade/timelock operating model |
 | [`MAINNET_READINESS.md`](MAINNET_READINESS.md) | 142 | Pre-mainnet | Pre-deployment checklist, migration steps, rollback plan, network-degradation architecture |
 
@@ -125,7 +127,6 @@
    `ACCOUNT_MAP.md` and `ERROR_REFERENCE.md` in the same PR.
 2. **Every operational change** (new alert, new runbook step, new governance path) must update
    `ONCALL_RUNBOOK.md` and `MONITORING.md`.
-3. Every doc should carry a `Status` / `Last updated` header; the five stale files are tracked in
-   `DOC_GAPS.md` §5.
+3. Every doc must carry a `Status` / `Last updated` header (corpus-wide, enforced in `DOC_GAPS.md` §3).
 4. Relative links between docs must never dangle — the index above and the corpus are link-checked
    in `DOC_GAPS.md` §3.

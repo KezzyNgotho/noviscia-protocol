@@ -1,5 +1,7 @@
 # Operational Monitoring Runbook
 
+> **Status:** Living runbook; SLO targets live in `SLO_OBSERVABILITY.md`. **Last updated:** September 5, 2026.
+
 Production monitoring requirements before mainnet launch.
 
 ## Sentry (Frontend — Already Configured)
