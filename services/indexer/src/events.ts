@@ -24,11 +24,11 @@ const PROGRAMS: ProgramMeta[] = [
   { name: 'yield-distributor', programId: process.env.NEXT_PUBLIC_YIELD_DISTRIBUTOR_PROGRAM_ID || 'YieldXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', idlName: 'yield_distributor' },
   { name: 'prediction-market', programId: process.env.NEXT_PUBLIC_PREDICTION_MARKET_PROGRAM_ID  || 'GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe', idlName: 'prediction_market' },
   { name: 'token-nvsc',        programId: process.env.NEXT_PUBLIC_NVSC_MINT                     || 'HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT', idlName: 'token_nvsc' },
-  { name: 'jit-risk',          programId: process.env.NEXT_PUBLIC_JIT_RISK_PROGRAM_ID            || '3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh', idlName: 'jit_risk' },
+  { name: 'jit-risk',          programId: process.env.NEXT_PUBLIC_JIT_RISK_PROGRAM_ID            || 'JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc', idlName: 'noviscia_capacity' },
   // Revenue engines: gateway-auction + sovereign-netting (matches jit-risk above).
   // These feed the omni-pool revenue chart. IDL names are the target/idl filenames.
   { name: 'gateway-auction',   programId: process.env.NEXT_PUBLIC_GATEWAY_AUCTION_PROGRAM_ID      || 'HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR', idlName: 'gateway_auction' },
-  { name: 'sovereign-netting', programId: process.env.NEXT_PUBLIC_SOVEREIGN_NETTING_PROGRAM_ID    || '9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk', idlName: 'sovereign_netting' },
+  { name: 'sovereign-netting', programId: process.env.NEXT_PUBLIC_SOVEREIGN_NETTING_PROGRAM_ID    || '68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56', idlName: 'netting_engine' },
 ];
 
 export interface ParsedEvent {

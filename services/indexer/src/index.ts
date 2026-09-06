@@ -67,9 +67,9 @@ const WATCHED_PIDS = new Set(
     process.env.NEXT_PUBLIC_YIELD_DISTRIBUTOR_PROGRAM_ID,
     process.env.NEXT_PUBLIC_PREDICTION_MARKET_PROGRAM_ID || 'GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe',
     process.env.NEXT_PUBLIC_NVSC_MINT                    || 'HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT',
-    process.env.NEXT_PUBLIC_JIT_RISK_PROGRAM_ID          || '3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh',
+    process.env.NEXT_PUBLIC_JIT_RISK_PROGRAM_ID          || 'JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc',
     process.env.NEXT_PUBLIC_GATEWAY_AUCTION_PROGRAM_ID     || 'HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR',
-    process.env.NEXT_PUBLIC_SOVEREIGN_NETTING_PROGRAM_ID   || '9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk',
+    process.env.NEXT_PUBLIC_SOVEREIGN_NETTING_PROGRAM_ID   || '68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56',
   ].filter(Boolean) as string[])
 );
 

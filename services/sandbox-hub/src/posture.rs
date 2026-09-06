@@ -1,6 +1,6 @@
 //! Deterministic clearing-window posture (on-chain grammar, sandbox clock).
 //!
-//! This mirrors `noviscia-asset-engine` (programs/active/noviscia-asset-engine
+//! This mirrors `noviscia-asset-engine` (programs/cluster-2-tvv-gate/noviscia-asset-engine
 //! lib.rs) exactly, projected onto the sandbox's 1,440× accelerated clock:
 //!
 //!   real WINDOW_SLOTS = 216,000   → 150 sandbox slots   (one real day → 60 s)
@@ -62,11 +62,7 @@ pub fn sandbox_to_real_slots(sandbox_slots: f64) -> u64 {
 /// - `t < start + WINDOW`          → Open (within the clearing window)
 /// - `t < start + WINDOW + GRACE`  → Overdue (in grace, toll accrues)
 /// - otherwise                     → Breached (reverted/expired, credit frozen)
-pub fn posture_at(
-    window_start_slot: u64,
-    current_slot: u64,
-    outstanding: bool,
-) -> Posture {
+pub fn posture_at(window_start_slot: u64, current_slot: u64, outstanding: bool) -> Posture {
     if !outstanding || window_start_slot == 0 {
         return Posture::NoWindow;
     }
@@ -94,9 +90,15 @@ mod tests {
 
     #[test]
     fn projection_is_exact() {
-        assert_eq!(real_to_sandbox_slots(REAL_SLOTS_PER_DAY), WINDOW_SANDBOX_SLOTS);
+        assert_eq!(
+            real_to_sandbox_slots(REAL_SLOTS_PER_DAY),
+            WINDOW_SANDBOX_SLOTS
+        );
         assert_eq!(real_to_sandbox_slots(REAL_GRACE_SLOTS), GRACE_SANDBOX_SLOTS);
-        assert_eq!(sandbox_to_real_slots(WINDOW_SANDBOX_SLOTS), REAL_SLOTS_PER_DAY);
+        assert_eq!(
+            sandbox_to_real_slots(WINDOW_SANDBOX_SLOTS),
+            REAL_SLOTS_PER_DAY
+        );
     }
 
     #[test]

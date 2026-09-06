@@ -57,8 +57,8 @@ const winner = Buffer.alloc(32, 9).toString('hex');
 const payer = Buffer.alloc(32, 3).toString('hex');
 
 test('jit-risk SliceRented decodes program/event/revenue', () => {
-  const pid = loadIdl('jit_risk').address as string;
-  const log = eventLog('jit_risk', 'SliceRented', {
+  const pid = loadIdl('noviscia_capacity').address as string;
+  const log = eventLog('noviscia_capacity', 'SliceRented', {
     mm, amount_usdc: 1_000_000_00n, delta_wad: 1_000_000n, premium: 250_000n, slot: 12345n,
   });
   const ev = parseActivityFromLogs(fullLogs(pid, [log])).find((e) => e.eventType === 'SliceRented');
@@ -80,8 +80,8 @@ test('gateway-auction registered; AuctionSettled decodes tip', () => {
 });
 
 test('sovereign-netting registered; NettingRentPaid decodes rent', () => {
-  const pid = loadIdl('sovereign_netting').address as string;
-  const log = eventLog('sovereign_netting', 'NettingRentPaid', {
+  const pid = loadIdl('netting_engine').address as string;
+  const log = eventLog('netting_engine', 'NettingRentPaid', {
     payer, amount_base: 100_000n, rent_revenue_total_base: 1_000_000n,
   });
   const ev = parseActivityFromLogs(fullLogs(pid, [log])).find((e) => e.eventType === 'NettingRentPaid');

@@ -15,7 +15,7 @@ use crate::state_store::StateStore;
 
 /// Noviscia program IDs that we filter on.
 const NOVISCIA_PROGRAM_IDS: &[&str] = &[
-    "8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg", // credit-line
+    "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56", // netting-engine host (credit-line + sovereign-netting handlers)
     "Pp1Pool11111111111111111111111111111111111111111", // permissioned-pool
     "6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws", // position-tracker
     "HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR", // gateway-auction
