@@ -1,0 +1,142 @@
+{
+  "generatedAt": "2026-09-06T14:53:36.836Z",
+  "rpc": "https://api.devnet.solana.com",
+  "clusterVersion": "{\"feature-set\":2409014235,\"solana-core\":\"4.3.0-beta.3\"}",
+  "programsDeployed": [
+    {
+      "name": "netting-engine",
+      "programId": "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56",
+      "deployed": true,
+      "sizeBytes": 36
+    },
+    {
+      "name": "nv-usdc-vault",
+      "programId": "CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC",
+      "deployed": true,
+      "sizeBytes": 36
+    },
+    {
+      "name": "noviscia-capacity",
+      "programId": "JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc",
+      "deployed": false,
+      "sizeBytes": null
+    },
+    {
+      "name": "gateway-auction",
+      "programId": "HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR",
+      "deployed": true,
+      "sizeBytes": 36
+    },
+    {
+      "name": "clearing-registry",
+      "programId": "Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo",
+      "deployed": true,
+      "sizeBytes": 36
+    },
+    {
+      "name": "yield-router",
+      "programId": "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4",
+      "deployed": true,
+      "sizeBytes": 36
+    },
+    {
+      "name": "burn-engine",
+      "programId": "nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id",
+      "deployed": true,
+      "sizeBytes": 36
+    },
+    {
+      "name": "escrow",
+      "programId": "2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ",
+      "deployed": true,
+      "sizeBytes": 36
+    },
+    {
+      "name": "bug-bounty",
+      "programId": "A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK",
+      "deployed": true,
+      "sizeBytes": 36
+    },
+    {
+      "name": "protocol-lp-vault",
+      "programId": "2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd",
+      "deployed": true,
+      "sizeBytes": 36
+    },
+    {
+      "name": "spot-dex",
+      "programId": "8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN",
+      "deployed": true,
+      "sizeBytes": 36
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Atomic Reversion Control",
+      "category": "must-be-correct-on-paper",
+      "currentStatus": "🟢 Proven On Paper / Code",
+      "targetMetric": "$0 Capital Leakage on failed transactions",
+      "measuredValue": "Programs not deployed",
+      "measuredStatus": "🔴 probe-failed",
+      "evidenceArtifact": null,
+      "notes": "Deploy netting-engine, nv-usdc-vault, noviscia-capacity first."
+    },
+    {
+      "claim": "Geyser Data Processing Speed",
+      "category": "needs-live-technical-validation",
+      "currentStatus": "🟡 Simulated / Sandbox",
+      "targetMetric": "< 2ms local RAM cache updates",
+      "measuredValue": null,
+      "measuredStatus": "🟡 not-yet-measured",
+      "evidenceArtifact": null,
+      "notes": "Requires grpc-pipeline service connected to a Yellowstone endpoint. Run: `GRPC_PORT=50051 YELLOWSTONE_ENDPOINT=<endpoint> cargo run -p grpc-pipeline` then re-run this probe with YELLOWSTONE_ENDPOINT set. The probe measures p50/p95/p99 slot-to-event latency over 1000 slots."
+    },
+    {
+      "claim": "Jito Engine Landing Rates",
+      "category": "needs-live-technical-validation",
+      "currentStatus": "🟡 Simulated / Sandbox",
+      "targetMetric": "80% Target Block Coverage",
+      "measuredValue": null,
+      "measuredStatus": "🟡 not-yet-measured",
+      "evidenceArtifact": "scripts/e2e/e2e-jito-devnet-probe.ts",
+      "notes": "Existing probe at scripts/e2e/e2e-jito-devnet-probe.ts tests transport + tip accounts. Full landing-rate measurement requires sending test bundles to mainnet (devnet block engine is decommissioned — NXDOMAIN). Run: `npx tsx scripts/e2e/e2e-jito-devnet-probe.ts` for transport check. Landing rate requires mainnet bundle submissions over multiple slots."
+    },
+    {
+      "claim": "Time-Accelerated Timeout Locks",
+      "category": "needs-live-technical-validation",
+      "currentStatus": "🟡 Simulated / Sandbox",
+      "targetMetric": "60s Expiry Execution (1440x scale)",
+      "measuredValue": null,
+      "measuredStatus": "🟡 not-yet-measured",
+      "evidenceArtifact": null,
+      "notes": "Requires on-chain desk creation + time-advance to observe 24h/2h window behavior. The sandboxAccelerator.ts models this at 1440x acceleration. Live measurement: create desk on devnet, advance clock via warp-slot, observe when the facility freezes."
+    },
+    {
+      "claim": "Senior Tranche Circuit Breakers",
+      "category": "needs-live-technical-validation",
+      "currentStatus": "🟡 Simulated / Sandbox",
+      "targetMetric": "Hard Freeze at 50% Junior Pool Drain",
+      "measuredValue": null,
+      "measuredStatus": "🟡 not-yet-measured",
+      "evidenceArtifact": null,
+      "notes": "Waterfall.ts S3 scenario demonstrates this triggers at 50% junior drain. Live measurement: simulate correlated defaults on devnet, observe vault program rejecting further draws after 50% junior threshold. The circuit breaker logic is in nv-usdc-vault (committed in code)."
+    },
+    {
+      "claim": "Non-Jito Slot Detection + Allocation Pause",
+      "category": "needs-live-technical-validation",
+      "currentStatus": "🟡 Simulated / Sandbox",
+      "targetMetric": "Proof that allocation pauses before risk is written",
+      "measuredValue": null,
+      "measuredStatus": "🟡 not-yet-measured",
+      "evidenceArtifact": "sdk/src/ability.ts",
+      "notes": "ability.ts implements leaderIsJito() + guardNonJitoLeaderSlot(). Live measurement: on devnet, observe that credit-line allocation is rejected during non-Jito leader slots. Requires Geyser stream + leader-schedule parsing."
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "provenOnPaper": 1,
+    "simulated": 5,
+    "pending": 0,
+    "flippedToMeasured": 0
+  }
+}

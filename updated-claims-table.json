@@ -1,0 +1,89 @@
+{
+  "generatedAt": "2026-09-06T14:53:36.836Z",
+  "claims": [
+    {
+      "claim": "Reconciled slot-level economics",
+      "status": "🟢 Proven On Paper / Math",
+      "target": "24% Implied Base Facility Rate",
+      "evidence": "sdk/src/economics.ts + sdk/src/spreadsheet.ts",
+      "measurement": "N/A — paper-first; reconciled in economics.ts"
+    },
+    {
+      "claim": "One source of truth for every assumption",
+      "status": "🟢 Proven On Paper / Code",
+      "target": "All constants labeled assumed/simulated/pending",
+      "evidence": "sdk/src/assumptions.ts",
+      "measurement": "Verified — 10 assumptions with 5-label provenance"
+    },
+    {
+      "claim": "Executable simulation code + tests + replay",
+      "status": "🟢 Proven On Paper / Code",
+      "target": "146/146 tests pass, replay digest pinned",
+      "evidence": "sdk/src/waterfall.ts + replay.ts",
+      "measurement": "Verified — 146/146, SHA-256 replay digest pinned"
+    },
+    {
+      "claim": "Atomic Reversion Control",
+      "status": "🟢 Proven On Paper / Code",
+      "target": "$0 Capital Leakage on failed transactions",
+      "evidence": "sdk/src/waterfall.ts (paper proof)",
+      "measurement": "Programs not deployed"
+    },
+    {
+      "claim": "Geyser Data Processing Speed",
+      "status": "🟡 Simulated / Sandbox",
+      "target": "< 2ms local RAM cache updates",
+      "evidence": "—",
+      "measurement": "Requires grpc-pipeline service connected to a Yellowstone endpoint. Run: `GRPC_PORT=50051 YELLOWSTONE_ENDPOINT=<endpoint> cargo run -p grpc-pipeline` then re-run this probe with YELLOWSTONE_ENDPOINT set. The probe measures p50/p95/p99 slot-to-event latency over 1000 slots."
+    },
+    {
+      "claim": "Jito Engine Landing Rates",
+      "status": "🟡 Simulated / Sandbox",
+      "target": "80% Target Block Coverage",
+      "evidence": "scripts/e2e/e2e-jito-devnet-probe.ts",
+      "measurement": "Existing probe at scripts/e2e/e2e-jito-devnet-probe.ts tests transport + tip accounts. Full landing-rate measurement requires sending test bundles to mainnet (devnet block engine is decommissioned — NXDOMAIN). Run: `npx tsx scripts/e2e/e2e-jito-devnet-probe.ts` for transport check. Landing rate requires mainnet bundle submissions over multiple slots."
+    },
+    {
+      "claim": "Time-Accelerated Timeout Locks",
+      "status": "🟡 Simulated / Sandbox",
+      "target": "60s Expiry Execution (1440x scale)",
+      "evidence": "—",
+      "measurement": "Requires on-chain desk creation + time-advance to observe 24h/2h window behavior. The sandboxAccelerator.ts models this at 1440x acceleration. Live measurement: create desk on devnet, advance clock via warp-slot, observe when the facility freezes."
+    },
+    {
+      "claim": "Senior Tranche Circuit Breakers",
+      "status": "🟡 Simulated / Sandbox",
+      "target": "Hard Freeze at 50% Junior Pool Drain",
+      "evidence": "—",
+      "measurement": "Waterfall.ts S3 scenario demonstrates this triggers at 50% junior drain. Live measurement: simulate correlated defaults on devnet, observe vault program rejecting further draws after 50% junior threshold. The circuit breaker logic is in nv-usdc-vault (committed in code)."
+    },
+    {
+      "claim": "Non-Jito Slot Detection + Allocation Pause",
+      "status": "🟡 Simulated / Sandbox",
+      "target": "Proof that allocation pauses before risk is written",
+      "evidence": "sdk/src/ability.ts",
+      "measurement": "ability.ts implements leaderIsJito() + guardNonJitoLeaderSlot(). Live measurement: on devnet, observe that credit-line allocation is rejected during non-Jito leader slots. Requires Geyser stream + leader-schedule parsing."
+    },
+    {
+      "claim": "2–3 credible searchers/MMs test the SDK",
+      "status": "🔴 Pending Live Validation",
+      "target": "Active institutional trading desks",
+      "evidence": "—",
+      "measurement": "Pending counterparty outreach"
+    },
+    {
+      "claim": "Pilot results and user commitments",
+      "status": "🔴 Pending Live Validation",
+      "target": "Written post-pilot assessment",
+      "evidence": "—",
+      "measurement": "Pending pilot execution"
+    },
+    {
+      "claim": "MLA enforceability (NY + jurisdictions)",
+      "status": "🔴 Pending Live Validation",
+      "target": "New York Jurisdiction Activation",
+      "evidence": "External Corporate Legal Counsel Review",
+      "measurement": "Pending legal counsel engagement"
+    }
+  ]
+}
