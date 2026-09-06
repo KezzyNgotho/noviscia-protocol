@@ -1,0 +1,234 @@
+{
+  "generator": "scripts/financial-model/generate-investor-report.ts",
+  "determinism": "integer-bigint engine, no floats, no RNG",
+  "generatedAt": "Deterministic — timestamp intentionally omitted",
+  "assumptions": [
+    {
+      "key": "pool_size",
+      "label": "Total pool size",
+      "valueUsdCents": "1000000000",
+      "provenance": "assumed"
+    },
+    {
+      "key": "senior_share",
+      "label": "Senior LP tranche share",
+      "valueUsdCents": "700000000",
+      "provenance": "assumed"
+    },
+    {
+      "key": "junior_share",
+      "label": "Junior LP first-loss share",
+      "valueUsdCents": "300000000",
+      "provenance": "assumed"
+    },
+    {
+      "key": "systemic_cap",
+      "label": "Systemic aggregate cap (60%)",
+      "valueUsdCents": "600000000",
+      "provenance": "assumed"
+    },
+    {
+      "key": "desk_cap",
+      "label": "Single-desk cap (15%)",
+      "valueUsdCents": "150000000",
+      "provenance": "assumed"
+    },
+    {
+      "key": "jito_eligibility",
+      "label": "Jito-eligible slot rate (80%)",
+      "valueUsdCents": "0",
+      "provenance": "pending"
+    },
+    {
+      "key": "debt_window",
+      "label": "24-hour debt window",
+      "valueUsdCents": "0",
+      "provenance": "assumed"
+    },
+    {
+      "key": "grace_period",
+      "label": "2-hour grace period",
+      "valueUsdCents": "0",
+      "provenance": "assumed"
+    },
+    {
+      "key": "loc_haircut",
+      "label": "LoC haircut (25%)",
+      "valueUsdCents": "0",
+      "provenance": "assumed"
+    },
+    {
+      "key": "infrastructure",
+      "label": "Annual bare-metal infrastructure",
+      "valueUsdCents": "5000000",
+      "provenance": "assumed"
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "S1 · single default",
+      "provenance": "simulated",
+      "description": "One desk fails to repay at the desk cap ($1.5M). Collateral seized at standard coverage; LoC honored at the 25% haircut.",
+      "measuredNote": null,
+      "absorbedUsd": {
+        "deskCollateral": 450000,
+        "loc": 675000,
+        "protocolReserves": 375000,
+        "junior": 0,
+        "senior": 0,
+        "uncovered": 0
+      },
+      "circuitBreakerTripped": false
+    },
+    {
+      "name": "S2 · correlated defaults (systemic cap saturated)",
+      "provenance": "simulated",
+      "description": "Four desks default simultaneously, totalling the 60% system cap ($6M). The stress the systemic cap is designed against.",
+      "measuredNote": null,
+      "absorbedUsd": {
+        "deskCollateral": 1800000,
+        "loc": 2700000,
+        "protocolReserves": 500000,
+        "junior": 1000000,
+        "senior": 0,
+        "uncovered": 0
+      },
+      "circuitBreakerTripped": false
+    },
+    {
+      "name": "S3 · correlated defaults + reserve shortfall",
+      "provenance": "simulated",
+      "description": "Couples the S2 correlated cascade with a pre-existing reserve drawdown (DIF at $0) to show the direct jump to junior capital.",
+      "measuredNote": null,
+      "absorbedUsd": {
+        "deskCollateral": 1800000,
+        "loc": 2700000,
+        "protocolReserves": 0,
+        "junior": 1500000,
+        "senior": 0,
+        "uncovered": 0
+      },
+      "circuitBreakerTripped": true
+    },
+    {
+      "name": "S4 · LoC delay / failure",
+      "provenance": "simulated",
+      "description": "The committed LoC does not honor the draw within settlement (delay or refusal), so L2 contributes $0 and the loss cascades to reserves + tranches.",
+      "measuredNote": null,
+      "absorbedUsd": {
+        "deskCollateral": 450000,
+        "loc": 0,
+        "protocolReserves": 500000,
+        "junior": 550000,
+        "senior": 0,
+        "uncovered": 0
+      },
+      "circuitBreakerTripped": false
+    },
+    {
+      "name": "S5 · 90% liquidity shock",
+      "provenance": "simulated",
+      "description": "Collateral value collapses ~90% at liquidation time, so L1 recovery drops to ~10% of the desk cap; LoC still honored.",
+      "measuredNote": null,
+      "absorbedUsd": {
+        "deskCollateral": 150000,
+        "loc": 675000,
+        "protocolReserves": 500000,
+        "junior": 175000,
+        "senior": 0,
+        "uncovered": 0
+      },
+      "circuitBreakerTripped": false
+    },
+    {
+      "name": "S6 · non-Jito slot dominance",
+      "provenance": "simulated",
+      "description": "Jito eligibility collapses to 0% on the leader schedule; no single-slot bundle lands, so gross revenue and the DIF build halt.",
+      "measuredNote": "Revenue line rerun with L_jito=0% ⇒ gross 0¢/yr; DIF contribution $0 for the period.",
+      "absorbedUsd": {
+        "deskCollateral": 0,
+        "loc": 0,
+        "protocolReserves": 0,
+        "junior": 0,
+        "senior": 0,
+        "uncovered": 0
+      },
+      "circuitBreakerTripped": false
+    },
+    {
+      "name": "S7 · congestion",
+      "provenance": "simulated",
+      "description": "Network congestion backs the bundle past the debt window + grace, voiding the LoC draw; L2 contributes nothing this cycle.",
+      "measuredNote": null,
+      "absorbedUsd": {
+        "deskCollateral": 450000,
+        "loc": 0,
+        "protocolReserves": 500000,
+        "junior": 550000,
+        "senior": 0,
+        "uncovered": 0
+      },
+      "circuitBreakerTripped": false
+    },
+    {
+      "name": "S8 · stale oracle data",
+      "provenance": "simulated",
+      "description": "A stale price paints the desk solvent; by the time liquidation executes the position is deeper underwater, shrinking L1 recovery to ~5%.",
+      "measuredNote": null,
+      "absorbedUsd": {
+        "deskCollateral": 75000,
+        "loc": 675000,
+        "protocolReserves": 500000,
+        "junior": 250000,
+        "senior": 0,
+        "uncovered": 0
+      },
+      "circuitBreakerTripped": false
+    },
+    {
+      "name": "S9 · duplicate draw requests",
+      "provenance": "simulated",
+      "description": "Two identical pulls land in the same slot. The atomic balance-state constraint should revert the second; modeled here as the vault being unchanged (all layers zero).",
+      "measuredNote": "Relies on cl_repay_and_settle’s atomic balance-state constraint; needs a devnet atomicity test to become testnet-observed.",
+      "absorbedUsd": {
+        "deskCollateral": 0,
+        "loc": 0,
+        "protocolReserves": 0,
+        "junior": 0,
+        "senior": 0,
+        "uncovered": 0
+      },
+      "circuitBreakerTripped": false
+    },
+    {
+      "name": "S10 · delayed settlement",
+      "provenance": "simulated",
+      "description": "Settlement slips past the 24h debt window and 2h grace (e.g. RPC outage); the facility freezes mid-flight with one desk fully exposed and the LoC void.",
+      "measuredNote": "Window/grace constants are on-chain (24h / 2h); event-path evidence pending.",
+      "absorbedUsd": {
+        "deskCollateral": 0,
+        "loc": 0,
+        "protocolReserves": 500000,
+        "junior": 1000000,
+        "senior": 0,
+        "uncovered": 0
+      },
+      "circuitBreakerTripped": false
+    },
+    {
+      "name": "S11 · infrastructure outage",
+      "provenance": "simulated",
+      "description": "Geyser + RPC + bundle engine unreachable; no settlement, revenue build halts, and the DIF cannot be replenished. Flags the frozen pipeline, not a loss event.",
+      "measuredNote": "Depends on the Geyser latency probe (see investor v0 VALIDATION section).",
+      "absorbedUsd": {
+        "deskCollateral": 0,
+        "loc": 0,
+        "protocolReserves": 0,
+        "junior": 0,
+        "senior": 0,
+        "uncovered": 0
+      },
+      "circuitBreakerTripped": false
+    }
+  ]
+}

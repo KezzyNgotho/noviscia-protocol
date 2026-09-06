@@ -12,6 +12,10 @@
  *                  report, liquidation, recall)
  *   - sandbox:     simulate-first dry-runs, account-existence pre-checks,
  *                  JIT price fetching
+ *   - economics / velocity / spreadsheet: the quantified TVV risk-pack engine
+ *   - assumptions: the labeled single-source-of-truth assumption registry
+ *   - waterfall:   the executable L1→L5 loss-waterfall + the 11 investor
+ *                  failure scenarios (simulated, reproducible)
  */
 export * from './ids';
 export * from './addresses';
@@ -203,3 +207,54 @@ export {
   type Workbook,
   type StressResult,
 } from './spreadsheet';
+export {
+  ASSUMPTIONS,
+  REFERENCE_POOL_USD_CENTS,
+  SENIOR_LP_BPS,
+  JUNIOR_LP_BPS,
+  SYSTEMIC_CAP_BPS,
+  DESK_CAP_BPS,
+  AVG_ACTIVE_UTILIZATION_BPS,
+  JITO_LANDING_BPS,
+  BASE_RATE_BPS,
+  JITO_TIP_BPS,
+  DIF_BPS,
+  INFRA_USD_CENTS,
+  SENIOR_HURDLE_BPS,
+  CIRCUIT_BREAKER_DRAIN_BPS,
+  LOC_HAIRCUT_BPS,
+  LOC_COVERAGE_BPS,
+  DESK_COLLATERAL_COVERAGE_BPS,
+  REFERENCE_RESERVE_USD_CENTS,
+  DEBT_WINDOW_HOURS,
+  GRACE_PERIOD_HOURS,
+  assumptionByKey,
+  isMeasured,
+  type Provenance,
+  type Assumption,
+} from './assumptions';
+export {
+  subFloor,
+  locEffectiveUsdCents,
+  referenceJuniorUsdCents,
+  referenceWaterfallState,
+  absorbDefault,
+  runDefaultCascade,
+  singleDefaultScenario,
+  correlatedDefaultsScenario,
+  reserveShortfallScenario,
+  locFailureScenario,
+  liquidityShockScenario,
+  nonJitoSlotsScenario,
+  congestionScenario,
+  staleDataScenario,
+  duplicateRequestScenario,
+  delayedSettlementScenario,
+  infrastructureOutageScenario,
+  allInvestorScenarios,
+  type LocOutcome,
+  type DeskDefaultEvent,
+  type WaterfallState,
+  type WaterfallResult,
+  type Scenario,
+} from './waterfall';
