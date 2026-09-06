@@ -297,7 +297,7 @@ cap-wiring" for the live numbers) if you hold a drawn window.
 | Three-tier governed multisig | Cold-start single key | Squads ceremony is mainnet scope (`KEY_MANAGEMENT_GOVERNANCE.md` §3) |
 | Sumsub/KYB on-ramp + Merkle proof | Scaffolded; root unset on-chain | KYB integration wiring |
 | Desk whitelist / `register_mm` admission | Test desks only | operations process |
-| API tokens (`X-Noviscia-App-Token`) | Scaffold | authz wiring |
+| API tokens (`X-Noviscia-App-Token`) | Issuance + authz wiring live | Scoped reads enforced on the indexer; per-desk/admission-derived providers are production scope (`/developer/api-tokens`) |
 | C++ SDK crate | Roadmap | — |
 
 Everything in §4–§13 is the **developer-grade** path that works on devnet today. Treat devnet

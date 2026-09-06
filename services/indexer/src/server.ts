@@ -1,5 +1,10 @@
 import express from 'express';
 import {
+  extractToken as extractTokenFromHeaders,
+  isValidScope,
+} from './tokens';
+
+import {
   advanceTwapSlice,
   cancelOrder,
   createApiKey,
@@ -25,6 +30,8 @@ import {
 } from './db';
 
 const INGEST_SECRET = process.env.INDEXER_INGEST_SECRET || process.env.KEEPER_INGEST_SECRET || '';
+const AUTHZ_MODE = (process.env.INDEXER_AUTHZ || 'sandbox').toLowerCase();
+const isStrict = () => AUTHZ_MODE === 'strict';
 
 function authIngest(req: express.Request): boolean {
   if (!INGEST_SECRET) return true;
@@ -32,21 +39,63 @@ function authIngest(req: express.Request): boolean {
   return h === `Bearer ${INGEST_SECRET}` || req.headers['x-ingest-secret'] === INGEST_SECRET;
 }
 
+/** First non-empty token value across the accepted token headers (X-Noviscia-App-Token canonical). */
+function extractToken(req: express.Request): string {
+  return extractTokenFromHeaders(req.headers);
+}
+
 /**
  * Resolve the wallet a request is acting as. Prefers an explicitly bound API key
- * (x-api-key) so a key alone can scope a user's data; falls back to an explicit
- * `wallet` query/body param when no key is presented. Returns null when neither
- * is present or the key is invalid.
+ * (x-api-key or X-Noviscia-App-Token) so a key alone can scope a user's data;
+ * falls back to an explicit `wallet` query/body param when no key is presented.
+ * Returns null when neither is present or the key is invalid.
  */
 async function resolveIdentity(req: express.Request): Promise<{ wallet: string; viaKey: boolean } | null> {
-  const apiKey = String(req.headers['x-api-key'] || '');
-  if (apiKey) {
-    const result = await verifyApiKey(apiKey);
+  const token = extractToken(req);
+  if (token) {
+    const result = await verifyApiKey(token);
     if (result.valid && result.wallet) return { wallet: result.wallet, viaKey: true };
   }
   const wallet = String(req.query.wallet || req.body?.wallet || '');
   if (wallet) return { wallet, viaKey: false };
   return null;
+}
+
+/**
+ * Resolve the acting principal for a private-data route. When a token is
+ * presented it MUST be valid and scopes the request to its bound wallet — an
+ * explicit `wallet` param that disagrees is rejected. When no token is presented
+ * the route falls back to `wallet` in sandbox mode (devnet demo) and refuses in
+ * strict mode, so a production deploy of the same code path is fully enforced.
+ */
+async function actingPrincipal(
+  req: express.Request,
+  res: express.Response
+): Promise<{ wallet: string; scope: string } | null> {
+  const token = extractToken(req);
+  if (token) {
+    const result = await verifyApiKey(token);
+    if (!result.valid || !result.wallet) {
+      res.status(401).json({ error: 'invalid or revoked API token' });
+      return null;
+    }
+    const claimed = String(req.query.wallet || req.body?.wallet || '');
+    if (claimed && claimed !== result.wallet) {
+      res.status(403).json({ error: 'token is scoped to a different wallet' });
+      return null;
+    }
+    return { wallet: result.wallet, scope: result.scope || 'read' };
+  }
+  if (isStrict()) {
+    res.status(401).json({ error: 'API token required (X-Noviscia-App-Token)' });
+    return null;
+  }
+  const wallet = String(req.query.wallet || req.body?.wallet || '');
+  if (!wallet) {
+    res.status(400).json({ error: 'wallet required' });
+    return null;
+  }
+  return { wallet, scope: 'public' };
 }
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
@@ -70,9 +119,9 @@ export async function startHttpServer(port = 8092): Promise<void> {
 
   app.use((req, res, next) => {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    const apiKey = String(req.headers['x-api-key'] || '');
-    const bucketKey = apiKey ? `key:${apiKey.slice(0, 12)}` : `ip:${ip}`;
-    const limit = apiKey ? 300 : 120;
+    const token = extractToken(req);
+    const bucketKey = token ? `key:${token.slice(0, 12)}` : `ip:${ip}`;
+    const limit = token ? 300 : 120;
     if (!rateLimit(bucketKey, limit)) {
       return res.status(429).json({ error: 'rate limit exceeded' });
     }
@@ -84,10 +133,10 @@ export async function startHttpServer(port = 8092): Promise<void> {
   });
 
   app.get('/orders', async (req, res) => {
-    const wallet = String(req.query.wallet || '');
-    if (!wallet) return res.status(400).json({ error: 'wallet required' });
+    const principal = await actingPrincipal(req, res);
+    if (!principal) return;
     const status = req.query.status ? String(req.query.status) : undefined;
-    const rows = await listOrders(wallet, status);
+    const rows = await listOrders(principal.wallet, status);
     res.json({ orders: rows });
   });
 
@@ -104,8 +153,13 @@ export async function startHttpServer(port = 8092): Promise<void> {
   });
 
   app.post('/orders', async (req, res) => {
+    const principal = await actingPrincipal(req, res);
+    if (!principal) return;
+    if (principal.scope === 'read') {
+      return res.status(403).json({ error: 'token scope does not permit placing orders' });
+    }
     const b = req.body || {};
-    const wallet = String(b.wallet || '');
+    const wallet = principal.wallet;
     const market = String(b.market || '');
     const side = String(b.side || '');
     if (!wallet || !market || !side || !b.limitPrice) {
@@ -139,8 +193,9 @@ export async function startHttpServer(port = 8092): Promise<void> {
   });
 
   app.delete('/orders/:id', async (req, res) => {
-    const wallet = String(req.query.wallet || req.body?.wallet || '');
-    const ok = await cancelOrder(req.params.id, wallet);
+    const principal = await actingPrincipal(req, res);
+    if (!principal) return;
+    const ok = await cancelOrder(req.params.id, principal.wallet);
     if (!ok) return res.status(404).json({ error: 'not found or not cancellable' });
     res.json({ ok: true });
   });
@@ -182,10 +237,15 @@ export async function startHttpServer(port = 8092): Promise<void> {
   });
 
   app.post('/copy/follow', async (req, res) => {
-    const follower = String(req.body?.followerWallet || '');
+    const principal = await actingPrincipal(req, res);
+    if (!principal) return;
+    if (principal.scope === 'read') {
+      return res.status(403).json({ error: 'token scope does not permit modifying copy settings' });
+    }
+    const follower = principal.wallet;
     const leader = String(req.body?.leaderWallet || '');
     if (!follower || !leader) {
-      return res.status(400).json({ error: 'followerWallet and leaderWallet required' });
+      return res.status(400).json({ error: 'leaderWallet required' });
     }
     await followLeader({
       followerWallet: follower,
@@ -197,9 +257,13 @@ export async function startHttpServer(port = 8092): Promise<void> {
   });
 
   app.delete('/copy/follow', async (req, res) => {
-    const follower = String(req.query.followerWallet || req.body?.followerWallet || '');
+    const principal = await actingPrincipal(req, res);
+    if (!principal) return;
+    if (principal.scope === 'read') {
+      return res.status(403).json({ error: 'token scope does not permit modifying copy settings' });
+    }
     const leader = String(req.query.leaderWallet || req.body?.leaderWallet || '');
-    const ok = await unfollowLeader(follower, leader);
+    const ok = await unfollowLeader(principal.wallet, leader);
     if (!ok) return res.status(404).json({ error: 'not found' });
     res.json({ ok: true });
   });
@@ -210,19 +274,28 @@ export async function startHttpServer(port = 8092): Promise<void> {
   });
 
   app.get('/copy/following/:wallet', async (req, res) => {
-    const rows = await listCopyFollowing(req.params.wallet);
+    const principal = await actingPrincipal(req, res);
+    if (!principal) return;
+    if (principal.wallet !== req.params.wallet) {
+      return res.status(403).json({ error: 'token is scoped to a different wallet' });
+    }
+    const rows = await listCopyFollowing(principal.wallet);
     res.json({ following: rows });
   });
 
   app.post('/api-keys', async (req, res) => {
     const wallet = String(req.body?.wallet || '');
     if (!wallet) return res.status(400).json({ error: 'wallet required' });
-    const { key, id } = await createApiKey(wallet, req.body?.label);
-    res.json({ id, key, wallet, note: 'Store this key securely — shown once' });
+    const scope = String(req.body?.scope || 'read');
+    if (!isValidScope(scope)) {
+      return res.status(400).json({ error: 'scope must be read, write, or admin' });
+    }
+    const { key, id } = await createApiKey(wallet, req.body?.label, scope);
+    res.json({ id, key, wallet, scope, note: 'Store this key securely — shown once' });
   });
 
   app.get('/api-keys/verify', async (req, res) => {
-    const key = String(req.headers['x-api-key'] || req.query.key || '');
+    const key = extractToken(req) || String(req.query.key || '');
     if (!key) return res.status(401).json({ valid: false });
     const result = await verifyApiKey(key);
     if (!result.valid) return res.status(401).json({ valid: false });
@@ -251,13 +324,9 @@ export async function startHttpServer(port = 8092): Promise<void> {
   });
 
   app.get('/history', async (req, res) => {
-    let wallet = String(req.query.wallet || '');
-    if (!wallet) {
-      const identity = await resolveIdentity(req);
-      if (!identity) return res.status(400).json({ error: 'wallet required' });
-      wallet = identity.wallet;
-    }
-    const fills = await listFills(wallet, Number(req.query.limit || 50));
+    const principal = await actingPrincipal(req, res);
+    if (!principal) return;
+    const fills = await listFills(principal.wallet, Number(req.query.limit || 50));
     res.json({ fills });
   });
 
@@ -283,13 +352,9 @@ export async function startHttpServer(port = 8092): Promise<void> {
 
   // ── Unified activity log ───────────────────────────────────────────────────
   app.get('/activity', async (req, res) => {
-    let wallet = String(req.query.wallet || '');
-    if (!wallet) {
-      const identity = await resolveIdentity(req);
-      if (!identity) return res.status(400).json({ error: 'wallet required' });
-      wallet = identity.wallet;
-    }
-    const rows = await listActivity(wallet, {
+    const principal = await actingPrincipal(req, res);
+    if (!principal) return;
+    const rows = await listActivity(principal.wallet, {
       limit: Number(req.query.limit || 100),
       program: req.query.program ? String(req.query.program) : undefined,
       eventType: req.query.type ? String(req.query.type) : undefined,

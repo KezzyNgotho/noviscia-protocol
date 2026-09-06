@@ -85,10 +85,13 @@ async function inlineBaseline(): Promise<void> {
 
     CREATE TABLE IF NOT EXISTS api_keys (
       id SERIAL PRIMARY KEY, wallet TEXT NOT NULL, key_hash TEXT NOT NULL UNIQUE,
-      label TEXT, rate_limit_per_min INT NOT NULL DEFAULT 120,
-      revoked BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW()
+      label TEXT, scope TEXT NOT NULL DEFAULT 'read',
+      rate_limit_per_min INT NOT NULL DEFAULT 120,
+      revoked BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW(),
+      last_used_at TIMESTAMPTZ
     );
     CREATE INDEX IF NOT EXISTS idx_api_keys_wallet ON api_keys(wallet);
+    CREATE INDEX IF NOT EXISTS idx_api_keys_scope ON api_keys(scope) WHERE NOT revoked;
 
     CREATE TABLE IF NOT EXISTS user_activity (
       id BIGSERIAL PRIMARY KEY, signature TEXT NOT NULL, wallet TEXT NOT NULL,
@@ -450,27 +453,35 @@ export async function listCopyFollowing(followerWallet: string) {
   return res.rows;
 }
 
-export async function createApiKey(wallet: string, label?: string): Promise<{ key: string; id: number }> {
+export async function createApiKey(
+  wallet: string,
+  label?: string,
+  scope: string = 'read'
+): Promise<{ key: string; id: number }> {
   const key = `nvk_${randomBytes(24).toString('hex')}`;
   const keyHash = createHash('sha256').update(key).digest('hex');
   const res = await pool.query<{ id: number }>(
-    `INSERT INTO api_keys (wallet, key_hash, label) VALUES ($1,$2,$3) RETURNING id`,
-    [wallet, keyHash, label ?? null]
+    `INSERT INTO api_keys (wallet, key_hash, label, scope) VALUES ($1,$2,$3,$4) RETURNING id`,
+    [wallet, keyHash, label ?? null, scope]
   );
   return { key, id: res.rows[0].id };
 }
 
-export async function verifyApiKey(key: string): Promise<{ valid: boolean; wallet?: string; rateLimit?: number }> {
+export async function verifyApiKey(
+  key: string
+): Promise<{ valid: boolean; wallet?: string; rateLimit?: number; scope?: string }> {
   const keyHash = createHash('sha256').update(key).digest('hex');
-  const res = await pool.query<{ wallet: string; rate_limit_per_min: number }>(
-    `SELECT wallet, rate_limit_per_min FROM api_keys WHERE key_hash = $1 AND NOT revoked`,
+  const res = await pool.query<{ wallet: string; rate_limit_per_min: number; scope: string }>(
+    `SELECT wallet, rate_limit_per_min, scope FROM api_keys WHERE key_hash = $1 AND NOT revoked`,
     [keyHash]
   );
   if (!res.rows[0]) return { valid: false };
+  await pool.query(`UPDATE api_keys SET last_used_at = NOW() WHERE key_hash = $1`, [keyHash]);
   return {
     valid: true,
     wallet: res.rows[0].wallet,
     rateLimit: res.rows[0].rate_limit_per_min,
+    scope: res.rows[0].scope,
   };
 }
 
@@ -478,15 +489,17 @@ export type ApiKeyRow = {
   id: number;
   wallet: string;
   label: string | null;
+  scope: string;
   rate_limit_per_min: number;
   revoked: boolean;
   created_at: Date;
+  last_used_at: Date | null;
 };
 
 /** List a wallet's active (non-revoked) keys. Never returns the raw key — only metadata. */
 export async function listApiKeys(wallet: string): Promise<ApiKeyRow[]> {
   const res = await pool.query<ApiKeyRow>(
-    `SELECT id, wallet, label, rate_limit_per_min, revoked, created_at
+    `SELECT id, wallet, label, scope, rate_limit_per_min, revoked, created_at, last_used_at
      FROM api_keys WHERE wallet = $1 AND NOT revoked ORDER BY created_at DESC`,
     [wallet]
   );
