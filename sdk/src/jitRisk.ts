@@ -78,7 +78,7 @@ const B = (s: string): Buffer => Buffer.from(s);
  *   - `riskReserveSlice` / `riskSettleSlice`: collateralized in-flight capacity keyed
  *     by [slice, mm, slot] that dissolves at settlement.
  *
- * All derivations use the noviscia-capacity host program ID JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc.
+ * All derivations use the noviscia-capacity host program ID EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe.
  */
 export class JitRiskClient {
   readonly program: Program;

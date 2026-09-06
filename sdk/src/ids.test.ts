@@ -22,9 +22,9 @@ describe('ids', () => {
     assert.equal(PROGRAM_IDS.burnEngine.toBase58(), 'nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id');
     assert.equal(PROGRAM_IDS.nettingEngine.toBase58(), '68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56');
     assert.equal(PROGRAM_IDS.escrow.toBase58(), '2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ');
-    assert.equal(PROGRAM_IDS.jitRisk.toBase58(), 'JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc');
+    assert.equal(PROGRAM_IDS.jitRisk.toBase58(), 'EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe');
     assert.equal(PROGRAM_IDS.creditLine.toBase58(), '68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56');
-    assert.equal(PROGRAM_IDS.assetEngine.toBase58(), 'JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc');
+    assert.equal(PROGRAM_IDS.assetEngine.toBase58(), 'EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe');
   });
 
   it('mint constants are valid PublicKeys', () => {

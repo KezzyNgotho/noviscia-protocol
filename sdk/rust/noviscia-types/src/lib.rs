@@ -68,7 +68,7 @@ pub const LIQUIDATION_VAULT_PROGRAM_ID: Pubkey =
 /// absorbed at Stage 2; see `docs/FROZEN.md` + `docs/CONSOLIDATION.md` §7).
 /// PDAs derive under the host ID.
 pub const JIT_RISK_PROGRAM_ID: Pubkey =
-    solana_program::pubkey!("JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc");
+    solana_program::pubkey!("EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe");
 /// Gateway auction program (devnet).
 pub const GATEWAY_AUCTION_PROGRAM_ID: Pubkey =
     solana_program::pubkey!("HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR");
@@ -352,7 +352,7 @@ pub const TREASURY_AUTH_SEED: &[u8] = b"treasury-auth";
 
 /// On-chain program ID for `noviscia-capacity` (devnet).
 pub const CAPACITY_PROGRAM_ID: Pubkey =
-    anchor_lang::solana_program::pubkey!("JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc");
+    anchor_lang::solana_program::pubkey!("EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe");
 
 /// Institutional client tier.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Hash, Debug, Default)]
@@ -470,7 +470,7 @@ pub const LATE_FEE_BASE: u64 = 10_000;
 /// `noviscia-asset-engine` was absorbed at Stage 2; see `docs/FROZEN.md` +
 /// `docs/CONSOLIDATION.md` §7). PDAs derive under the host ID.
 pub const ASSET_ENGINE_PROGRAM_ID: Pubkey =
-    anchor_lang::solana_program::pubkey!("JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc");
+    anchor_lang::solana_program::pubkey!("EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe");
 
 /// Wrap-SOL mint (native-interop profile for SOL exposure).
 pub const WSOL_MINT: Pubkey =

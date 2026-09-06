@@ -54,7 +54,7 @@ const RPC = process.env.SOLANA_RPC_DEVNET || 'https://api.devnet.solana.com';
 // ── Hardcoded program constant (independent of the SDK ids module) ─────────────
 // Mirrors `declare_id!` of the noviscia-capacity host (asset_* handlers). If
 // these drift, the registry-PDA recomputation below will fail loudly.
-const PROGRAM_ID = new PublicKey('JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc');
+const PROGRAM_ID = new PublicKey('EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe');
 const REGISTRY_SEED = Buffer.from('asset-registry');
 
 // ── Anchor primitives, recomputed locally ───────────────────────────────────────

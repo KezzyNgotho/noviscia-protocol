@@ -17,9 +17,9 @@
     },
     {
       "name": "noviscia-capacity",
-      "programId": "JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc",
-      "deployed": false,
-      "sizeBytes": null
+      "programId": "EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe",
+      "deployed": true,
+      "sizeBytes": 892416
     },
     {
       "name": "gateway-auction",
@@ -76,10 +76,10 @@
       "category": "must-be-correct-on-paper",
       "currentStatus": "🟢 Proven On Paper / Code",
       "targetMetric": "$0 Capital Leakage on failed transactions",
-      "measuredValue": "Programs not deployed",
-      "measuredStatus": "🔴 probe-failed",
-      "evidenceArtifact": null,
-      "notes": "Deploy netting-engine, nv-usdc-vault, noviscia-capacity first."
+      "measuredValue": "All three core programs live on devnet: netting-engine, nv-usdc-vault, noviscia-capacity (EDBr2VFW). Atomicity probe ran: real token flow, no leakage.",
+      "measuredStatus": "🟢 testnet-measured",
+      "evidenceArtifact": "scripts/devnet/measure-atomicity.ts",
+      "notes": "netting-engine deployed, nv-usdc-vault (CN92hA) live, capacity redeployed at EDBr2VFW after keypair migration. Re-run `npx tsx scripts/devnet/measure-atomicity.ts` to refresh."
     },
     {
       "claim": "Geyser Data Processing Speed",
@@ -106,10 +106,10 @@
       "category": "needs-live-technical-validation",
       "currentStatus": "🟡 Simulated / Sandbox",
       "targetMetric": "60s Expiry Execution (1440x scale)",
-      "measuredValue": null,
-      "measuredStatus": "🟡 not-yet-measured",
-      "evidenceArtifact": null,
-      "notes": "Requires on-chain desk creation + time-advance to observe 24h/2h window behavior. The sandboxAccelerator.ts models this at 1440x acceleration. Live measurement: create desk on devnet, advance clock via warp-slot, observe when the facility freezes."
+      "measuredValue": "Window opened on devnet at slot 494190470 (2026-09-06). Open posture confirmed; mature at slot 494406470 (+216,000 ≈ 24h), breach at 494424470 (+234,000 ≈ 26h). OverdueSlots/Breached observation pending 26h observer.",
+      "measuredStatus": "🟡 observation-in-progress",
+      "evidenceArtifact": "devnet-window-observation.json + scripts/devnet/observe-capacity-window-devnet.ts",
+      "notes": "Real `asset_allocate_capacity` moved wSOL tokens into the EDBr2VFW capacity host (live ERC-4626 deposit + allocation). No warp-slot: frozen window will be proven by devnet observer at ~24h/26h real wall-clock (2026-09-07). Flip claim to testnet-measured once OverdueSlots or Breached observed."
     },
     {
       "claim": "Senior Tranche Circuit Breakers",
@@ -137,6 +137,6 @@
     "provenOnPaper": 1,
     "simulated": 5,
     "pending": 0,
-    "flippedToMeasured": 0
+    "flippedToMeasured": 1
   }
 }

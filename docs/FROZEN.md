@@ -52,7 +52,8 @@
 ## 6. Frozen `declare_id` audit trail
 
 ```
-noviscia-capacity         JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc   (host — ID survives)
+noviscia-capacity         JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc   (legacy — keypair lost; host redeployed at EDBr2VFW…)
+noviscia-capacity         EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe   (host — current devnet ID)
 noviscia-asset-engine     5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb
 noviscia-credit-line      8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg
 noviscia-tranche-vault    9Sk1zLo7uprmtrskoZQS6zf1KFSNv4uTCxMsbqGVMCMb

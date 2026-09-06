@@ -1,6 +1,6 @@
 # Devnet Runbook — Noviscia Protocol
 
-**Last updated:** September 3, 2026
+**Last updated:** September 6, 2026
 **Network:** Solana devnet
 **Deployer wallet:** `pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA`
 **Keypair path:** `~/.config/solana/new-id.json`
@@ -27,7 +27,7 @@
 | `noviscia_credit_line` | `8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg` |
 | `noviscia_clearing` | `GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe` |
 | `noviscia_permissioned_pool` | `BNLwfHfWyuPoDVs7LeX6vAep33k7fzhiTiYzW9Th5u2v` |
-| `noviscia_capacity` | `JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc` |
+| `noviscia_capacity` | `EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe` |
 | `noviscia_tranche_vault` | `9Sk1zLo7uprmtrskoZQS6zf1KFSNv4uTCxMsbqGVMCMb` |
 | `noviscia_asset_engine` | `5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb` |
 
@@ -61,6 +61,7 @@
 | TVV yield engine (idle pooled capital → slot-scoped contingent capacity, 15–35% APY) | **Live** | `yield-router`, `yield-distributor`, `nv-usdc-vault` |
 | Revenue engines 1–3 (feed omni-pool NAV) | **Live** | `sovereign-netting` (`NettingRentPaid`), `gateway-auction` (`AuctionSettled` premium tips), `jit-risk` (`SliceRented`/`PremiumSwept`) — indexer tracks all |
 | Protocol analytics | **Live** | `/analytics`, `/api/protocol/metrics`, `/api/protocol/solvency` |
+| Institutional capacity credit line (asset engine, folded into `noviscia-capacity` host) | **Live** — window open | $6M `C_sys` credit line at `AifRX9…cw5`; 24h floating window opened 2026-09-06 at slot 494190470 via a real `asset_allocate_capacity` onto the wSOL pool (real token flow, premium accrued). Posture `Open`; freeze being proven by observer at ≈ 24h/26h (see `scripts/devnet/observe-capacity-window-devnet.ts`) |
 | NVSC TGE / mainnet | **Q1 2027** | |
 
 ---
@@ -190,22 +191,23 @@ See [`app/web/.env.example`](../app/web/.env.example) — it's the maintained so
 
 ## Asset engine cap-wiring
 
-The `noviscia_asset_engine` (`5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb`) is the
-institutional asset-lifecycle program (per-asset `AssetPool` vaults, aggregate credit lines,
-three-tier RBAC). **Deployed and cap-wired on devnet** (Sep 5 2026, slot 493611446, ~483 KB):
-owner `BPFLoaderUpgradeab1e11111111111111111111111`, upgrade authority = deployer
+The `noviscia_asset_engine` handlers were folded into the `noviscia_capacity` host
+(`EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe`) — the institutional asset-lifecycle engine
+(per-asset `AssetPool` vaults, aggregate credit lines, three-tier RBAC). **Host is deployed and
+cap-wired on devnet** (Sep 6 2026 — original keypair `JDsM18…` lost, host redeployed at
+`EDBr2VFW…`; .so hash `011f6882…e9`, 892,416 B): owner
+`BPFLoaderUpgradeab1e11111111111111111111111`, upgrade authority = deployer
 (`pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA`). The program keypair that must match the
-canonical ID lives at `target/deploy/noviscia_asset_engine-keypair.json` (gitignored, never
-committed) — the binary's `declare_id!` anchors every PDA it creates to `5qpo…ZrMKb`.
+canonical ID lives at `target/deploy/noviscia_capacity-keypair.json` (gitignored, never
+committed) — the binary's `declare_id!` anchors every PDA it creates to `EDBr2VFW…`. The
+credential/upgrade keypair is backed up at `~/.config/solana/program-ids/noviscia-capacity-program.json`.
 
 Re-deploy / upgrade after a source change (fees paid by `~/.config/solana/new-id.json`):
 
 ```bash
-cargo build-sbf --manifest-path programs/cluster-2-tvv-gate/noviscia-asset-engine/Cargo.toml --tools-version v1.52
-cp target/sbf-solana-solana/release/noviscia_asset_engine.so target/deploy/
-solana program deploy target/deploy/noviscia_asset_engine.so \
-  --program-id target/deploy/noviscia_asset_engine-keypair.json \
-  --keypair ~/.config/solana/new-id.json --url devnet
+cargo build-sbf --manifest-path programs/cluster-2-tvv-gate/noviscia-capacity/Cargo.toml
+cp target/sbf-solana-solana/release/noviscia_capacity.so target/deploy/
+anchor deploy --program-name noviscia_capacity
 ```
 
 The derived caps from the Quantified Risk Pack & Economics module (reference `$10,000,000` pool)
@@ -233,6 +235,16 @@ Derived cap table (60% systemic / 15% desk of the `$10M` reference pool — see
 cap converts at a documented price basis (defaults: USDC `$1.00`, wSOL `$150.00`, NVSC `$1.00`)
 → `max_capacity` = `1,500,000` USDC / `10,000` wSOL / `1,500,000` NVSC, and the aggregate credit
 line = `6,000,000,000,000` raw USDC (6-dec).
+
+**Live window status:** the credit line at
+`AifRX9brGfJmJpDcBDtpf4bbkNM65pCBYXHkrVAWPcw5` holds `total` = `6,000,000,000,000` raw, and a
+real 24h floating window was opened 2026-09-06 via `asset_allocate_capacity` (slot 494190463,
+premium 240,000 raw; `window_start_slot` = 494190470) onto the wSOL pool (`9v12r3KZbFpN6gdC3n482MkWEzYGwfGYjK1v7aCAPxdh`,
+desk_position `HevKzcRDfiCnheXhzHFsZ4ktHB5HjwGvohvayydNivxD`). Posture confirmed `Open` on
+devnet; the deterministic `OverdueSlots`/`Breached` freeze (~+216k/+234k slots, ≈ 24h/26h) is
+proven by the observer at `scripts/devnet/observe-capacity-window-devnet.ts` (writes
+`devnet-window-observation.json`). Do not re-initialize the credit line — an init would recreate
+the seed/bump issue documented in the code (`bump = credit_line.bump` → plain `bump` fix).
 
 Signer resolution and overrides:
 

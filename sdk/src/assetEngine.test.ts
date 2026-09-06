@@ -51,7 +51,7 @@ const le64 = (v: bigint): Buffer => {
 
 describe('assetEngine', () => {
   it('exposes the deployed program ID', () => {
-    assert.equal(ASSET_ENGINE_PROGRAM_ID.toBase58(), 'JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc');
+    assert.equal(ASSET_ENGINE_PROGRAM_ID.toBase58(), 'EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe');
   });
 
   it('uses the Anchor sha256 global discriminator prefix', () => {

@@ -24,10 +24,10 @@
     },
     {
       "claim": "Atomic Reversion Control",
-      "status": "🟢 Proven On Paper / Code",
+      "status": "🟢 testnet-measured",
       "target": "$0 Capital Leakage on failed transactions",
-      "evidence": "sdk/src/waterfall.ts (paper proof)",
-      "measurement": "Programs not deployed"
+      "evidence": "scripts/devnet/measure-atomicity.ts",
+      "measurement": "All three core programs live on devnet: netting-engine, nv-usdc-vault, noviscia-capacity (EDBr2VFW). Atomicity probe ran: real token flow, no leakage."
     },
     {
       "claim": "Geyser Data Processing Speed",
@@ -47,8 +47,8 @@
       "claim": "Time-Accelerated Timeout Locks",
       "status": "🟡 Simulated / Sandbox",
       "target": "60s Expiry Execution (1440x scale)",
-      "evidence": "—",
-      "measurement": "Requires on-chain desk creation + time-advance to observe 24h/2h window behavior. The sandboxAccelerator.ts models this at 1440x acceleration. Live measurement: create desk on devnet, advance clock via warp-slot, observe when the facility freezes."
+      "evidence": "devnet-window-observation.json + scripts/devnet/observe-capacity-window-devnet.ts",
+      "measurement": "Window opened on devnet at slot 494190470 (2026-09-06). Open posture confirmed; mature at slot 494406470 (+216,000 ≈ 24h), breach at 494424470 (+234,000 ≈ 26h). OverdueSlots/Breached observation pending 26h observer."
     },
     {
       "claim": "Senior Tranche Circuit Breakers",

@@ -221,7 +221,7 @@ commit boundary. Storage/verification is local-devnet; **no mainnet data migrati
   for sub-millisecond slot throughput and deployment hot-spots).
 
 ### Stage 2 — Cluster 2 (largest merge): `jit-risk` + `capacity` + `asset-engine` → `tvv-gate` ✅ DONE
-- **Identity:** `noviscia-capacity` crate (host) preserved `declare_id!("JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc")`; no client/PDA migration on the live devnet account.
+- **Identity:** `noviscia-capacity` crate (host) originally preserved `declare_id!("JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc")`. The original deploy keypair was subsequently lost, so the host was redeployed at `EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe` (see docs/DEVNET.md); client/PDA derivations migrate with the new address.
 - **Merged as namespaced submodules** (`asset_engine.rs` 2,382 LOC / 27 tests; `jit_risk.rs` 2,061 LOC / 24 tests):
   - `asset_engine` — full multi-asset pool/credit engine (15 handlers, ERC-4626 LP shares, daily single-tx clearing, ceilings, hashv-Merkle KYC gate). Renames avoid host collisions: `AssetError→AssetEngineError`, `BPS→ASSET_BPS`, `*_compute_kyc_hash/verify_merkle_proof/keccak256_pair→asset_*`.
   - `jit_risk` — slot-scoped capacity-rental marketplace (13 handlers, insurance floor sync, 85/15 sweep CPI to vault). Renames: `BPS→JIT_BPS`, `WAD→JIT_WAD`.
