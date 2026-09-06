@@ -35,6 +35,10 @@ import {
   computeDepositShares,
   computeLpWithdrawValue,
   computeLpSharePrice,
+  assetComputeKycHash,
+  assetKeccak256Pair,
+  assetBuildKycMerkleTree,
+  assetVerifyKycProof,
   WINDOW_SLOTS,
   GRACE_SLOTS,
   USDC_PROFILE,
@@ -268,5 +272,67 @@ describe('assetEngine', () => {
     assert.equal(computeLpWithdrawValue(500n, 1_500n, 1_800n), 600n);
     assert.equal(computeLpWithdrawValue(1_000n, 1_000n, 0n), 0n);
     assert.equal(computeLpWithdrawValue(1_000n, 1_000n, 500n), 500n);
+  });
+
+  it('credit-line KYC leaf mirrors asset_compute_kyc_hash', () => {
+    const institution = uuid();
+    const leaf = assetComputeKycHash(institution, 1_758_000_000n);
+    assert.equal(leaf.length, 32);
+    // deterministic
+    assert.deepEqual(
+      Buffer.from(assetComputeKycHash(institution, 1_758_000_000n)),
+      Buffer.from(leaf),
+    );
+    // different expiry → different leaf
+    const other = assetComputeKycHash(institution, 1_759_000_000n);
+    assert.equal(Buffer.from(leaf).equals(Buffer.from(other)), false);
+  });
+
+  it('empty proof against own root passes (mirrors single-leaf tree)', () => {
+    const institution = uuid();
+    const leaf = assetComputeKycHash(institution, 1_758_000_000n);
+    assert.equal(assetVerifyKycProof(leaf, [], leaf), true);
+    const other = assetComputeKycHash(institution, 1_759_000_000n);
+    assert.equal(assetVerifyKycProof(other, [], leaf), false);
+  });
+
+  it('sorted-pair two-leaf root verifies from either leaf', () => {
+    const a = assetComputeKycHash(uuid(), 100n);
+    const b = assetComputeKycHash(uuid(), 200n);
+    const root = assetKeccak256Pair(a, b);
+    assert.equal(assetVerifyKycProof(a, [b], root), true);
+    assert.equal(assetVerifyKycProof(b, [a], root), true);
+  });
+
+  it('zero root is always rejected', () => {
+    const a = assetComputeKycHash(uuid(), 100n);
+    const b = assetComputeKycHash(uuid(), 200n);
+    const zero = new Uint8Array(32);
+    assert.equal(assetVerifyKycProof(a, [b], zero), false);
+  });
+
+  it('proof built from a real tree validates every leaf', () => {
+    const leaves = [0, 1, 2, 3, 4].map((i) => assetComputeKycHash(uuid(), BigInt(1_000 + i)));
+    const { root, proofForIndex } = assetBuildKycMerkleTree(leaves);
+    assert.equal(root.length, 32);
+    for (let i = 0; i < leaves.length; i++) {
+      assert.equal(assetVerifyKycProof(leaves[i], proofForIndex(i), root), true, `leaf ${i}`);
+    }
+    // a leaf that was never in the tree must fail
+    const foreign = assetComputeKycHash(uuid(), 9_999n);
+    assert.equal(assetVerifyKycProof(foreign, proofForIndex(0), root), false);
+  });
+
+  it('odd leaf count mirrors the on-chain duplicate-last fold', () => {
+    const leaves = [
+      assetComputeKycHash(uuid(), 1n),
+      assetComputeKycHash(uuid(), 2n),
+      assetComputeKycHash(uuid(), 3n),
+    ];
+    const { root, proofForIndex } = assetBuildKycMerkleTree(leaves);
+    assert.equal(leaves.length, 3);
+    for (let i = 0; i < leaves.length; i++) {
+      assert.equal(assetVerifyKycProof(leaves[i], proofForIndex(i), root), true, `leaf ${i}`);
+    }
   });
 });

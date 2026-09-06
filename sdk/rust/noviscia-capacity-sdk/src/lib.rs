@@ -7,6 +7,9 @@
 //!   bundle: Merkle KYC + dynamic premium + slot reservation.
 //! - Utilization reporting, slot settlement, and the instant programmatic
 //!   credit freeze (`freeze_client`).
+//! - `risk_register_mm` / `risk_suspend_mm` / `risk_activate_mm` — the
+//!   jit-risk MM admission & lifecycle gate (C_desk ceiling enforced
+//!   client-side to mirror on-chain `validate_mm_ceiling`).
 //! - keccak256 merkle helpers matching the on-chain layout.
 
 use sha3::{Digest, Keccak256};
@@ -14,17 +17,39 @@ use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::pubkey::Pubkey;
 
 use noviscia_types::{
-    BPS, CAPACITY_SEED, CLIENT_SEED, ClientTier, CONGESTION_SEED, SLOT_LEDGER_SEED,
+    ClientTier, BPS, CAPACITY_SEED, CLIENT_SEED, CONGESTION_SEED, SLOT_LEDGER_SEED,
     TREASURY_AUTH_SEED, TREASURY_SEED,
 };
 
 /// Re-exported `noviscia-capacity` program id for callers.
 pub use noviscia_types::CAPACITY_PROGRAM_ID;
+/// Re-exported jit-risk program id (host EDBr — the consolidated marketplace).
+pub use noviscia_types::JIT_RISK_PROGRAM_ID;
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
 /// Maximum merkle tree depth (supports up to 2^20 ≈ 1M verified clients).
 pub const MAX_MERKLE_DEPTH: usize = 20;
+
+/// Program seed for the singleton marketplace account.
+pub const MARKETPLACE_SEED: &[u8] = b"marketplace";
+/// Program seed for an MM registration: `[MM_SEED, mm]`.
+pub const MM_SEED: &[u8] = b"mm";
+/// Per-MM credit ceiling cap = single-desk cap C_desk ($1.5M) from the
+/// quantified risk pack; mirrors on-chain `MAX_MM_CEILING_USDC`.
+pub const MAX_MM_CEILING_USDC: u64 = 1_500_000_000_000;
+
+/// Admission contract must mirror on-chain `validate_mm_ceiling`:
+/// ceiling > 0 and ≤ C_desk.
+pub fn assert_valid_mm_ceiling_usdc(credit_ceiling_usdc: u64) -> Result<(), &'static str> {
+    if credit_ceiling_usdc == 0 {
+        return Err("Desk admission rejected: ceiling must be greater than zero");
+    }
+    if credit_ceiling_usdc > MAX_MM_CEILING_USDC {
+        return Err("Desk admission rejected: ceiling exceeds the single-desk cap C_desk ($1.5M)");
+    }
+    Ok(())
+}
 
 // ── Anchor Discriminator ───────────────────────────────────────────────────
 
@@ -68,6 +93,20 @@ pub fn treasury_pda(program_id: &Pubkey) -> Pubkey {
 
 pub fn treasury_auth_pda(program_id: &Pubkey) -> Pubkey {
     let (pda, _bump) = Pubkey::find_program_address(&[TREASURY_AUTH_SEED], program_id);
+    pda
+}
+
+// ── jit-risk PDAs ─────────────────────────────────────────────────────────
+
+/// `[b"marketplace"]` — singleton marketplace state (jit-risk section).
+pub fn marketplace_pda(program_id: &Pubkey) -> Pubkey {
+    let (pda, _bump) = Pubkey::find_program_address(&[MARKETPLACE_SEED], program_id);
+    pda
+}
+
+/// `[b"mm", mm]` — market-maker registration (jit-risk section).
+pub fn mm_registration_pda(program_id: &Pubkey, mm: &Pubkey) -> Pubkey {
+    let (pda, _bump) = Pubkey::find_program_address(&[MM_SEED, mm.as_ref()], program_id);
     pda
 }
 
@@ -173,7 +212,11 @@ pub fn build_initialize_ix(
     data.extend_from_slice(&premium_cap_bps.to_le_bytes());
     data.extend_from_slice(&congestion_multiplier_bps.to_le_bytes());
     data.extend_from_slice(&min_premium_lamports.to_le_bytes());
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 /// Build `set_kyc_merkle_root`.
@@ -188,7 +231,11 @@ pub fn build_set_kyc_merkle_root_ix(
     ];
     let mut data = anchor_discriminator("set_kyc_merkle_root").to_vec();
     data.extend_from_slice(&new_root);
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 /// Build `set_pricing`.
@@ -209,7 +256,11 @@ pub fn build_set_pricing_ix(
     data.extend_from_slice(&premium_cap_bps.to_le_bytes());
     data.extend_from_slice(&congestion_multiplier_bps.to_le_bytes());
     data.extend_from_slice(&min_premium_lamports.to_le_bytes());
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 /// Build `update_congestion` (keeper-fed).
@@ -227,7 +278,11 @@ pub fn build_update_congestion_ix(
     let mut data = anchor_discriminator("update_congestion").to_vec();
     data.extend_from_slice(&load_ratio_bps.to_le_bytes());
     data.extend_from_slice(&cu_consumed.to_le_bytes());
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 /// Build `register_client`.
@@ -246,7 +301,11 @@ pub fn build_register_client_ix(
     let mut data = anchor_discriminator("register_client").to_vec();
     data.push(tier as u8);
     data.extend_from_slice(&credit_limit.to_le_bytes());
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 /// Build `update_credit`.
@@ -263,7 +322,11 @@ pub fn build_update_credit_ix(
     ];
     let mut data = anchor_discriminator("update_credit").to_vec();
     data.extend_from_slice(&credit_limit.to_le_bytes());
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 /// Build `deposit_margin`.
@@ -285,7 +348,11 @@ pub fn build_deposit_margin_ix(
     ];
     let mut data = anchor_discriminator("deposit_margin").to_vec();
     data.extend_from_slice(&amount.to_le_bytes());
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 /// Build `withdraw_margin`.
@@ -307,7 +374,11 @@ pub fn build_withdraw_margin_ix(
     ];
     let mut data = anchor_discriminator("withdraw_margin").to_vec();
     data.extend_from_slice(&amount.to_le_bytes());
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 /// Build `purchase_capacity` — **Transaction A** of the atomic bundle.
@@ -344,7 +415,11 @@ pub fn build_purchase_capacity_ix(
     data.extend_from_slice(&desired_capacity.to_le_bytes());
     data.extend_from_slice(&expiry.to_le_bytes());
     append_proof(&mut data, &merkle_proof);
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 /// Build `report_utilization`.
@@ -365,15 +440,15 @@ pub fn build_report_utilization_ix(
     let mut data = anchor_discriminator("report_utilization").to_vec();
     data.extend_from_slice(&cu_used.to_le_bytes());
     data.extend_from_slice(&notional.to_le_bytes());
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 /// Build `settle_slot`.
-pub fn build_settle_slot_ix(
-    program_id: Pubkey,
-    signer: Pubkey,
-    operator: Pubkey,
-) -> Instruction {
+pub fn build_settle_slot_ix(program_id: Pubkey, signer: Pubkey, operator: Pubkey) -> Instruction {
     let accounts = vec![
         AccountMeta::new(signer, true),
         AccountMeta::new_readonly(operator, false),
@@ -404,7 +479,11 @@ pub fn build_freeze_client_ix(
     ];
     let mut data = anchor_discriminator("freeze_client").to_vec();
     append_string(&mut data, reason);
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 /// Build `unfreeze_client`.
@@ -435,7 +514,11 @@ pub fn build_set_paused_ix(program_id: Pubkey, authority: Pubkey, paused: bool) 
     ];
     let mut data = anchor_discriminator("set_paused").to_vec();
     data.push(paused as u8);
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 /// Build `withdraw_treasury`.
@@ -457,7 +540,86 @@ pub fn build_withdraw_treasury_ix(
     ];
     let mut data = anchor_discriminator("withdraw_treasury").to_vec();
     data.extend_from_slice(&amount.to_le_bytes());
-    Instruction { program_id, accounts, data }
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
+}
+
+// ── jit-risk MM admission & lifecycle ─────────────────────────────────────
+
+/// Build `risk_register_mm` — onboard a market maker with a per-MM credit
+/// ceiling. Account order mirrors the on-chain `RegisterMm` context:
+/// 0. marketplace (mut)
+/// 1. mm_registration (init, payer = authority)
+/// 2. mm (readonly — seed component only)
+/// 3. authority (mut, signer)
+/// 4. system_program
+///
+/// Data: `risk_register_mm` discriminator + mm (32 B) + u64 LE ceiling.
+pub fn build_risk_register_mm_ix(
+    program_id: Pubkey,
+    mm: Pubkey,
+    credit_ceiling_usdc: u64,
+    authority: Pubkey,
+) -> Result<Instruction, &'static str> {
+    assert_valid_mm_ceiling_usdc(credit_ceiling_usdc)?;
+    let accounts = vec![
+        AccountMeta::new(marketplace_pda(&program_id), false),
+        AccountMeta::new(mm_registration_pda(&program_id, &mm), false),
+        AccountMeta::new_readonly(mm, false),
+        AccountMeta::new(authority, true),
+        AccountMeta::new_readonly(solana_program::system_program::ID, false),
+    ];
+    let mut data = anchor_discriminator("risk_register_mm").to_vec();
+    data.extend_from_slice(&mm.to_bytes());
+    data.extend_from_slice(&credit_ceiling_usdc.to_le_bytes());
+    Ok(Instruction {
+        program_id,
+        accounts,
+        data,
+    })
+}
+
+/// Build `risk_suspend_mm` — block a market maker from new slices.
+/// Account order mirrors the on-chain `SuspendMm` context:
+/// 0. marketplace (mut)
+/// 1. mm_registration (mut)
+/// 2. mm (readonly)
+/// 3. authority (mut, signer)
+pub fn build_risk_suspend_mm_ix(program_id: Pubkey, mm: Pubkey, authority: Pubkey) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new(marketplace_pda(&program_id), false),
+        AccountMeta::new(mm_registration_pda(&program_id, &mm), false),
+        AccountMeta::new_readonly(mm, false),
+        AccountMeta::new(authority, true),
+    ];
+    let mut data = anchor_discriminator("risk_suspend_mm").to_vec();
+    data.extend_from_slice(&mm.to_bytes());
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
+}
+
+/// Build `risk_activate_mm` — reinstate a suspended market maker (idempotent
+/// for active desks). Same account order as `risk_suspend_mm`.
+pub fn build_risk_activate_mm_ix(program_id: Pubkey, mm: Pubkey, authority: Pubkey) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new(marketplace_pda(&program_id), false),
+        AccountMeta::new(mm_registration_pda(&program_id, &mm), false),
+        AccountMeta::new_readonly(mm, false),
+        AccountMeta::new(authority, true),
+    ];
+    let mut data = anchor_discriminator("risk_activate_mm").to_vec();
+    data.extend_from_slice(&mm.to_bytes());
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
 }
 
 // ── Default program convenience ────────────────────────────────────────────
@@ -546,5 +708,73 @@ mod tests {
         let op = Pubkey::new_unique();
         assert_ne!(client_pda(&program, &op), ledger_pda(&program, &op));
         assert_ne!(treasury_pda(&program), treasury_auth_pda(&program));
+    }
+
+    #[test]
+    fn registered_mm_ceiling_contract_mirrors_onchain() {
+        assert!(assert_valid_mm_ceiling_usdc(0).is_err());
+        assert!(assert_valid_mm_ceiling_usdc(MAX_MM_CEILING_USDC + 1).is_err());
+        assert!(assert_valid_mm_ceiling_usdc(MAX_MM_CEILING_USDC).is_ok());
+        assert!(assert_valid_mm_ceiling_usdc(500_000_000_000).is_ok());
+        assert!(assert_valid_mm_ceiling_usdc(20_000_000_000).is_ok());
+    }
+
+    #[test]
+    fn risk_register_mm_encodes_args_and_accounts() {
+        let program = JIT_RISK_PROGRAM_ID;
+        let mm = Pubkey::new_unique();
+        let authority = Pubkey::new_unique();
+        let ix = build_risk_register_mm_ix(program, mm, 20_000_000_000, authority)
+            .expect("default ceiling accepted");
+        assert_eq!(ix.program_id, JIT_RISK_PROGRAM_ID);
+        // marketplace, mm_registration, mm, authority, system_program
+        assert_eq!(ix.accounts.len(), 5);
+        assert_eq!(ix.accounts[0].pubkey, marketplace_pda(&program));
+        assert_eq!(ix.accounts[1].pubkey, mm_registration_pda(&program, &mm));
+        assert_eq!(ix.accounts[3].pubkey, authority);
+        assert!(ix.accounts[3].is_signer);
+        assert!(
+            !ix.accounts[0].is_signer,
+            "marketplace is a PDA, not a signer"
+        );
+        // discriminator (8) + mm (32) + u64 ceiling LE
+        let body = &ix.data[8..];
+        assert_eq!(body.len(), 32 + 8);
+        assert_eq!(&body[..32], &mm.to_bytes());
+        assert_eq!(&body[32..40], &20_000_000_000u64.to_le_bytes());
+    }
+
+    #[test]
+    fn risk_register_mm_rejects_overdraft_ceiling() {
+        let err = build_risk_register_mm_ix(
+            JIT_RISK_PROGRAM_ID,
+            Pubkey::new_unique(),
+            0,
+            Pubkey::new_unique(),
+        );
+        assert!(err.is_err(), "zero ceiling rejected");
+        let err = build_risk_register_mm_ix(
+            JIT_RISK_PROGRAM_ID,
+            Pubkey::new_unique(),
+            MAX_MM_CEILING_USDC + 1,
+            Pubkey::new_unique(),
+        );
+        assert!(err.is_err(), "ceiling above C_desk rejected");
+    }
+
+    #[test]
+    fn risk_suspend_activate_share_same_account_layout() {
+        let mm = Pubkey::new_unique();
+        let authority = Pubkey::new_unique();
+        let suspend = build_risk_suspend_mm_ix(JIT_RISK_PROGRAM_ID, mm, authority);
+        let activate = build_risk_activate_mm_ix(JIT_RISK_PROGRAM_ID, mm, authority);
+        assert_eq!(suspend.accounts.len(), 4);
+        assert_eq!(activate.accounts, suspend.accounts);
+        assert_eq!(&suspend.data[..8], &anchor_discriminator("risk_suspend_mm"));
+        assert_eq!(
+            &activate.data[..8],
+            &anchor_discriminator("risk_activate_mm")
+        );
+        assert_eq!(&suspend.data[8..], &mm.to_bytes());
     }
 }

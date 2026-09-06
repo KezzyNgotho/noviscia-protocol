@@ -21,6 +21,7 @@
 use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::pubkey::Pubkey;
 use solana_sdk::sysvar::rent::ID as RENT_ID;
+use sha3::{Digest, Keccak256};
 
 use noviscia_types::{
     ASSET_AUTHORITY_SEED, ASSET_CREDIT_LINE_SEED, ASSET_ENGINE_PROGRAM_ID, ASSET_FEE_VAULT_SEED,
@@ -427,6 +428,77 @@ pub fn build_set_kyc_root_ix(
     let mut data = anchor_discriminator("asset_set_kyc_root").to_vec();
     data.extend_from_slice(&kyc_merkle_root);
     Instruction { program_id, accounts, data }
+}
+
+// ── Credit-line Merkle KYC (keccak256, mirrors asset_engine.rs) ────────────
+
+/// keccak256 KYC leaf: `keccak256(institution || expiry_BE)`, mirrors the
+/// on-chain `asset_compute_kyc_hash`. Note the asset-engine flavor has NO tier
+/// byte (unlike the capacity-host leaf).
+pub fn asset_compute_kyc_hash(institution: &Pubkey, expiry: i64) -> [u8; 32] {
+    let mut hasher = Keccak256::new();
+    hasher.update(institution.as_ref());
+    hasher.update(expiry.to_be_bytes());
+    hasher.finalize().into()
+}
+
+/// Sorted-pair keccak, mirrors `asset_keccak256_pair`.
+pub fn asset_keccak256_pair(a: &[u8; 32], b: &[u8; 32]) -> [u8; 32] {
+    let mut hasher = Keccak256::new();
+    let (left, right) = if a <= b { (a, b) } else { (b, a) };
+    hasher.update(left);
+    hasher.update(right);
+    hasher.finalize().into()
+}
+
+/// Validate a sorted-pair merkle proof against a desk's KYC root.
+/// Returns `false` when the root is all zeros (proof skipped on-chain).
+pub fn asset_verify_merkle_proof(leaf: &[u8; 32], proof: &[[u8; 32]], root: &[u8; 32]) -> bool {
+    if root == &[0u8; 32] {
+        return false;
+    }
+    let mut digest = *leaf;
+    for sibling in proof {
+        digest = asset_keccak256_pair(&digest, sibling);
+    }
+    digest == *root
+}
+
+/// Build a deterministic sorted-pair merkle tree (duplicate-last for odd
+/// counts) and return the complete leaf proof set keyed by index. Mirrors the
+/// tree construction consumed by `asset_verify_merkle_proof`.
+pub fn asset_build_merkle_tree(leaves: &[[u8; 32]]) -> ([u8; 32], Vec<Vec<[u8; 32]>>) {
+    assert!(!leaves.is_empty(), "asset_build_merkle_tree: empty leaves");
+    let mut levels: Vec<Vec<[u8; 32]>> = vec![leaves.to_vec()];
+    while levels.last().unwrap().len() > 1 {
+        let cur = levels.last().unwrap();
+        let mut next: Vec<[u8; 32]> = Vec::new();
+        let mut i = 0;
+        while i < cur.len() {
+            let left = cur[i];
+            let right = if i + 1 < cur.len() { cur[i + 1] } else { left };
+            next.push(asset_keccak256_pair(&left, &right));
+            i += 2;
+        }
+        levels.push(next);
+    }
+    let root = *levels.last().unwrap().last().unwrap();
+    let proofs = (0..leaves.len())
+        .map(|mut idx| {
+            let mut proof = Vec::new();
+            for level in levels.iter().take(levels.len() - 1) {
+                let sibling_idx = if idx % 2 == 0 {
+                    idx + 1
+                } else {
+                    idx - 1
+                };
+                proof.push(level[sibling_idx.min(level.len() - 1)]);
+                idx /= 2;
+            }
+            proof
+        })
+        .collect();
+    (root, proofs)
 }
 
 /// Build `asset_settle_daily` — Phase 3 daily clearing house settlement.
@@ -915,5 +987,76 @@ mod tests {
         // Redeems cap at total assets.
         assert_eq!(compute_lp_withdraw_value(1_000, 1_000, 0), 0);
         assert_eq!(compute_lp_withdraw_value(1_000, 1_000, 500), 500);
+    }
+
+    #[test]
+    fn credit_line_kyc_leaf_mirrors_asset_compute_kyc_hash() {
+        let institution = Pubkey::new_unique();
+        let leaf = asset_compute_kyc_hash(&institution, 1_758_000_000);
+        assert_eq!(leaf.len(), 32);
+        assert_eq!(asset_compute_kyc_hash(&institution, 1_758_000_000), leaf);
+        assert_ne!(
+            asset_compute_kyc_hash(&institution, 1_759_000_000),
+            leaf,
+            "different expiry must change the leaf"
+        );
+    }
+
+    #[test]
+    fn empty_proof_against_own_root_passes() {
+        let institution = Pubkey::new_unique();
+        let leaf = asset_compute_kyc_hash(&institution, 1_758_000_000);
+        assert!(asset_verify_merkle_proof(&leaf, &[], &leaf));
+        let other = asset_compute_kyc_hash(&institution, 1_759_000_000);
+        assert!(!asset_verify_merkle_proof(&other, &[], &leaf));
+    }
+
+    #[test]
+    fn sorted_pair_two_leaf_root_verifies_from_either_leaf() {
+        let a = asset_compute_kyc_hash(&Pubkey::new_unique(), 100);
+        let b = asset_compute_kyc_hash(&Pubkey::new_unique(), 200);
+        let root = asset_keccak256_pair(&a, &b);
+        assert!(asset_verify_merkle_proof(&a, &[b], &root));
+        assert!(asset_verify_merkle_proof(&b, &[a], &root));
+    }
+
+    #[test]
+    fn zero_root_is_always_rejected() {
+        let a = asset_compute_kyc_hash(&Pubkey::new_unique(), 100);
+        let b = asset_compute_kyc_hash(&Pubkey::new_unique(), 200);
+        let zero = [0u8; 32];
+        assert!(!asset_verify_merkle_proof(&a, &[b], &zero));
+    }
+
+    #[test]
+    fn proof_from_real_tree_validates_every_leaf() {
+        let leaves: Vec<[u8; 32]> = (0..5)
+            .map(|i| asset_compute_kyc_hash(&Pubkey::new_unique(), 1_000 + i))
+            .collect();
+        let (root, proofs) = asset_build_merkle_tree(&leaves);
+        assert_eq!(root.len(), 32);
+        for (i, proof) in proofs.iter().enumerate() {
+            assert!(
+                asset_verify_merkle_proof(&leaves[i], proof, &root),
+                "leaf {i} must verify"
+            );
+        }
+        let foreign = asset_compute_kyc_hash(&Pubkey::new_unique(), 9_999);
+        assert!(!asset_verify_merkle_proof(&foreign, &proofs[0], &root));
+    }
+
+    #[test]
+    fn odd_leaf_count_mirrors_duplicate_last_fold() {
+        let leaves: Vec<[u8; 32]> = (0..3)
+            .map(|i| asset_compute_kyc_hash(&Pubkey::new_unique(), i as i64 + 1))
+            .collect();
+        let (root, proofs) = asset_build_merkle_tree(&leaves);
+        assert_eq!(leaves.len(), 3);
+        for (i, proof) in proofs.iter().enumerate() {
+            assert!(
+                asset_verify_merkle_proof(&leaves[i], proof, &root),
+                "leaf {i} must verify"
+            );
+        }
     }
 }

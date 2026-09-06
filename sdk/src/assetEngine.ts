@@ -9,6 +9,7 @@
  */
 
 import { createHash } from 'node:crypto';
+import { keccak_256 } from '@noble/hashes/sha3';
 import { PublicKey, SystemProgram, TransactionInstruction, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { ASSET_ENGINE_PROGRAM_ID } from './ids';
@@ -718,4 +719,73 @@ export function registerAssetDefault(
   profile: AssetParams,
 ): TransactionInstruction {
   return buildRegisterAssetIx(ASSET_ENGINE_PROGRAM_ID, upgradeAuthority, mint, profile);
+}
+
+// ── Credit-line KYC Merkle helpers (mirror asset_engine.rs) ─────────────────
+
+/** keccak256(institution || expiry_BE) — matches `asset_compute_kyc_hash`. */
+export function assetComputeKycHash(institution: PublicKey, expiry: bigint): Uint8Array {
+  const expiryBuf = Buffer.alloc(8);
+  expiryBuf.writeBigInt64BE(BigInt(expiry));
+  const input = Buffer.concat([institution.toBuffer(), expiryBuf]);
+  return keccak_256(input);
+}
+
+/** Sorted-pair keccak — matches `asset_keccak256_pair`. */
+export function assetKeccak256Pair(a: Uint8Array, b: Uint8Array): Uint8Array {
+  const [left, right] = Buffer.compare(Buffer.from(a), Buffer.from(b)) <= 0 ? [a, b] : [b, a];
+  return keccak_256(Buffer.concat([left, right]));
+}
+
+/**
+ * Build a deterministic sorted-pair merkle tree from leaf hashes.
+ * Returns the root and a function that produces the sibling proof for a given index.
+ */
+export function assetBuildKycMerkleTree(
+  leaves: Uint8Array[],
+): { root: Uint8Array; proofForIndex: (index: number) => Uint8Array[] } {
+  if (leaves.length === 0) throw new Error('assetBuildKycMerkleTree: empty leaves');
+  const levels: Buffer[][] = [leaves.map((l) => Buffer.from(l))];
+  while (levels[levels.length - 1].length > 1) {
+    const cur = levels[levels.length - 1];
+    const next: Buffer[] = [];
+    for (let i = 0; i < cur.length; i += 2) {
+      const left = cur[i];
+      const right = i + 1 < cur.length ? cur[i + 1] : left;
+      next.push(Buffer.from(assetKeccak256Pair(left, right)));
+    }
+    levels.push(next);
+  }
+  const root = levels[levels.length - 1][0];
+  return {
+    root,
+    proofForIndex: (index: number) => {
+      if (index < 0 || index >= leaves.length) throw new RangeError(`index ${index} out of range`);
+      const proof: Uint8Array[] = [];
+      for (let level = 0; level < levels.length - 1; level++) {
+        const cur = levels[level];
+        const siblingIdx = index % 2 === 0 ? index + 1 : index - 1;
+        proof.push(Buffer.from(cur[Math.min(siblingIdx, cur.length - 1)]));
+        index = Math.floor(index / 2);
+      }
+      return proof;
+    },
+  };
+}
+
+/**
+ * Verify a sorted-pair merkle proof — mirrors `asset_verify_merkle_proof`.
+ * Returns false if root is all zeros.
+ */
+export function assetVerifyKycProof(
+  leaf: Uint8Array,
+  proof: Uint8Array[],
+  root: Uint8Array,
+): boolean {
+  if (root.length !== 32 || root.every((b) => b === 0)) return false;
+  let digest = Buffer.from(leaf);
+  for (const sibling of proof) {
+    digest = Buffer.from(assetKeccak256Pair(digest, sibling));
+  }
+  return Buffer.from(digest).equals(Buffer.from(root));
 }

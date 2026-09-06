@@ -89,7 +89,7 @@ live emulator (`services/sandbox-hub`). If a flow breaks here, do **not** try it
 | Master Loan Agreement / KYB review | No (off-chain, enforced by issuer) | Contract in `docs/MASTER_LOAN_AGREEMENT.md`; Sumsub KYB flow is **scaffolded** in the web app |
 | Three-tier RBAC (breaker/committee/council) | Yes — `AssetRegistry` pins 3 keys | **Cold-start = single deployer key** `pm2tUw22…`; Squads split is a mainnet target |
 | Desk registration (`register_mm` whitelist) | Yes (jit_risk registry) | Admission runbook + ceiling cap gate (§15) — devnet test desks via `scripts/devnet/register-mm-admission-devnet.ts` |
-| Merkle KYC proof | Yes — `credit_line.kyc_merkle_root` | **Root unset → proof is skipped** (see §9) |
+| Merkle KYC proof | Yes — `credit_line.kyc_merkle_root` | **Live + enforced** — root committed, allocation verifies the keccak sorted-pair proof; invalid proof rejected (`KycProofInvalid`). Runbook §15.6 |
 
 If your desk needs its own identity (not the deployer), generate a keypair and provision it
 (§7.2) — do not piggyback the cold-start deployer for anything you care about.
@@ -178,7 +178,8 @@ window opened on 2026-09-06 (slot 494190470).
 
 ```ts
 import { windowPosture, computePremium, buildAllocateAssetCapacityIx,
-         creditLinePDA, deskPositionPDA, assetPoolPDA } from '@noviscia/sdk';
+         creditLinePDA, deskPositionPDA, assetPoolPDA,
+         assetComputeKycHash, assetBuildKycMerkleTree, assetVerifyKycProof } from '@noviscia/sdk';
 
 const desk  = Keypair.fromSecretKey(/* desk signer */);
 const pid   = new PublicKey(EDBr2_TEST_PROGRAM_ID);      // EDBr2VFW…
@@ -191,6 +192,16 @@ const premium = computePremium(amount, 12, 0n);
 // target_slot must be ≥ the execution slot — program only checks the ordering
 const currentSlot = await conn.getSlot('confirmed');
 
+// credit-line KYC leaf = keccak256(institution ‖ expiry) (no tier — differs from
+// the capacity host's operator‖tier‖expiry leaf). Build a tree, post its root with
+// asset_set_kyc_root (Risk Committee), then prove a member leaf at allocate time.
+const leaves = [bigintExpiry1, bigintExpiry2].map((e) =>
+  assetComputeKycHash(desk.publicKey, e));
+const { root, proofForIndex } = assetBuildKycMerkleTree(leaves);
+// ... asset_set_kyc_root(root) signed by the Risk Committee ...
+const proof = proofForIndex(0).map((node) => new Uint8Array(node));
+assert(assetVerifyKycProof(leaves[0], proof, root));
+
 const ix = buildAllocateAssetCapacityIx(pid, {
   mint: WSOL,
   institution: desk.publicKey,      // the credit-line holder
@@ -199,8 +210,8 @@ const ix = buildAllocateAssetCapacityIx(pid, {
   requestedAmount: amount,
   targetSlot: BigInt(currentSlot + 1000),
   expectedPremium: premium,
-  expiry: BigInt(Math.floor(Date.now()/1000)) + 3600n,
-  merkleProof: [],                   // [] — KYC root unset on-chain; proof skipped
+  expiry: bigintExpiry1,            // must match the leaf you prove
+  merkleProof: proof,               // sorted-pair path to the committed root
 });
 ```
 
@@ -295,7 +306,7 @@ cap-wiring" for the live numbers) if you hold a drawn window.
 |---|---|---|
 | Mainnet liquidity + real yield | Devnet only | mainnet TGE/governance Q1 2027; Jito landing untested on mainnet |
 | Three-tier governed multisig | Cold-start single key | Squads ceremony is mainnet scope (`KEY_MANAGEMENT_GOVERNANCE.md` §3) |
-| Sumsub/KYB on-ramp + Merkle proof | Scaffolded; root unset on-chain | KYB integration wiring |
+| Sumsub/KYB on-ramp + Merkle proof | **Live + enforced**: `credit_line.kyc_merkle_root` posted on-chain (keccak sorted-pair tree), allocation verifies the proof → invalid proof rejected (`KycProofInvalid`) on EDBr devnet, runbook §15.6 | Sumsub UI/kid-the-key material is production scope; leaf schema is provider-agnostic (`keccak256(institution ‖ expiry)`) |
 | Desk whitelist / `register_mm` admission | Admission runbook + ceiling cap gate; `suspend_mm`/`activate_mm` live (deployed to `3w9Gr`, §15) | Per-desk KYB attestation (signing authority) is a committee/off-chain step; no trustless link from the credit line's `kyc_merkle_root` to a desk yet (honest note below) |
 | API tokens (`X-Noviscia-App-Token`) | Issuance + authz wiring live | Scoped reads enforced on the indexer; per-desk/admission-derived providers are production scope (`/developer/api-tokens`) |
 | C++ SDK crate | Roadmap | — |
@@ -381,10 +392,46 @@ Notes
 Two distinct registries exist today: the credit-line's **desks** (`AssetRegistry`) and the
 marketplace's **MMs** (`MmRegistration`). They are operated by the same authority but are **not
 linked on-chain** — nothing yet proves that an active `MmRegistration` corresponds to a
-KYB-cleared credit-line desk. Closing that gap (a registry-consistency check or a proof that
-pins `kyc_merkle_root` to the `mm` key) is a follow-up; until then, treat desk admission as
-enforced by policy at the authority step, with on-chain program-level gates (status + ceiling +
-suspension) proven as engineered.
+KYB-cleared credit-line desk.
+
+What **is** live on EDBr devnet today: every credit line carries a `kyc_merkle_root`, and
+`asset_allocate_capacity` rejects a non-validating proof (`KycProofInvalid`) once that root is
+committed by the Risk Committee — proven end-to-end by the §15.6 runbook. The remaining gap is
+the *link*, not the *mechanism*: pinning `kyc_merkle_root` to the `mm` key (a registry-consistency
+check or a proof in `register_mm`) is a follow-up. Until then, treat desk admission as enforced
+by policy at the authority step, with on-chain program-level gates (status + ceiling + suspension
++ Merkle KYC) proven as engineered.
+
+### 15.6 Credit-line KYC runbook
+
+Proves provider-agnostic Merkle KYC live on the EDBr host (workstream #3):
+
+```bash
+# Default: reuse the persisted institution (scripts/devnet/.runbook-kyc-inst.json)
+npx tsx scripts/devnet/set-credit-line-kyc-devnet.ts
+
+# Rotate to a brand-new institution (fresh credit line, zero KYC root)
+npx tsx scripts/devnet/set-credit-line-kyc-devnet.ts --fresh
+```
+
+What it asserts, on-chain, in order:
+
+1. **A. Root unset → proof skipped** — an allocation with a bogus/empty proof *succeeds* while
+   `credit_line.kyc_merkle_root == 0` (the documented §14 gap, demonstrated live). This is a
+   **real borrow** (0.2 wSOL stays on the desk), so later phases account for it.
+2. **B. Root committed** — Risk Committee (`~/.config/solana/new-id.json`) posts the rooted tree
+   built from `assetComputeKycHash(institution, expiry)`; read-back asserts
+   `credit_line.kyc_merkle_root == root`.
+3. **C. Same bogus proof rejected** — the identical allocate now fails with `KycProofInvalid`.
+4. **D. Valid proof passes** — a member-leaf proof for the same institution+expiry succeeds and
+   opens the 24h floating window.
+5. **E. Root rotation revokes** — the committee posts a rotated root without a previously-valid
+   leaf; that old leaf's proof now fails on-chain (observed `{"Custom":6018}` = `KycProofInvalid`).
+
+Leaf schema honesty note: the asset-engine leaf is `keccak256(institution ‖ expiry_BE)` — **no
+tier byte** — which deliberately differs from the capacity host's `keccak256(operator ‖ tier ‖
+expiry)`. The expiry is *committed into the leaf*, so expiration is enforced by root rotation
+(revoking a stale leaf), not by an on-chain wall-clock check.
 
 ---
 
