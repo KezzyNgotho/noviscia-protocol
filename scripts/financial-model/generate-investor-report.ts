@@ -22,6 +22,11 @@ import {
 } from '../../sdk/src/waterfall';
 import { ASSUMPTIONS, type Assumption } from '../../sdk/src/assumptions';
 import { grossRevenueUsdCents, referenceTvvParams } from '../../sdk/src/economics';
+import {
+  assumptionsDigest,
+  scenarioDigest,
+  replayDigest,
+} from '../../sdk/src/replay';
 
 const MAX_SCENARIO_NAME = 42;
 
@@ -97,6 +102,24 @@ function summary(): string {
   ].join('\n');
 }
 
+function fingerprintSection(): string {
+  return [
+    '## D · Replay fingerprint (reproducibility checkpoint)',
+    '',
+    'A reviewer can recompute these from a clean checkout; if they match, the',
+    'engine inputs AND outputs were byte-identical to what is published here:',
+    '',
+    '| Digest | SHA-256 |',
+    '|---|---|',
+    `| assumption registry (inputs) | \`${assumptionsDigest()}\` |`,
+    `| 11-scenario cascade (outputs) | \`${scenarioDigest()}\` |`,
+    `| replay (inputs + outputs) | \`${replayDigest()}\` |`,
+    '',
+    '> Pinned by tests in `sdk/src/replay.test.ts`. Changing an assumption is a',
+    '> deliberate, reviewed act — never a silent one.',
+  ].join('\n');
+}
+
 function main(): void {
   const md = [
     '# Noviscia investor v0 — stress tables (reproducible)',
@@ -114,6 +137,8 @@ function main(): void {
     waterfallTable(),
     '',
     summary(),
+    '',
+    fingerprintSection(),
     '',
   ].join('\n');
 
@@ -140,6 +165,11 @@ function main(): void {
     generator: 'scripts/financial-model/generate-investor-report.ts',
     determinism: 'integer-bigint engine, no floats, no RNG',
     generatedAt: 'Deterministic — timestamp intentionally omitted',
+    replayFingerprint: {
+      assumptionsDigest: assumptionsDigest(),
+      scenarioDigest: scenarioDigest(),
+      replayDigest: replayDigest(),
+    },
     assumptions: ASSUMPTIONS.map((a: Assumption) => ({
       key: a.key,
       label: a.label,

@@ -16,6 +16,9 @@
  *   - assumptions: the labeled single-source-of-truth assumption registry
  *   - waterfall:   the executable L1→L5 loss-waterfall + the 11 investor
  *                  failure scenarios (simulated, reproducible)
+ *   - replay:      SHA-256 replay fingerprint of the whole engine
+ *                  (assumption registry + cascade outputs) — reproducibility
+ *                  checkpoint for external reviewers
  */
 export * from './ids';
 export * from './addresses';
@@ -258,3 +261,9 @@ export {
   type WaterfallResult,
   type Scenario,
 } from './waterfall';
+export {
+  assumptionsDigest,
+  scenarioDigest,
+  scenarioDigestOf,
+  replayDigest,
+} from './replay';

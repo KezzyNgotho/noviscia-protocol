@@ -62,3 +62,17 @@ Scenario                                   | L1 desk | L2 LoC    | L3 reserves |
 
 > The revenue line is SIMULATED on the audited integer model; the Jito
 > eligibility it depends on is `pending` live measurement.
+
+## D · Replay fingerprint (reproducibility checkpoint)
+
+A reviewer can recompute these from a clean checkout; if they match, the
+engine inputs AND outputs were byte-identical to what is published here:
+
+| Digest | SHA-256 |
+|---|---|
+| assumption registry (inputs) | `c78855952f1d9193a37b086c9515ec1cf2a0afbf464e83ea327ab0af844d8938` |
+| 11-scenario cascade (outputs) | `0bea634989592c4e8efe084ee98f5a3d3cba979170a8eaea40b221b4d54931e3` |
+| replay (inputs + outputs) | `5f3486ff6801eaf3d7effe31caeab8e80b97ea7903099be76a937b534b2a508e` |
+
+> Pinned by tests in `sdk/src/replay.test.ts`. Changing an assumption is a
+> deliberate, reviewed act — never a silent one.
