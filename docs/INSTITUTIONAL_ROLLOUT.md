@@ -47,7 +47,7 @@ retail LP never sees HFT tooling and a quant desk never sees yield-farming chrom
 |---|---|---|
 | Headless API documentation + simulation console | the official headless spec implemented in `services/sandbox-hub` (gRPC `:10000`, bundles `:10001`, control plane `:10002` — see `SANDBOX_HUB.md` §6) | implemented |
 | Token registration + `X-Noviscia-App-Token` credentials | developer shell `app/web/app/developer/api-tokens` — issue scoped (`read`/`write`/`admin`) tokens, revoke, one-time display; indexer enforces token-scoped authz (`INDEXER_AUTHZ=strict`) | **implemented** |
-| Rust/C++ open-source SDK crates | `sdk/` (TS) + `sdk/rust/` (Rust twin); C++ crate = roadmap | sdk/rust present |
+| Rust/C++ open-source SDK crates | `sdk/` (TS) + `sdk/rust/` (Rust twin) + `sdk/cpp/` (C++ twin) | present (all three) |
 | Latency logs (<2ms stream proof) | `scripts/sandbox/e2e-sandbox-verification.ts` Test 2 (median < 2ms) | verified |
 | Jito Bundle Emulator metrics (zero capital leakage) | `emulator.rs` spec surface + 50,000-bundle test | verified |
 | Non-Jito leader safety switch | `sdk/src/ability.ts` `guardNonJitoLeaderSlot` / `NonJitoLeaderError` | **new** |
