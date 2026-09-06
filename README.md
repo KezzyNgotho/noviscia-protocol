@@ -13,8 +13,11 @@ A **central counterparty (CCP) clearing house for Solana** — a single on-chain
 ```
 Anchor.toml / Cargo.toml     Solana workspace config (programs + archive)
 programs/
-  active/                    The 19 live on-chain programs (Anchor)
-  later/                     Archived / "for-later" programs (kept for reference, not built)
+  cluster-1-clearing-core/   CCP core: netting-engine, position-tracker, noviscia-clearing, clearing-registry (+ absorbed sovereign-netting, credit-line)
+  cluster-2-tvv-gate/        TVV gate: noviscia-capacity (+ absorbed jit-risk, asset-engine), yield-router, gateway-auction
+  cluster-3-vault-registry/  Omni-pool vault: nv-usdc-vault (+ absorbed tranche-vault, permissioned-pool)
+  cluster-4-governance/      Locked tokenomics (token-nvsc, ve-nvs, staking-manager, yield-distributor, liquidation-vault) + deferred/archive programs (escrow, burn-engine, spot-dex, bug-bounty, protocol-lp-vault)
+  _idl_stage/                Symlinks to host clusters for the IDL staging step
 services/                    Operational services (indexer, relayers, oracles, AI…)
 sdk/                         @noviscia/sdk — universal integrator gateway
 app/web/                     Next.js frontend (dApp + investor relations)
@@ -51,7 +54,7 @@ target/idl/                  Compiled Anchor IDLs (synced to app + sdk)
 | **ve-nvs** | Vote-escrowed NVSC for governance weighting |
 
 Deferred programs (bug-bounty, burn-engine, escrow, protocol-lp-vault, spot-dex) live
-under `programs/later/` and are kept for reference only — they are **not** part of the active
+under `programs/cluster-4-governance/` and are kept for reference only — they are **not** part of the active
 clearing + yield path.
 
 ---
