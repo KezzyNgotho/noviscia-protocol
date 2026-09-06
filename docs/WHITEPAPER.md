@@ -107,7 +107,7 @@ The protocol separates **yield-bearing margin** (nvscUSDC) from **governance** (
 | 14 | **ve-nvs** | Vote-escrowed NVSC: time-weighted governance weight |
 | 15 | **noviscia-credit-line** | Institutional credit line (active-pull commits, priority-bid monetization) |
 
-> Deferred programs (burn-engine, escrow, spot-dex, protocol-lp-vault, bug-bounty) are preserved under `programs/later/` for reference and are **not** part of the live clearing path. The `cross-border` and `tbill-fund` programs (and the `liquidation-keeper`, `risk-engine`, `ai-rebalancer`, `mock-pyth-receiver` services) have been removed from the codebase.
+> Deferred programs (burn-engine, escrow, spot-dex, protocol-lp-vault, bug-bounty) are preserved under `programs/cluster-4-governance/` for reference and are **not** part of the live clearing path. The `cross-border` and `tbill-fund` programs (and the `liquidation-keeper`, `risk-engine`, `ai-rebalancer`, `mock-pyth-receiver` services) have been removed from the codebase.
 
 ### 3.2 Product verticals
 
@@ -122,7 +122,7 @@ The protocol separates **yield-bearing margin** (nvscUSDC) from **governance** (
 | **Yield + governance** | yield-distributor, yield-router, staking-manager, ve-nvs | Live | Yield, atomic recall, staking, vote-escrow |
 | **Tenant settlement** | @noviscia/sdk | Published | Any DEX/GameFi/RWA frontend routes in via SDK |
 
-> Spot DEX, protocol LP vault, and burn-engine are deferred (`programs/later/`) as of v4.1 — the revenue spine now runs off gateway-auction / netting-rent / JIT premiums rather than per-product fee streams. Cross-border settlement and tbill-fund have been removed from the codebase.
+> Spot DEX, protocol LP vault, and burn-engine are deferred (`programs/cluster-4-governance/`) as of v4.1 — the revenue spine now runs off gateway-auction / netting-rent / JIT premiums rather than per-product fee streams. Cross-border settlement and tbill-fund have been removed from the codebase.
 
 ### 3.3 CCP netting model
 

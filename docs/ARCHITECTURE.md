@@ -171,7 +171,7 @@ nvscUSDC is a **yield-bearing vault share** (similar to ERC-4626):
 **Program layout (15 active on devnet):** CCP core (position-tracker, noviscia-clearing,
 netting-engine, clearing-registry) · revenue engines (sovereign-netting, gateway-auction,
 jit-risk) · supporting (nv-usdc-vault, liquidation-vault, yield-router, yield-distributor,
-staking-manager, ve-nvs, token-nvsc, noviscia-credit-line). Programs under `programs/later/`
+staking-manager, ve-nvs, token-nvsc, noviscia-credit-line). Programs under `programs/cluster-4-governance/`
 (bug-bounty, burn-engine, escrow, protocol-lp-vault, spot-dex) are **deferred / not yet live**
 and are preserved for reference only.
 
@@ -346,7 +346,7 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
 ### 3c. Escrow (Deferred — Not Live)
 **Program ID:** `2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ`
 
-**Role:** Formerly held trader deposits (USDC, WSOL, nvUSDC) with per-trader approvals. **Deferred / not yet live** — margin now flows directly through the omni-pool's `nv-usdc-vault` mint/burn (`deposit_sol`/`withdraw_sol` retained in the vault). Preserved under `programs/later/` for reference.
+**Role:** Formerly held trader deposits (USDC, WSOL, nvUSDC) with per-trader approvals. **Deferred / not yet live** — margin now flows directly through the omni-pool's `nv-usdc-vault` mint/burn (`deposit_sol`/`withdraw_sol` retained in the vault). Preserved under `programs/cluster-4-governance/` for reference.
 
 ---
 
@@ -354,7 +354,7 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
 **Program ID:** `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id`
 **Lines:** ~687
 
-**Role:** Designed to convert trading fees (nvUSDC) into NVSC tokens via AMM, then burn the NVSC — creating deflationary pressure. **Deferred / not yet live** — the NVSC buyback/burn flywheel is handled through the omni-pool's fee spine (`accumulate_protocol_fees`) rather than a dedicated burn program. Preserved under `programs/later/` for reference.
+**Role:** Designed to convert trading fees (nvUSDC) into NVSC tokens via AMM, then burn the NVSC — creating deflationary pressure. **Deferred / not yet live** — the NVSC buyback/burn flywheel is handled through the omni-pool's fee spine (`accumulate_protocol_fees`) rather than a dedicated burn program. Preserved under `programs/cluster-4-governance/` for reference.
 
 #### Flow (as designed)
 1. Receives a share of trading fees (in nvUSDC shares)
@@ -396,7 +396,7 @@ slice_size_usdc, slice_collateral_shares, interval_secs, last_slice_ts
 ### 3g. Protocol LP Vault (Deferred — Not Live)
 **Program ID:** `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd`
 
-**Role:** Designed to accept LP deposits into the protocol's trading pool. **Deferred / not yet live** — LP yield now flows through the omni-pool (`nvscUSDC` shares + `fee_index` NAV accrual) rather than a dedicated LP vault. Preserved under `programs/later/` for reference.
+**Role:** Designed to accept LP deposits into the protocol's trading pool. **Deferred / not yet live** — LP yield now flows through the omni-pool (`nvscUSDC` shares + `fee_index` NAV accrual) rather than a dedicated LP vault. Preserved under `programs/cluster-4-governance/` for reference.
 
 ---
 
@@ -612,7 +612,7 @@ including those with locked margin:
 ```
 
 NVSC buyback/burn and staker fee-share are handled through the fee spine and
-`staking-manager`; the dedicated burn program is **deferred** (`programs/later/`).
+`staking-manager`; the dedicated burn program is **deferred** (`programs/cluster-4-governance/`).
 
 ### 4c. Liquidation Penalty Split
 
@@ -974,7 +974,7 @@ removed services `liquidation-keeper`, `risk-engine`, `ai-rebalancer`, and
 | 14 | ve-nvs | (veNVSC vote-escrow) |
 | 15 | token-nvsc | `HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT` |
 
-**Deferred / not live** (`programs/later/`): burn-engine `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` · escrow `2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ` · protocol-lp-vault `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd` · spot-dex `8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN` · bug-bounty `A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK`.
+**Deferred / not live** (`programs/cluster-4-governance/`): burn-engine `nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id` · escrow `2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ` · protocol-lp-vault `2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd` · spot-dex `8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN` · bug-bounty `A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK`.
 
 **Removed / no longer in the codebase:** cross-border (`C3uoiE3GZ47nuGwUckQPsZF8JBqgMk54nmfJYKqAEMbv`) and tbill-fund programs; liquidation-keeper, risk-engine, ai-rebalancer, mock-pyth-receiver services.
 

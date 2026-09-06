@@ -6,27 +6,27 @@ Use this checklist when engaging a third-party auditor (target: pre-mainnet Q1 2
 
 ## Programs in scope
 
-The scope below reflects the **15 live programs** in `programs/active/`. Parked programs in `programs/later/` (`bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`) are **deferred / out of scope** for the live-protocol audit.
+The scope below reflects the **15 live programs** under `programs/cluster-*/`. Parked programs in `programs/cluster-4-governance/` (`bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`) are **deferred / out of scope** for the live-protocol audit.
 
 | Program | Path | Priority |
 |---------|------|----------|
-| position-tracker | `programs/active/position-tracker/src/lib.rs`, `state.rs` | P0 |
-| nv-usdc-vault | `programs/active/nv-usdc-vault/src/lib.rs` | P0 |
-| netting-engine | `programs/active/netting-engine/src` | P0 |
-| sovereign-netting | `programs/active/sovereign-netting/src` | P0 |
-| jit-risk | `programs/active/jit-risk/src` | P0 |
-| gateway-auction | `programs/active/gateway-auction/src` | P0 |
-| noviscia-clearing | `programs/active/noviscia-clearing/src` | P1 |
-| clearing-registry | `programs/active/clearing-registry/src` | P1 |
-| noviscia-credit-line | `programs/active/noviscia-credit-line/src` | P1 |
-| staking-manager | `programs/active/staking-manager/src/lib.rs` | P1 |
-| ve-nvs | `programs/active/ve-nvs/src` | P1 |
-| yield-router | `programs/active/yield-router/src` | P1 |
-| yield-distributor | `programs/active/yield-distributor/src` | P1 |
-| token-nvsc | `programs/active/token-nvsc/src` | P1 |
-| liquidation-vault | `programs/active/liquidation-vault/src` | P1 |
+| position-tracker | `programs/cluster-1-clearing-core/position-tracker/src/lib.rs`, `state.rs` | P0 |
+| nv-usdc-vault | `programs/cluster-3-vault-registry/nv-usdc-vault/src/lib.rs` | P0 |
+| netting-engine | `programs/cluster-1-clearing-core/netting-engine/src` | P0 |
+| sovereign-netting | `programs/cluster-1-clearing-core/sovereign-netting/src` | P0 |
+| jit-risk | `programs/cluster-2-tvv-gate/jit-risk/src` | P0 |
+| gateway-auction | `programs/cluster-2-tvv-gate/gateway-auction/src` | P0 |
+| noviscia-clearing | `programs/cluster-1-clearing-core/noviscia-clearing/src` | P1 |
+| clearing-registry | `programs/cluster-1-clearing-core/clearing-registry/src` | P1 |
+| noviscia-credit-line | `programs/cluster-1-clearing-core/noviscia-credit-line/src` | P1 |
+| staking-manager | `programs/cluster-4-governance/staking-manager/src/lib.rs` | P1 |
+| ve-nvs | `programs/cluster-4-governance/ve-nvs/src` | P1 |
+| yield-router | `programs/cluster-2-tvv-gate/yield-router/src` | P1 |
+| yield-distributor | `programs/cluster-4-governance/yield-distributor/src` | P1 |
+| token-nvsc | `programs/cluster-4-governance/token-nvsc/src` | P1 |
+| liquidation-vault | `programs/cluster-4-governance/liquidation-vault/src` | P1 |
 
-**Out of scope:** `lending-integrator` has been deleted from the codebase entirely. Parked programs (`bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`) are deferred — include them only when they move to `programs/active/`. `escrow` and `liquidation-vault` are not part of the current JIT perps margin/liquidation path (see root `README.md`); `liquidation-vault` is included above as it is a live active program.
+**Out of scope:** `lending-integrator` has been deleted from the codebase entirely. Parked programs (`bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`) are deferred — include them only when they are promoted out of `programs/cluster-4-governance/`. `escrow` and `liquidation-vault` are not part of the current JIT perps margin/liquidation path (see root `README.md`); `liquidation-vault` is included above as it is a live active program.
 
 ## Known design choices (not bugs)
 

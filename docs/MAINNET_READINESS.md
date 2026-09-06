@@ -10,7 +10,7 @@
 ### Security
 - [ ] External audit by reputable firm (OtterSec, Neodyme, or Zellic)
 - [ ] All P0/P1 audit findings resolved
-- [ ] Bug bounty program live (Immunefi or equivalent) — deferred, planned post-audit (`programs/later/bug-bounty`)
+- [ ] Bug bounty program live (Immunefi or equivalent) — deferred, planned post-audit (`programs/cluster-4-governance/bug-bounty`)
 - [ ] Admin key rotated to Squads multisig (M-of-N)
 - [ ] No hardcoded keys or secrets in source code
 
@@ -126,7 +126,7 @@ Where `recovery_factor` estimates the additional exposure accumulated while liqu
 Insurance Fund → Default Fund → CCP Equity → Settlement Vault
 ```
 
-Implemented in `programs/active/position-tracker/src/helpers.rs` via `pay_winner_from_waterfall`.
+Implemented in `programs/cluster-1-clearing-core/position-tracker/src/helpers.rs` via `pay_winner_from_waterfall`.
 
 ---
 

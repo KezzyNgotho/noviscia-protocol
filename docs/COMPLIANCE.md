@@ -45,7 +45,7 @@ The CCP model means Noviscia is the buyer to every seller and seller to every bu
 ## Audit & assurance status
 
 - **No third-party audit completed.** Target: Q4 2026 (see [`AUDIT_PREP.md`](./AUDIT_PREP.md)).
-- The bug-bounty program (`programs/later/bug-bounty`) is **deferred** — not live on devnet.
+- The bug-bounty program (`programs/cluster-4-governance/bug-bounty`) is **deferred** — not live on devnet.
 - All contracts should be treated as unaudited experimental software.
 
 ---

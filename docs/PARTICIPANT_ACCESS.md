@@ -146,7 +146,7 @@ follow a traditional, high-security institutional onboarding path.
 | Institutional web dashboard | `app/web/app/institutional/*`, `app/web/app/liquidity-hub/*` (asset-lifecycle, LP of the vault band) |
 | Enterprise custody connect | Wallet-standard + institutional custody wiring in `app/web` providers |
 | Sumsub corporate KYB | Compliance-flow references in `app/web/app/institutional/asset-lifecycle/page.tsx`; KYB is an off-chain gate whose proof enters via Merkle roots |
-| Provider-agnostic KYC/AML ring (de-KYC) | `programs/active/noviscia-permissioned-pool` |
+| Provider-agnostic KYC/AML ring (de-KYC) | `programs/cluster-3-vault-registry/noviscia-permissioned-pool` |
 | SAS attestation stamp | Off-chain relayer writing an on-chain attestation pointer (relayer wiring in `services/`; stamp consumption in `noviscia-permissioned-pool`) |
 | Deposit → share mint | `noviscia-asset-engine` `deposit_asset_liquidity` → ERC-4626 `asset_lp_mint`/`asset_lp_position` |
 | Auto-compounding | `lp_yield_split_bps` premium split (Part 2 LP vaults) |

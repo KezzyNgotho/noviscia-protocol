@@ -3,7 +3,7 @@
 > **Purpose:** Deterministic error-code catalog for all 19 programs. Integrators can resolve any
 > on-chain error number from the RPC / UI to a variant and its meaning.
 >
-> **Status:** Generated from `programs/active/*` (Anchor 0.31.x). Sync in the same PR as any
+> **Status:** Generated from `programs/cluster-*/` (Anchor 0.31.x). Sync in the same PR as any
 > program change. **Last updated:** September 2026
 
 ---
@@ -328,7 +328,7 @@ Two verified framework codes (from this repo's test logs, anchor-lang 0.31):
 ## 4. Maintenance
 
 - Regenerate with: extract each `#[error_code]` enum and index variants in declaration order
-  (`grep -n '#\[error_code\]' programs/active/*/src` marks the enums).
+  (`grep -n '#\[error_code\]' programs/cluster-*//src` marks the enums).
 - New variant appended to the **end** of the enum to preserve existing codes.
 - Renaming/removing a variant breaks RPC clients tracking codes — ban in the audit gate
   (`mainnet-readiness` checklist).

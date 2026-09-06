@@ -31,7 +31,7 @@ the canonical navigation hub and is linked from `README.md` §Documentation.
 | # | Severity | Gap | Evidence | Resolution | Status |
 |---|----------|-----|----------|------------|--------|
 | D1 | **High** | No documentation index / navigation hub — `README.md` linked only 13/29 docs; `MAINNET_READINESS.md`, `USER_GUIDE.md`, `INSOLVENCY_POLICY.md` invisible from entrypoint | README §Documentation (6 lines) | **[`INDEX.md`](INDEX.md)** created; README updated to link it | ✅ Closed |
-| D2 | **High** | No cross-program PDA seed / account registry — architects only covered `position-tracker` (§3a) and `jit-risk` (TVV §8.1); auditors must reconstruct 19 programs from source | `ARCHITECTURE.md` §3a | **[`ACCOUNT_MAP.md`](ACCOUNT_MAP.md)** generated from all 19 `programs/active/` | ✅ Closed |
+| D2 | **High** | No cross-program PDA seed / account registry — architects only covered `position-tracker` (§3a) and `jit-risk` (TVV §8.1); auditors must reconstruct 19 programs from source | `ARCHITECTURE.md` §3a | **[`ACCOUNT_MAP.md`](ACCOUNT_MAP.md)** generated from all 19 `programs/cluster-*/` | ✅ Closed |
 | D3 | **High** | No cross-program error-code reference — only the "6000 + index" pattern in `DEVNET.md` | `DEVNET.md`; frontend `jitOracle.ts` map | **[`ERROR_REFERENCE.md`](ERROR_REFERENCE.md)** generated | ✅ Closed |
 | D4 | **High** | No threat model — `SECURITY.md` describes defenses but not adversary model / trust boundaries / attack paths | `SECURITY.md` (154 lines) | **[`THREAT_MODEL.md`](THREAT_MODEL.md)** | ✅ Closed |
 | D5 | **High** | Emergency breaker & on-call playbook not operationalized — three-tier Squads governance described architecturally only | `ARCHITECTURE.md` §3n | **[`ONCALL_RUNBOOK.md`](ONCALL_RUNBOOK.md)** | ✅ Closed |

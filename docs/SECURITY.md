@@ -1,6 +1,6 @@
 # Security Best Practices & Audit Guide
 
-**Last updated:** September 3, 2026
+**Last updated:** September 6, 2026
 **Status:** Devnet · unaudited · mainnet requires audit sign-off
 
 ---
@@ -111,11 +111,44 @@ All perps cranks are permissionless — no operator key required:
 
 ---
 
-## Audit status
+### Post-consolidation cluster security & maturity evaluation
+
+Per-cluster hardening posture after the 19→4 consolidation (`CONSOLIDATION.md`), measured
+across the live hosts. Counts are raw source markers over each crate's `src/` (devnet,
+unaudited — see `AUDIT_PREP.md`).
+
+**C1 · Clearing-Core (CCP)** — `netting-engine 68s4…` (host: `credit_line.rs` + `sovereign.rs`),
+`position-tracker`, `noviscia-clearing`, `clearing-registry`
+- Maturity: netting-engine 42/42 · position-tracker 105 · clearing 48 · registry 14 — heaviest authority surface in the system.
+- Primitive density (netting-engine): `require!` 79 · seeds 48 · `init_if_needed` 4 · CPI invokes 4 · Pyth mentions 1. Position-tracker is the densest crate anywhere: seeds 266 · `require!` 289 · `init_if_needed` 30 · CPI invokes 123 · Pyth 262.
+- Risk shape: oracle dependency + settlement correctness dominate. Pyth pull-oracle freshness is enforced (JIT oracle section above); netting/clearing ledgers are mutualized (non-custodial, no SPL movement) so the exposure surface is ledger-state, not token custody.
+
+**C2 · TVV Gate** — `noviscia-capacity JDsM…` (host: `asset_engine.rs` + `jit_risk.rs`), `gateway-auction`, `yield-router`
+- Maturity: capacity 66/66 · auction + router smaller suites; consolidated single authority spin.
+- Primitive density (capacity): `has_one` 23 · `require!` 106 · seeds 94 · `constraint` 30 · `init_if_needed` 2 · CPI invokes 2 (sweep → vault) · **Pyth 0**.
+- Risk shape: 400ms slot is the trust-critical window (capacity rental, JIT risk, asset-engine credit). No external oracle; pricing flows through position-tracker/Pyth at C1 or venue quotes. Sweep CPIs into `nv-usdc-vault` are fee-spine re-pointed (marketplace PDA allowlisted).
+
+**C3 · Vault & Tranches** — `nv-usdc-vault CN92…` (host: `router_pool.rs` + `tranche_pool.rs`)
+- Maturity: vault 77/77 (incl. tranche 9 + router 11 + 5 unification across same-binary loss↔default-fund).
+- Primitive density (vault): `require!` 184 · seeds 143 · `constraint` 65 · `has_one` 8 · `init_if_needed` 9 · signers 49 · **CPI invokes 0** (sub-custody transfers only) · Pyth 0.
+- Risk shape: single `vault_config.admin` spine governs vault + tranche + router (one authority boundary). Token custody is centralized in-program (largest token-handling surface in the protocol); timelocked-admin seed present (`b"timelocked-admin"`).
+
+**C4 · Ecosystem & Governance** — `token-nvsc`, `ve-nvs`, `staking-manager`, `yield-distributor`, `liquidation-vault`
+- Maturity: locked no-upgrade during phase-1 sandbox (D5); deploy maps muted in `Anchor.toml`, IDLs stable.
+- Risk shape: governance/ve-key plumbing only — no custody, no oracle. Lowest exposure, intentionally pinned.
+
+**Cross-cluster observations (from consolidation, not newly introduced):**
+- Authority hops cut 19 → 13 deploy entries; no two-cluster CPI trust boundary remains for the
+  former `credit-line`/`jit-risk`/`tranche-vault`/`permissioned-pool` edges.
+- Vault fee-spine (C3) accepts both consolidated market/revenue/credit-line PDAs and legacy
+  standalone IDs — a deliberate dual-accept window during migration; tighten to consolidated
+  IDs only after devnet state migration (see `REVIEW_CONSOLIDATION.md` §6).
+
+### Audit status
 
 - **No independent third-party audit completed.**
 - Target: Q4 2026 (see [`AUDIT_PREP.md`](./AUDIT_PREP.md))
-- Bug-bounty program (`programs/later/bug-bounty`) is **deferred** — not live on devnet; a responsible-disclosure email contact applies meanwhile.
+- Bug-bounty program (`programs/cluster-4-governance/bug-bounty`) is **deferred** — not live on devnet; a responsible-disclosure email contact applies meanwhile.
 - **Until audit complete, treat all contracts as unaudited experimental software.**
 
 ---

@@ -85,7 +85,7 @@ Noviscia is a multi-product clearing house. Here's what's live:
 
 Parimutuel clearing engine for binary and multi-outcome events. Compiled on-chain (`noviscia-clearing`) — frontend integration planned.
 
-> **Deferred** (in `programs/later/`, not live): spot-dex, escrow, protocol-lp-vault, burn-engine, bug-bounty. These programs exist in the repo but are not deployed or wired to the frontend.
+> **Deferred** (in `programs/cluster-4-governance/`, not live): spot-dex, escrow, protocol-lp-vault, burn-engine, bug-bounty. These programs exist in the repo but are not deployed or wired to the frontend.
 
 ---
 
@@ -106,7 +106,7 @@ Deposit USDC → mint nvscUSDC shares at current NAV. NAV compounds from **all p
 | Gold | 10,000 | 50% |
 | Platinum | 100,00 | 100% (free trading) |
 
-> **Note:** The protocol-lp-vault product is deferred (`programs/later/`). Not available on devnet.
+> **Note:** The protocol-lp-vault product is deferred (`programs/cluster-4-governance/`). Not available on devnet.
 
 ---
 

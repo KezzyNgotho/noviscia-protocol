@@ -1,9 +1,9 @@
 # Noviscia — Global Account & PDA Seed Map
 
 > **Purpose:** Authoritative, cross-program reference for every on-chain account, PDA seed, and
-> associated authority across the 19 active programs. Generated from `programs/active/` source.
+> associated authority across the 19 active programs. Generated from `programs/cluster-*/` source.
 >
-> **Status:** Generated from `programs/active/*` (Anchor). Sync in the same PR as any program change.
+> **Status:** Generated from `programs/cluster-*/` (Anchor). Sync in the same PR as any program change.
 > **Last updated:** September 2026 · **Anchor:** 0.31.x
 >
 > **Conventions**
@@ -350,7 +350,7 @@ use `seeds::program = <owner::ID>`**; the past absence of that clause caused the
 ## 4. Machine checks
 
 - Regenerate/mine this table with:
-  `grep -rn 'seeds = \[' programs/active/*/src | grep -v '/\.cache/'`
-- Accounts: `grep -rln '#\[account\]' programs/active/*/src`
+  `grep -rn 'seeds = \[' programs/cluster-*//src | grep -v '/\.cache/'`
+- Accounts: `grep -rln '#\[account\]' programs/cluster-*//src`
 - Discriminators: Anchor account discriminator = `sha256("account:<StructName>")[0..8]`.
 - Keep in sync per `INDEX.md` maintenance rule 1.

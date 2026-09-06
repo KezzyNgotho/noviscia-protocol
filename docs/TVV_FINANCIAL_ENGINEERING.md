@@ -396,7 +396,7 @@ No new oracle surface is created — this is a hard requirement, not a nice-to-h
 
 ---
 
-## 8. Program Blueprint (`programs/active/jit-risk`)
+## 8. Program Blueprint (`programs/cluster-2-tvv-gate/jit-risk`)
 
 Implemented and live on devnet (ID `3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh`). Anchor, matching repo conventions.
 

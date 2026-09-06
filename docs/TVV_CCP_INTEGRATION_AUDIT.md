@@ -29,7 +29,7 @@ Everything else in §9-§10 that touches money-movement is implemented.
 
 ## 2. What is real and enforced on-chain
 
-### 2.1 The time-slice contract (`programs/active/jit-risk`)
+### 2.1 The time-slice contract (`programs/cluster-2-tvv-gate/jit-risk`)
 
 - **State** (`constants.rs`): `MarketplaceState` carries the full spec surface —
   `insurance_fund_floor_usdc`, `writable_bps` (ψ), `risk_budget_bps` (RB),
@@ -141,15 +141,15 @@ in place via `solana program deploy --program-id` at their existing program IDs
 
 | Item | Location |
 |---|---|
-| Fee-type constants (0–3) | `programs/active/nv-usdc-vault/src/lib.rs:135-140` (now incl. `FEE_TYPE_CAPACITY = 4`) |
-| Vault `accumulate_protocol_fees` auth (incl. jit marketplace) + legacy routing | `programs/active/nv-usdc-vault/src/lib.rs:1369-1470` |
-| Jit `sweep_premiums` (85/15 split, CPI with `FEE_TYPE_CAPACITY`) | `programs/active/jit-risk/src/instructions/sweep_premiums.rs` |
-| Floor live-sync instruction (owner-checked read of `position-tracker::Market.insurance_fund_usdc`) | `programs/active/jit-risk/src/instructions/sync_insurance_floor.rs` |
-| Position-market floor byte offset + program id consts | `programs/active/jit-risk/src/constants.rs` (`POSITION_MARKET_INSURANCE_FUND_START/END`, `POSITION_TRACKER_PROGRAM_ID`) |
-| `MarketplaceState` (floor, ψ, RB, O_t, ledgers) | `programs/active/jit-risk/src/constants.rs:60-107` |
-| Writable-base + concurrency-cap math (unit-tested) | `programs/active/jit-risk/src/math.rs:11-41` |
-| `validate_capacity` + `assert_capacity_preserved` | `programs/active/jit-risk/src/instructions/capacity.rs` |
-| Manual floor set / tunable | `programs/active/jit-risk/src/instructions/initialize_marketplace.rs:90`, `update_params.rs:79` |
-| Settle/reap loss ledger + auto-freeze | `programs/active/jit-risk/src/instructions/settle_slice.rs:138-186`, `reap_expired_slice.rs:98-116` |
+| Fee-type constants (0–3) | `programs/cluster-3-vault-registry/nv-usdc-vault/src/lib.rs:135-140` (now incl. `FEE_TYPE_CAPACITY = 4`) |
+| Vault `accumulate_protocol_fees` auth (incl. jit marketplace) + legacy routing | `programs/cluster-3-vault-registry/nv-usdc-vault/src/lib.rs:1369-1470` |
+| Jit `sweep_premiums` (85/15 split, CPI with `FEE_TYPE_CAPACITY`) | `programs/cluster-2-tvv-gate/jit-risk/src/instructions/sweep_premiums.rs` |
+| Floor live-sync instruction (owner-checked read of `position-tracker::Market.insurance_fund_usdc`) | `programs/cluster-2-tvv-gate/jit-risk/src/instructions/sync_insurance_floor.rs` |
+| Position-market floor byte offset + program id consts | `programs/cluster-2-tvv-gate/jit-risk/src/constants.rs` (`POSITION_MARKET_INSURANCE_FUND_START/END`, `POSITION_TRACKER_PROGRAM_ID`) |
+| `MarketplaceState` (floor, ψ, RB, O_t, ledgers) | `programs/cluster-2-tvv-gate/jit-risk/src/constants.rs:60-107` |
+| Writable-base + concurrency-cap math (unit-tested) | `programs/cluster-2-tvv-gate/jit-risk/src/math.rs:11-41` |
+| `validate_capacity` + `assert_capacity_preserved` | `programs/cluster-2-tvv-gate/jit-risk/src/instructions/capacity.rs` |
+| Manual floor set / tunable | `programs/cluster-2-tvv-gate/jit-risk/src/instructions/initialize_marketplace.rs:90`, `update_params.rs:79` |
+| Settle/reap loss ledger + auto-freeze | `programs/cluster-2-tvv-gate/jit-risk/src/instructions/settle_slice.rs:138-186`, `reap_expired_slice.rs:98-116` |
 
 **Status legend:** ✅ implemented & enforced · ⚠️ implemented but spec-mismatched · 🚧 design-only/off-chain

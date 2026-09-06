@@ -31,7 +31,7 @@
 | `noviscia_tranche_vault` | `9Sk1zLo7uprmtrskoZQS6zf1KFSNv4uTCxMsbqGVMCMb` |
 | `noviscia_asset_engine` | `5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb` |
 
-> **Parked / not live** (in `programs/later/` — deferred, not deployed as live): `bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`. The deleted programs `cross-border` and `tbill-fund` (and the deleted services `liquidation-keeper`, `risk-engine`, `ai-rebalancer`, `mock-pyth-receiver`) are gone from the codebase and are **not** part of the current state.
+> **Parked / not live** (in `programs/cluster-4-governance/` — deferred, not deployed as live): `bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`. The deleted programs `cross-border` and `tbill-fund` (and the deleted services `liquidation-keeper`, `risk-engine`, `ai-rebalancer`, `mock-pyth-receiver`) are gone from the codebase and are **not** part of the current state.
 
 **Key devnet mints:**
 | Token | Mint |
@@ -201,7 +201,7 @@ committed) — the binary's `declare_id!` anchors every PDA it creates to `5qpo�
 Re-deploy / upgrade after a source change (fees paid by `~/.config/solana/new-id.json`):
 
 ```bash
-cargo build-sbf --manifest-path programs/active/noviscia-asset-engine/Cargo.toml --tools-version v1.52
+cargo build-sbf --manifest-path programs/cluster-2-tvv-gate/noviscia-asset-engine/Cargo.toml --tools-version v1.52
 cp target/sbf-solana-solana/release/noviscia_asset_engine.so target/deploy/
 solana program deploy target/deploy/noviscia_asset_engine.so \
   --program-id target/deploy/noviscia_asset_engine-keypair.json \

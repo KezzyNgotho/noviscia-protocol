@@ -38,6 +38,9 @@
 | [`WHITEPAPER.md`](WHITEPAPER.md) | 264 | v4.1 | Protocol whitepaper: problem, solution, architecture, tokenomics, roadmap |
 | [`NOVISCIA_NARRATIVE.md`](NOVISCIA_NARRATIVE.md) | 146 | Canonical narrative | "One balance sheet, two engines" — CCP clearing + TVV yield reconciliation |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | 1,173 | Live | Full system architecture: token design, all 19 programs, revenue model, oracles, risk, funding, off-chain infra, security |
+| [`CONSOLIDATION.md`](CONSOLIDATION.md) | — | Stages 0–4 executed | 19→4 cluster collapse: redundancy verdicts, CPI ground truth, per-program placement, staged test-green merge plan, decision register — Stages 0–1 ✅, Stage 2 ✅ (capacity host 873,616 B, 66/66; vault 77/77), Stage 3 ✅ (netting-engine host 660,304 B, 42/42), Stage 4 ✅ (C4 lock + SDK re-point) |
+| [`REVIEW_CONSOLIDATION.md`](REVIEW_CONSOLIDATION.md) | — | Review sheet (Stage 4) | Diffed close-out: what moved/froze, audit-relevant counts, acceptance suite, residuals/caveats |
+| [`FROZEN.md`](FROZEN.md) | — | Stages 0–3 executed | Freeze register: absorption sources/hosts, evidence tests to carry forward, `declare_id` audit trail — tranche-vault→vault, permissioned-pool→vault, asset-engine→capacity, jit-risk→capacity, credit-line+sovereign-netting→netting-engine |
 | [`SYSTEM_DIAGRAMS.md`](SYSTEM_DIAGRAMS.md) | 215 | Live | Mermaid diagrams: system structure, trade flow, yield flow, deployment, AI layer, liquidation, netting, credit-line, staking, TVV slices |
 | [`TVV_FINANCIAL_ENGINEERING.md`](TVV_FINANCIAL_ENGINEERING.md) | 637 | Design Phase | Financial engineering spec for the JIT time-slice marketplace (slot math, premium pricing, risk register) |
 | [`TVV_CCP_INTEGRATION_AUDIT.md`](TVV_CCP_INTEGRATION_AUDIT.md) | 154 | Closed 2026-09-02 | Code-level truth table: which TVV–CCP integration claims are wired on-chain |
@@ -58,7 +61,7 @@
 
 | Doc | Lines | Status | Purpose |
 |---|---|---|---|
-| [`SECURITY.md`](SECURITY.md) | 154 | Devnet, unaudited | Security best practices, CCP model, admin gates, permissionless cranks, audit status |
+| [`SECURITY.md`](SECURITY.md) | 195 | Devnet, unaudited | Security best practices, CCP model, admin gates, permissionless cranks, audit status + post-consolidation per-cluster maturity |
 | [`ONCALL_RUNBOOK.md`](ONCALL_RUNBOOK.md) | — | Working | Incident response + emergency breaker playbook operationalizing the three-tier governance |
 | [`IR_DR_DRILL.md`](IR_DR_DRILL.md) | — | Working | Extended-halt, state-reseed & quarterly-drill runbook tying ONCALL to rollback/degradation tiers |
 | [`MONITORING.md`](MONITORING.md) | 82 | Live (on-chain stack "needs setup") | Sentry, on-chain metrics, incident response outline, log aggregation |
@@ -74,6 +77,7 @@
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | 96 | Live (mainnet = placeholder) | Deploy & maintenance: frontend, programs, services, troubleshooting |
 | [`E2E_TEST.md`](E2E_TEST.md) | 55 | Live | Scripted e2e proofs (`scripts/e2e/*`) + UI flow checklist |
 | [`SANDBOX_HUB.md`](SANDBOX_HUB.md) | — | Live (Module 3) | 3-tier sandbox: local ledger, mock gRPC stream, Jito bundle emulator + 4-test institutional verification |
+| [`INSTITUTIONAL_ROLLOUT.md`](INSTITUTIONAL_ROLLOUT.md) | — | Live (checklist closed) | Three-tier frontend architecture + 11-point institutional system checklist (PASS/PARTIAL/GAP + acceptance commands) |
 
 ## 6. Integration surfaces
 

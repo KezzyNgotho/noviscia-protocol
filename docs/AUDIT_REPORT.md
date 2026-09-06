@@ -15,7 +15,7 @@ This document will be updated with the full audit report upon completion.
 
 ## Audit scope (planned)
 
-The following **live programs** (`programs/active/`) are in-scope for the planned pre-mainnet audit. Parked programs in `programs/later/` (`bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`) are **deferred / out of scope**.
+The following **live programs** (under `programs/cluster-*/`) are in-scope for the planned pre-mainnet audit. Parked programs in `programs/cluster-4-governance/` (`bug-bounty`, `burn-engine`, `escrow`, `protocol-lp-vault`, `spot-dex`) are **deferred / out of scope**.
 
 | Program | Description |
 |---------|-------------|
@@ -93,7 +93,7 @@ A live misconfiguration was found and fixed 2026-07-06: ETH's `max_leverage_bps`
 
 ## Responsible disclosure
 
-A responsible-disclosure process is in place during devnet. The dedicated bug-bounty program (`programs/later/bug-bounty`) is **deferred** — not live on devnet. Critical findings during devnet beta should be reported privately to `security@noviscia.com` before public disclosure.
+A responsible-disclosure process is in place during devnet. The dedicated bug-bounty program (`programs/cluster-4-governance/bug-bounty`) is **deferred** — not live on devnet. Critical findings during devnet beta should be reported privately to `security@noviscia.com` before public disclosure.
 
 ---
 
