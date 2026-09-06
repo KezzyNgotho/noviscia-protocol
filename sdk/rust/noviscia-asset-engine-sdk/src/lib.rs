@@ -113,7 +113,7 @@ pub fn asset_lp_position_pda(
     pda
 }
 
-/// Per-asset plan used by `register_asset`.
+/// Per-asset plan used by `asset_register`.
 #[derive(Clone, Copy, Debug)]
 pub struct AssetParams {
     pub decimals: u8,
@@ -183,7 +183,7 @@ pub fn build_initialize_ix(
     Instruction { program_id, accounts, data }
 }
 
-/// Build `register_asset` — onboards a mint (Tier 3: Core Ecosystem Council,
+/// Build `asset_register` — onboards a mint (Tier 3: Core Ecosystem Council,
 /// 5-of-7 Squads, 72h timelock).
 #[allow(clippy::too_many_arguments)]
 pub fn build_register_asset_ix(
@@ -205,7 +205,7 @@ pub fn build_register_asset_ix(
         AccountMeta::new_readonly(spl_token::ID, false),
         AccountMeta::new_readonly(RENT_ID, false),
     ];
-    let mut data = anchor_discriminator("register_asset").to_vec();
+    let mut data = anchor_discriminator("asset_register").to_vec();
     data.push(params.decimals);
     data.extend_from_slice(&params.base_premium_rate_bps.to_le_bytes());
     data.extend_from_slice(&params.premium_cap_bps.to_le_bytes());
@@ -215,7 +215,7 @@ pub fn build_register_asset_ix(
     Instruction { program_id, accounts, data }
 }
 
-/// Build `update_asset_params` — adjusts a registered asset's parameters
+/// Build `asset_update_params` — adjusts a registered asset's parameters
 /// (Tier 2: Risk Committee, 3-of-5 Squads).
 pub fn build_update_asset_params_ix(
     program_id: Pubkey,
@@ -229,7 +229,7 @@ pub fn build_update_asset_params_ix(
         AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
         AccountMeta::new_readonly(mint, false),
     ];
-    let mut data = anchor_discriminator("update_asset_params").to_vec();
+    let mut data = anchor_discriminator("asset_update_params").to_vec();
     data.extend_from_slice(&params.base_premium_rate_bps.to_le_bytes());
     data.extend_from_slice(&params.premium_cap_bps.to_le_bytes());
     data.extend_from_slice(&params.max_capacity.to_le_bytes());
@@ -238,7 +238,7 @@ pub fn build_update_asset_params_ix(
     Instruction { program_id, accounts, data }
 }
 
-/// Build `set_asset_support` — toggles an asset's registration latch
+/// Build `asset_set_support` — toggles an asset's registration latch
 /// (Tier 2: Risk Committee, 3-of-5 Squads).
 pub fn build_set_asset_support_ix(
     program_id: Pubkey,
@@ -252,12 +252,12 @@ pub fn build_set_asset_support_ix(
         AccountMeta::new(asset_pool_pda(&program_id, &mint), false),
         AccountMeta::new_readonly(mint, false),
     ];
-    let mut data = anchor_discriminator("set_asset_support").to_vec();
+    let mut data = anchor_discriminator("asset_set_support").to_vec();
     data.push(supported as u8);
     Instruction { program_id, accounts, data }
 }
 
-/// Build `initialize_credit_line` — registers an institution's aggregate
+/// Build `asset_initialize_credit_line` — registers an institution's aggregate
 /// multi-asset credit ceiling (Tier 2: Risk Committee, 3-of-5, post-KYB).
 pub fn build_initialize_credit_line_ix(
     program_id: Pubkey,
@@ -272,12 +272,12 @@ pub fn build_initialize_credit_line_ix(
         AccountMeta::new(credit_line_pda(&program_id, &institution), false),
         AccountMeta::new_readonly(solana_program::system_program::ID, false),
     ];
-    let mut data = anchor_discriminator("initialize_credit_line").to_vec();
+    let mut data = anchor_discriminator("asset_initialize_credit_line").to_vec();
     data.extend_from_slice(&total_credit_limit.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
 
-/// Build `update_credit_limit` — adjusts the aggregate ceiling
+/// Build `asset_update_credit_limit` — adjusts the aggregate ceiling
 /// (Tier 2: Risk Committee, 3-of-5 Squads).
 pub fn build_update_credit_limit_ix(
     program_id: Pubkey,
@@ -291,12 +291,12 @@ pub fn build_update_credit_limit_ix(
         AccountMeta::new(credit_line_pda(&program_id, &institution), false),
         AccountMeta::new_readonly(institution, false),
     ];
-    let mut data = anchor_discriminator("update_credit_limit").to_vec();
+    let mut data = anchor_discriminator("asset_update_credit_limit").to_vec();
     data.extend_from_slice(&new_limit.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
 
-/// Build `set_credit_frozen` — freezes an institution's credit line
+/// Build `asset_set_credit_frozen` — freezes an institution's credit line
 /// (Tier 1: Emergency Risk Guard "The Breaker", 1-of-3 Squads).
 pub fn build_set_credit_frozen_ix(
     program_id: Pubkey,
@@ -310,12 +310,12 @@ pub fn build_set_credit_frozen_ix(
         AccountMeta::new(credit_line_pda(&program_id, &institution), false),
         AccountMeta::new_readonly(institution, false),
     ];
-    let mut data = anchor_discriminator("set_credit_frozen").to_vec();
+    let mut data = anchor_discriminator("asset_set_credit_frozen").to_vec();
     data.push(frozen as u8);
     Instruction { program_id, accounts, data }
 }
 
-/// Build `set_paused` — engine-level allocation pause
+/// Build `asset_set_paused` — engine-level allocation pause
 /// (Tier 1: Emergency Risk Guard "The Breaker", 1-of-3 Squads).
 pub fn build_set_paused_ix(
     program_id: Pubkey,
@@ -326,12 +326,12 @@ pub fn build_set_paused_ix(
         AccountMeta::new(breaker_authority, true),
         AccountMeta::new(registry_pda(&program_id), false),
     ];
-    let mut data = anchor_discriminator("set_paused").to_vec();
+    let mut data = anchor_discriminator("asset_set_paused").to_vec();
     data.push(paused as u8);
     Instruction { program_id, accounts, data }
 }
 
-/// Build `allocate_asset_capacity` — the Multi-Asset JIT Allocation core.
+/// Build `asset_allocate_capacity` — the Multi-Asset JIT Allocation core.
 ///
 /// Account order mirrors the on-chain `AllocateAssetCapacity` context:
 /// 0. pool (mut)
@@ -374,7 +374,7 @@ pub fn build_allocate_asset_capacity_ix(
         AccountMeta::new_readonly(spl_token::ID, false),
         AccountMeta::new_readonly(solana_program::system_program::ID, false),
     ];
-    let mut data = anchor_discriminator("allocate_asset_capacity").to_vec();
+    let mut data = anchor_discriminator("asset_allocate_capacity").to_vec();
     data.extend_from_slice(&requested_amount.to_le_bytes());
     data.extend_from_slice(&target_slot.to_le_bytes());
     data.extend_from_slice(&expected_premium.to_le_bytes());
@@ -386,7 +386,7 @@ pub fn build_allocate_asset_capacity_ix(
     Instruction { program_id, accounts, data }
 }
 
-/// Build `recredit_asset_capacity` — releases unused slot capital.
+/// Build `asset_recredit_capacity` — releases unused slot capital.
 pub fn build_recredit_asset_capacity_ix(
     program_id: Pubkey,
     mint: Pubkey,
@@ -404,13 +404,13 @@ pub fn build_recredit_asset_capacity_ix(
         AccountMeta::new(trader_token_account, false),
         AccountMeta::new_readonly(spl_token::ID, false),
     ];
-    let mut data = anchor_discriminator("recredit_asset_capacity").to_vec();
+    let mut data = anchor_discriminator("asset_recredit_capacity").to_vec();
     data.extend_from_slice(&amount.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
 
-/// Build `set_kyc_root` — posts a desk's provider-agnostic Merkle root.
-/// Build `set_kyc_root` — provider-agnostic Merkle KYC root for a desk
+/// Build `asset_set_kyc_root` — posts a desk's provider-agnostic Merkle root.
+/// Build `asset_set_kyc_root` — provider-agnostic Merkle KYC root for a desk
 /// (Tier 2: Risk Committee, 3-of-5 Squads).
 pub fn build_set_kyc_root_ix(
     program_id: Pubkey,
@@ -424,12 +424,12 @@ pub fn build_set_kyc_root_ix(
         AccountMeta::new(credit_line_pda(&program_id, &institution), false),
         AccountMeta::new_readonly(institution, false),
     ];
-    let mut data = anchor_discriminator("set_kyc_root").to_vec();
+    let mut data = anchor_discriminator("asset_set_kyc_root").to_vec();
     data.extend_from_slice(&kyc_merkle_root);
     Instruction { program_id, accounts, data }
 }
 
-/// Build `settle_daily` — Phase 3 daily clearing house settlement.
+/// Build `asset_settle_daily` — Phase 3 daily clearing house settlement.
 ///
 /// The desk treasury returns the exact native asset. `late_fee_payment` is the
 /// deterministic per-block default interest during the 2h grace phase
@@ -466,14 +466,14 @@ pub fn build_settle_daily_ix(
         AccountMeta::new(treasury_token_account, false),
         AccountMeta::new_readonly(spl_token::ID, false),
     ];
-    let mut data = anchor_discriminator("settle_daily").to_vec();
+    let mut data = anchor_discriminator("asset_settle_daily").to_vec();
     data.extend_from_slice(&principal_payment.to_le_bytes());
     data.extend_from_slice(&premium_payment.to_le_bytes());
     data.extend_from_slice(&late_fee_payment.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
 
-/// Build `deposit_asset_liquidity` — LP seeds a pool vault in native asset and
+/// Build `asset_deposit_liquidity` — LP seeds a pool vault in native asset and
 /// receives freshly minted ERC-4626 share tokens (nUSDC / nSOL / nNVSC).
 #[allow(clippy::too_many_arguments)]
 pub fn build_deposit_asset_liquidity_ix(
@@ -496,12 +496,12 @@ pub fn build_deposit_asset_liquidity_ix(
         AccountMeta::new_readonly(spl_token::ID, false),
         AccountMeta::new_readonly(solana_program::system_program::ID, false),
     ];
-    let mut data = anchor_discriminator("deposit_asset_liquidity").to_vec();
+    let mut data = anchor_discriminator("asset_deposit_liquidity").to_vec();
     data.extend_from_slice(&amount.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
 
-/// Build `withdraw_asset_liquidity` — an LP burns share tokens and redeems a
+/// Build `asset_withdraw_liquidity` — an LP burns share tokens and redeems a
 /// proportional slice of the pool vault, subject to the desk-solvency floor
 /// (`idle − shares_value ≥ active credit utilization`).
 #[allow(clippy::too_many_arguments)]
@@ -524,13 +524,13 @@ pub fn build_withdraw_asset_liquidity_ix(
         AccountMeta::new(destination, false),
         AccountMeta::new_readonly(spl_token::ID, false),
     ];
-    let mut data = anchor_discriminator("withdraw_asset_liquidity").to_vec();
+    let mut data = anchor_discriminator("asset_withdraw_liquidity").to_vec();
     data.extend_from_slice(&shares.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
 
-/// Build `withdraw_asset_fees` — sweeps a per-asset fee vault.
-/// Build `withdraw_asset_fees` — sweeps a per-asset fee vault (Tier 3:
+/// Build `asset_withdraw_fees` — sweeps a per-asset fee vault.
+/// Build `asset_withdraw_fees` — sweeps a per-asset fee vault (Tier 3:
 /// Core Ecosystem Council, 5-of-7 Squads, 72h timelock — treasury allocation).
 pub fn build_withdraw_asset_fees_ix(
     program_id: Pubkey,
@@ -548,14 +548,14 @@ pub fn build_withdraw_asset_fees_ix(
         AccountMeta::new(destination, false),
         AccountMeta::new_readonly(spl_token::ID, false),
     ];
-    let mut data = anchor_discriminator("withdraw_asset_fees").to_vec();
+    let mut data = anchor_discriminator("asset_withdraw_fees").to_vec();
     data.extend_from_slice(&amount.to_le_bytes());
     Instruction { program_id, accounts, data }
 }
 
 // ── Default program convenience ────────────────────────────────────────────
 
-pub fn register_asset_default(authority: Pubkey, mint: Pubkey, profile: AssetParams) -> Instruction {
+pub fn asset_register_default(authority: Pubkey, mint: Pubkey, profile: AssetParams) -> Instruction {
     build_register_asset_ix(ASSET_ENGINE_PROGRAM_ID, authority, mint, profile)
 }
 
@@ -744,7 +744,7 @@ mod tests {
             ASSET_ENGINE_PROGRAM_ID, mint, institution, treasury, tta, 1_000_000_000, 50_000,
             777,
         );
-        assert_eq!(&settle.data[..8], &anchor_discriminator("settle_daily"));
+        assert_eq!(&settle.data[..8], &anchor_discriminator("asset_settle_daily"));
         assert_eq!(settle.accounts.len(), 8);
         assert_eq!(settle.accounts[0].pubkey, asset_pool_pda(&ASSET_ENGINE_PROGRAM_ID, &mint));
         assert_eq!(settle.accounts[4].pubkey, desk_position_pda(&ASSET_ENGINE_PROGRAM_ID, &institution, &mint));
@@ -759,7 +759,7 @@ mod tests {
         // (Tier 2 committee signs after the registry proof).
         let root = [42u8; 32];
         let kyc = build_set_kyc_root_ix(ASSET_ENGINE_PROGRAM_ID, Pubkey::new_unique(), institution, root);
-        assert_eq!(&kyc.data[..8], &anchor_discriminator("set_kyc_root"));
+        assert_eq!(&kyc.data[..8], &anchor_discriminator("asset_set_kyc_root"));
         assert_eq!(&kyc.data[8..40], &root);
         assert_eq!(
             kyc.accounts[2].pubkey,
@@ -894,7 +894,7 @@ mod tests {
     fn every_builder_uses_the_anchor_discriminator_prefix() {
         // spot-check three builders land a 32-byte body past the prefix
         let ix = build_set_paused_ix(ASSET_ENGINE_PROGRAM_ID, Pubkey::new_unique(), true);
-        assert_eq!(&ix.data[..8], &anchor_discriminator("set_paused"));
+        assert_eq!(&ix.data[..8], &anchor_discriminator("asset_set_paused"));
         assert_eq!(ix.data.len(), 9);
         assert_eq!(
             noviscia_types::WSOL_MINT.to_string().starts_with("So111"),

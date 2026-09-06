@@ -11,4 +11,4 @@ solana-program = "2"
 anchor-lang = "0.31.1"
 spl-token = "7"
 sha3 = "0.10"
-noviscia-types = { path = "../noviscia-types" }
+noviscia-types = { version = "0.2.2", path = "../noviscia-types" }

@@ -51,15 +51,15 @@ const le64 = (v: bigint): Buffer => {
 
 describe('assetEngine', () => {
   it('exposes the deployed program ID', () => {
-    assert.equal(ASSET_ENGINE_PROGRAM_ID.toBase58(), '5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb');
+    assert.equal(ASSET_ENGINE_PROGRAM_ID.toBase58(), 'JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc');
   });
 
   it('uses the Anchor sha256 global discriminator prefix', () => {
     const ix = buildSetPausedIx(ASSET_ENGINE_PROGRAM_ID, uuid(), true);
-    assert.deepEqual(ix.data.subarray(0, 8), anchorDiscriminator('set_paused'));
+    assert.deepEqual(ix.data.subarray(0, 8), anchorDiscriminator('asset_set_paused'));
     assert.equal(ix.data.length, 9);
     // spot-check the well-known Anchor prefixes
-    assert.equal(anchorDiscriminator('initialize').subarray(0, 1).toString('hex').length, 2);
+    assert.equal(anchorDiscriminator('asset_initialize').subarray(0, 1).toString('hex').length, 2);
   });
 
   it('encodes three-tier governance keys and account orders in initialize', () => {

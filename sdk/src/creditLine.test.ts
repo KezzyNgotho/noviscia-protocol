@@ -16,8 +16,8 @@ function stubProgram() {
 }
 
 describe('creditLine', () => {
-  it('exposes the deployed program ID', () => {
-    assert.equal(CREDIT_LINE_PROGRAM_ID.toBase58(), '8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg');
+  it('exposes the netting-engine host program ID (credit-line folded in as cl_* handlers)', () => {
+    assert.equal(CREDIT_LINE_PROGRAM_ID.toBase58(), '68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56');
   });
 
   it('rejects a client built on the wrong program ID', () => {

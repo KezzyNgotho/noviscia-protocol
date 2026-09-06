@@ -22,7 +22,7 @@ REST round-trip.
   `build_withdraw_asset_fees_ix`.
 - **Asset profiles** — `NVSC_PROFILE`, `USDC_PROFILE`, `WSOL_PROFILE` with the
   per-asset ceilings, hairline bps, and fee splits that govern allocation, plus
-  `register_asset_default` / `register_wsol_default` conveniences.
+  `asset_register_default` / `register_wsol_default` conveniences.
 - **LP share / risk math** — `compute_deposit_shares`,
   `compute_lp_withdraw_value`, `compute_lp_share_price` (ERC-4626-style shares,
   `LP_PRICE_SCALE = 1_000_000`), `compute_premium`, `compute_late_fee`, and
@@ -64,7 +64,7 @@ institutional borrower and LP flows.
 
 ## Repository
 
-- Program: `programs/active/noviscia-asset-engine`
+- Program: `programs/cluster-2-tvv-gate/noviscia-asset-engine`
 - Type crate: `sdk/rust/noviscia-types`
 - TS twin: `@noviscia/sdk` (`assetEngine` and `jito` modules) on npm
 - On-chain layout and governance: see `docs/ARCHITECTURE.md` —

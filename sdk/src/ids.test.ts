@@ -22,9 +22,9 @@ describe('ids', () => {
     assert.equal(PROGRAM_IDS.burnEngine.toBase58(), 'nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id');
     assert.equal(PROGRAM_IDS.nettingEngine.toBase58(), '68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56');
     assert.equal(PROGRAM_IDS.escrow.toBase58(), '2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ');
-    assert.equal(PROGRAM_IDS.jitRisk.toBase58(), '3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh');
-    assert.equal(PROGRAM_IDS.creditLine.toBase58(), '8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg');
-    assert.equal(PROGRAM_IDS.assetEngine.toBase58(), '5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb');
+    assert.equal(PROGRAM_IDS.jitRisk.toBase58(), 'JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc');
+    assert.equal(PROGRAM_IDS.creditLine.toBase58(), '68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56');
+    assert.equal(PROGRAM_IDS.assetEngine.toBase58(), 'JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc');
   });
 
   it('mint constants are valid PublicKeys', () => {
@@ -37,9 +37,13 @@ describe('ids', () => {
     assert.equal(TREASURY_ID, 0);
   });
 
-  it('no duplicate program IDs', () => {
+  it('no duplicate program IDs (except consolidated hosts)', () => {
     const ids = Object.values(PROGRAM_IDS).map((pk) => pk.toBase58());
     const unique = new Set(ids);
-    assert.equal(ids.length, unique.size, 'duplicate program IDs found');
+    // jit-risk + asset-engine share the noviscia-capacity host (`risk_*` /
+    // `asset_*` handlers), and credit-line shares the netting-engine host
+    // with nettingEngine (`cl_*` handlers) after the 19→4 consolidation.
+    assert.equal(ids.length - unique.size, 2, `expected exactly the capacity-host + netting-host duplicates`);
+    assert.equal(unique.size, ids.length - 2);
   });
 });

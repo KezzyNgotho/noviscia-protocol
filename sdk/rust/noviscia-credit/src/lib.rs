@@ -121,7 +121,7 @@ fn anchor_discriminator(name: &str) -> [u8; 8] {
 
 // ── Instruction Builders ───────────────────────────────────────────────────
 
-/// Build a `pull_credit` instruction.
+/// Build a `cl_pull_credit` instruction.
 ///
 /// Account order mirrors the on-chain `PullCredit` context:
 /// 0. borrower_owner (signer, mut)
@@ -149,7 +149,7 @@ pub fn build_pull_credit_ix(
         AccountMeta::new_readonly(spl_token::ID, false),   // token_program
     ];
 
-    let mut data = anchor_discriminator("pull_credit").to_vec();
+    let mut data = anchor_discriminator("cl_pull_credit").to_vec();
     data.extend_from_slice(&requested_amount.to_le_bytes());
 
     Instruction {
@@ -159,7 +159,7 @@ pub fn build_pull_credit_ix(
     }
 }
 
-/// Build a `repay_and_settle` instruction.
+/// Build a `cl_repay_and_settle` instruction.
 ///
 /// Account order mirrors the on-chain `RepayAndSettle` context:
 /// 0. borrower_owner (signer, mut)
@@ -201,7 +201,7 @@ pub fn build_repay_and_settle_ix(
         AccountMeta::new_readonly(spl_token::ID, false),   // token_program
     ];
 
-    let mut data = anchor_discriminator("repay_and_settle").to_vec();
+    let mut data = anchor_discriminator("cl_repay_and_settle").to_vec();
     data.extend_from_slice(&principal.to_le_bytes());
 
     Instruction {
@@ -214,7 +214,7 @@ pub fn build_repay_and_settle_ix(
 // ── Atomic Arbitrage Helper ────────────────────────────────────────────────
 
 /// Build the instructions for an atomic single-block credit arbitrage:
-/// `pull_credit` → external swaps → `repay_and_settle`.
+/// `cl_pull_credit` → external swaps → `cl_repay_and_settle`.
 ///
 /// Returns the credit line instructions (pull + repay). External swap
 /// instructions should be sandwiched between them by the caller.

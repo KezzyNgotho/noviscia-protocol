@@ -3,7 +3,7 @@ import { PublicKey, SystemProgram } from '@solana/web3.js';
 import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { PROGRAM_IDS, USDC_MINT } from './ids';
 
-/** Anchor-typed account shapes for jit-risk (fields per target/idl/jit_risk.json). */
+/** Anchor-typed account shapes for jit-risk (fields per target/idl/noviscia_capacity.json, `risk_*` handlers). */
 export interface MarketplaceState {
   authority: PublicKey;
   usdcVault: PublicKey;
@@ -73,12 +73,12 @@ const B = (s: string): Buffer => Buffer.from(s);
  *
  * Markets idle insurance-pool risk capacity to market makers for a single
  * Solana slot (400ms). Two primitives:
- *   - `rentSlice`: atomic micro-premium paid inside the buyer's own tx — risk
+ *   - `riskRentSlice`: atomic micro-premium paid inside the buyer's own tx — risk
  *     enters and exits within the same slot (zero in-flight window).
- *   - `reserveSlice` / `settleSlice`: collateralized in-flight capacity keyed
+ *   - `riskReserveSlice` / `riskSettleSlice`: collateralized in-flight capacity keyed
  *     by [slice, mm, slot] that dissolves at settlement.
  *
- * All derivations use the fixed program ID 3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh.
+ * All derivations use the noviscia-capacity host program ID JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc.
  */
 export class JitRiskClient {
   readonly program: Program;
@@ -179,7 +179,7 @@ export class JitRiskClient {
 // ── governance ────────────────────────────────────────────────────────────────
 
   /** Admin bootstrap: creates MarketplaceState + USDC vault. */
-  initializeMarketplace(params: {
+  riskInitializeMarketplace(params: {
     authority: PublicKey;
     insuranceFundFloorUsdc: number | bigint;
     writableBps: number;
@@ -192,7 +192,7 @@ export class JitRiskClient {
   }) {
     const { insuranceFundFloorUsdc, writableBps, riskBudgetBps, maxSliceUsdc, maxSlotAge, deltaMinWad, deltaMaxWad, premiumMin } = params;
     return this.program.methods
-      .initializeMarketplace({
+      .risk_initialize_marketplace({
         authority: params.authority,
         insuranceFundFloorUsdc: this.bn(insuranceFundFloorUsdc),
         writableBps,
@@ -214,9 +214,9 @@ export class JitRiskClient {
   }
 
   /** Admin: onboard a market maker with a per-MM credit ceiling. */
-  registerMm(mm: PublicKey, creditCeilingUsdc: number | bigint) {
+  riskRegisterMm(mm: PublicKey, creditCeilingUsdc: number | bigint) {
     return this.program.methods
-      .registerMm(mm, this.bn(creditCeilingUsdc) as never)
+      .risk_register_mm(mm, this.bn(creditCeilingUsdc) as never)
       .accountsStrict({
         marketplace: this.marketplace(),
         mmRegistration: this.mmRegistration(mm),
@@ -227,9 +227,9 @@ export class JitRiskClient {
   }
 
   /** Admin: suspend a market maker (blocks new slices). */
-  suspendMm(mm: PublicKey) {
+  riskSuspendMm(mm: PublicKey) {
     return this.program.methods
-      .suspendMm(mm)
+      .risk_suspend_mm(mm)
       .accountsStrict({
         marketplace: this.marketplace(),
         mmRegistration: this.mmRegistration(mm),
@@ -239,9 +239,9 @@ export class JitRiskClient {
   }
 
   /** Admin: flag a desk for synthetic-volume review (§3.3 redline). Emits SyntheticDeskFlagged. */
-  flagDesk(mm: PublicKey) {
+  riskFlagDesk(mm: PublicKey) {
     return this.program.methods
-      .flagDesk(mm)
+      .risk_flag_desk(mm)
       .accountsStrict({
         marketplace: this.marketplace(),
         mmRegistration: this.mmRegistration(mm),
@@ -251,7 +251,7 @@ export class JitRiskClient {
   }
 
   /** Admin: one-sided parameter update (each field validated independently). */
-  updateParams(params: {
+  riskUpdateParams(params: {
     writableBps?: number;
     riskBudgetBps?: number;
     maxSliceUsdc?: number | bigint;
@@ -262,7 +262,7 @@ export class JitRiskClient {
     insuranceFundFloorUsdc?: number | bigint;
   }) {
     return this.program.methods
-      .updateParams({
+      .risk_update_params({
         writableBps: params.writableBps ?? null,
         riskBudgetBps: params.riskBudgetBps ?? null,
         maxSliceUsdc: params.maxSliceUsdc != null ? this.bn(params.maxSliceUsdc) : null,
@@ -279,9 +279,9 @@ export class JitRiskClient {
   }
 
   /** Admin kill-switch. */
-  forceFreeze() {
+  riskForceFreeze() {
     return this.program.methods
-      .forceFreeze()
+      .risk_force_freeze()
       .accountsStrict({
         marketplace: this.marketplace(),
         authority: this.provider.publicKey,
@@ -289,9 +289,9 @@ export class JitRiskClient {
   }
 
   /** Admin resume. */
-  unfreeze() {
+  riskUnfreeze() {
     return this.program.methods
-      .unfreeze()
+      .risk_unfreeze()
       .accountsStrict({
         marketplace: this.marketplace(),
         authority: this.provider.publicKey,
@@ -303,9 +303,9 @@ export class JitRiskClient {
    * insurance ledger (`position-tracker::Market.insurance_fund_usdc`), so the
    * writable base excludes the real CCP insurance reserve.
    */
-  syncInsuranceFloor(insuranceMarket: PublicKey) {
+  riskSyncInsuranceFloor(insuranceMarket: PublicKey) {
     return this.program.methods
-      .syncInsuranceFloor()
+      .risk_sync_insurance_floor()
       .accountsStrict({
         marketplace: this.marketplace(),
         authority: this.provider.publicKey,
@@ -319,11 +319,11 @@ export class JitRiskClient {
    * Atomic slice: buyer composes this into their arbitrage tx; premium paid in
    * the same transaction → risk lives for exactly one slot.
    *
-   * `signer` must be the market maker's keypair (rent_slice requires `mm: Signer`).
+   * `signer` must be the market maker's keypair (risk_rent_slice requires `mm: Signer`).
    */
-  rentSlice(mm: PublicKey, amount: number | bigint, deltaWad: number | bigint, signer?: { publicKey: PublicKey; secretKey: Uint8Array }) {
+  riskRentSlice(mm: PublicKey, amount: number | bigint, deltaWad: number | bigint, signer?: { publicKey: PublicKey; secretKey: Uint8Array }) {
     const builder = this.program.methods
-      .rentSlice(this.bn(amount) as never, this.bn(deltaWad) as never)
+      .risk_rent_slice(this.bn(amount) as never, this.bn(deltaWad) as never)
       .accountsStrict({
         marketplace: this.marketplace(),
         mmRegistration: this.mmRegistration(mm),
@@ -331,6 +331,7 @@ export class JitRiskClient {
         mmTokenAccount: this.mmTokenAccount(mm),
         usdcVault: this.usdcVault(),
         usdcMint: this.usdcMint,
+        vaultConfig: this.vaultConfig(),
         tokenProgram: TOKEN_PROGRAM_ID,
       } as never);
     return signer ? builder.signers([signer]) : builder;
@@ -338,8 +339,8 @@ export class JitRiskClient {
 
   /** In-flight: premium + collateral C = (1+μ)·A parked into the pool vault.
    *
-   * `signer` must be the market maker's keypair (reserve_slice requires `mm: Signer`). */
-  reserveSlice(
+   * `signer` must be the market maker's keypair (risk_reserve_slice requires `mm: Signer`). */
+  riskReserveSlice(
     mm: PublicKey,
     amount: number | bigint,
     deltaWad: number | bigint,
@@ -347,7 +348,7 @@ export class JitRiskClient {
     signer?: { publicKey: PublicKey; secretKey: Uint8Array },
   ) {
     const builder = this.program.methods
-      .reserveSlice(this.bn(amount) as never, this.bn(deltaWad) as never, this.bn(slotKey) as never)
+      .risk_reserve_slice(this.bn(amount) as never, this.bn(deltaWad) as never, this.bn(slotKey) as never)
       .accountsStrict({
         marketplace: this.marketplace(),
         mmRegistration: this.mmRegistration(mm),
@@ -356,6 +357,7 @@ export class JitRiskClient {
         mmTokenAccount: this.mmTokenAccount(mm),
         usdcVault: this.usdcVault(),
         usdcMint: this.usdcMint,
+        vaultConfig: this.vaultConfig(),
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
       } as never);
@@ -363,9 +365,9 @@ export class JitRiskClient {
   }
 
   /** Permissionless settlement within the freshness window. `pnl` is the adjudicated buyer slot PnL. */
-  settleSlice(mm: PublicKey, slotKey: number | bigint, pnl: number | bigint, mmTokenAccount?: PublicKey) {
+  riskSettleSlice(mm: PublicKey, slotKey: number | bigint, pnl: number | bigint, mmTokenAccount?: PublicKey) {
     return this.program.methods
-      .settleSlice(mm, this.bn(slotKey) as never, this.bn(pnl) as never)
+      .risk_settle_slice(mm, this.bn(slotKey) as never, this.bn(pnl) as never)
       .accountsStrict({
         marketplace: this.marketplace(),
         mmRegistration: this.mmRegistration(mm),
@@ -380,9 +382,9 @@ export class JitRiskClient {
   }
 
   /** Permissionless: dissolve stale Reserved receipts older than max_slot_age. */
-  reapExpiredSlice(mm: PublicKey, slotKey: number | bigint) {
+  riskReapExpiredSlice(mm: PublicKey, slotKey: number | bigint) {
     return this.program.methods
-      .reapExpiredSlice(mm, this.bn(slotKey) as never)
+      .risk_reap_expired_slice(mm, this.bn(slotKey) as never)
       .accountsStrict({
         marketplace: this.marketplace(),
         mmRegistration: this.mmRegistration(mm),
@@ -401,9 +403,9 @@ export class JitRiskClient {
    * `FEE_TYPE_CAPACITY` protocol fee — the marketplace PDA signs as the source
    * token authority, so the pool's `fee_index`/NAV grows by the swept premium.
    */
-  sweepPremiums() {
+  riskSweepPremiums() {
     return this.program.methods
-      .sweepPremiums()
+      .risk_sweep_premiums()
       .accountsStrict({
         marketplace: this.marketplace(),
         usdcVault: this.usdcVault(),

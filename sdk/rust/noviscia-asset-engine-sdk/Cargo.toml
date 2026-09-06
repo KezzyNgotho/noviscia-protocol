@@ -1,6 +1,6 @@
 [package]
 name = "noviscia-asset-engine-sdk"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 description = "Multi-asset JIT allocation, daily clearing, ERC-4626 LP vault builders & PDA derivation for the Noviscia asset engine."
 license = "Apache-2.0"
@@ -19,4 +19,4 @@ solana-sdk = "2"
 solana-program = "2"
 anchor-lang = "0.31.1"
 spl-token = "7"
-noviscia-types = { version = "0.2.0", path = "../noviscia-types" }
+noviscia-types = { version = "0.2.2", path = "../noviscia-types" }

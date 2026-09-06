@@ -2,7 +2,7 @@
  * Sandbox clock — the deterministic 1,440× projection of the on-chain
  * asset-engine clearing window (Module 3, Phase 4).
  *
- * The engine (programs/active/noviscia-asset-engine/src/lib.rs) derives a
+ * The engine (programs/cluster-2-tvv-gate/noviscia-asset-engine/src/lib.rs) derives a
  * desk's posture from REAL slots:
  *
  *   no window until a first borrow opens it at slot `w`;

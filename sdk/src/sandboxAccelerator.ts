@@ -16,7 +16,7 @@
  *   sandbox GRACE  =  18,000 / 1,440 = 12.5 sandbox slots  (=  5 s @ 400 ms)
  *
  * This module is a pure, deterministic twin of the on-chain posture derivation
- * (programs/active/noviscia-asset-engine/src/lib.rs) plus the freeze predicate
+ * (programs/cluster-2-tvv-gate/noviscia-asset-engine/src/lib.rs) plus the freeze predicate
  * used by the institutional verification checklist (Test 3 and Test 4).
  *
  * @module sandboxAccelerator

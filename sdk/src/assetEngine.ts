@@ -216,7 +216,7 @@ const M = (pubkey: PublicKey, isSigner: boolean, isWritable: boolean) => ({
 });
 
 /**
- * `initialize` — pins the platform mints + three-tier Squads keys.
+ * `asset_initialize` — pins the platform mints + three-tier Squads keys.
  * Signed by the Tier-3 Core Ecosystem Council (upgrade authority).
  */
 export function buildInitializeIx(
@@ -232,7 +232,7 @@ export function buildInitializeIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('initialize'),
+    anchorDiscriminator('asset_initialize'),
     params.breakerAuthority.toBuffer(),
     params.riskCommitteeAuthority.toBuffer(),
     params.upgradeAuthority.toBuffer(),
@@ -251,7 +251,7 @@ export function buildInitializeIx(
   });
 }
 
-/** `register_asset` — onboards a mint (Tier 3: Council, 5-of-7, 72h timelock). */
+/** `asset_register` — onboards a mint (Tier 3: Council, 5-of-7, 72h timelock). */
 export function buildRegisterAssetIx(
   programId: PublicKey | undefined,
   upgradeAuthority: PublicKey,
@@ -260,7 +260,7 @@ export function buildRegisterAssetIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('register_asset'),
+    anchorDiscriminator('asset_register'),
     Buffer.from([params.decimals]),
     le16(params.basePremiumRateBps),
     le16(params.premiumCapBps),
@@ -287,7 +287,7 @@ export function buildRegisterAssetIx(
   });
 }
 
-/** `update_asset_params` — adjusts a registered asset (Tier 2: Risk Committee). */
+/** `asset_update_params` — adjusts a registered asset (Tier 2: Risk Committee). */
 export function buildUpdateAssetParamsIx(
   programId: PublicKey | undefined,
   riskCommitteeAuthority: PublicKey,
@@ -296,7 +296,7 @@ export function buildUpdateAssetParamsIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('update_asset_params'),
+    anchorDiscriminator('asset_update_params'),
     le16(params.basePremiumRateBps),
     le16(params.premiumCapBps),
     le64(params.maxCapacity),
@@ -315,7 +315,7 @@ export function buildUpdateAssetParamsIx(
   });
 }
 
-/** `set_asset_support` — toggles a supported latch (Tier 2: Risk Committee). */
+/** `asset_set_support` — toggles a supported latch (Tier 2: Risk Committee). */
 export function buildSetAssetSupportIx(
   programId: PublicKey | undefined,
   riskCommitteeAuthority: PublicKey,
@@ -324,7 +324,7 @@ export function buildSetAssetSupportIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('set_asset_support'),
+    anchorDiscriminator('asset_set_support'),
     Buffer.from([supported ? 1 : 0]),
   ]);
   return new TransactionInstruction({
@@ -339,7 +339,7 @@ export function buildSetAssetSupportIx(
   });
 }
 
-/** `initialize_credit_line` — desk ceiling (Tier 2: Risk Committee, post-KYB). */
+/** `asset_initialize_credit_line` — desk ceiling (Tier 2: Risk Committee, post-KYB). */
 export function buildInitializeCreditLineIx(
   programId: PublicKey | undefined,
   institution: PublicKey,
@@ -348,7 +348,7 @@ export function buildInitializeCreditLineIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('initialize_credit_line'),
+    anchorDiscriminator('asset_initialize_credit_line'),
     le64(totalCreditLimit),
   ]);
   return new TransactionInstruction({
@@ -364,7 +364,7 @@ export function buildInitializeCreditLineIx(
   });
 }
 
-/** `update_credit_limit` — changes the ceiling (Tier 2: Risk Committee). */
+/** `asset_update_credit_limit` — changes the ceiling (Tier 2: Risk Committee). */
 export function buildUpdateCreditLimitIx(
   programId: PublicKey | undefined,
   riskCommitteeAuthority: PublicKey,
@@ -373,7 +373,7 @@ export function buildUpdateCreditLimitIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('update_credit_limit'),
+    anchorDiscriminator('asset_update_credit_limit'),
     le64(newLimit),
   ]);
   return new TransactionInstruction({
@@ -388,7 +388,7 @@ export function buildUpdateCreditLimitIx(
   });
 }
 
-/** `set_credit_frozen` — desk freeze (Tier 1: Breaker, 1-of-3). */
+/** `asset_set_credit_frozen` — desk freeze (Tier 1: Breaker, 1-of-3). */
 export function buildSetCreditFrozenIx(
   programId: PublicKey | undefined,
   breakerAuthority: PublicKey,
@@ -397,7 +397,7 @@ export function buildSetCreditFrozenIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('set_credit_frozen'),
+    anchorDiscriminator('asset_set_credit_frozen'),
     Buffer.from([frozen ? 1 : 0]),
   ]);
   return new TransactionInstruction({
@@ -412,7 +412,7 @@ export function buildSetCreditFrozenIx(
   });
 }
 
-/** `set_paused` — engine-level allocation pause (Tier 1: Breaker, 1-of-3). */
+/** `asset_set_paused` — engine-level allocation pause (Tier 1: Breaker, 1-of-3). */
 export function buildSetPausedIx(
   programId: PublicKey | undefined,
   breakerAuthority: PublicKey,
@@ -420,7 +420,7 @@ export function buildSetPausedIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('set_paused'),
+    anchorDiscriminator('asset_set_paused'),
     Buffer.from([paused ? 1 : 0]),
   ]);
   return new TransactionInstruction({
@@ -431,7 +431,7 @@ export function buildSetPausedIx(
 }
 
 /**
- * `allocate_asset_capacity` — single-slot JIT allocation. `expiry` is the KYC
+ * `asset_allocate_capacity` — single-slot JIT allocation. `expiry` is the KYC
  * leaf timestamp (unix seconds); `merkleProof` must validate against the root.
  */
 export function buildAllocateAssetCapacityIx(
@@ -450,7 +450,7 @@ export function buildAllocateAssetCapacityIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('allocate_asset_capacity'),
+    anchorDiscriminator('asset_allocate_capacity'),
     le64(params.requestedAmount),
     le64(params.targetSlot),
     le64(params.expectedPremium),
@@ -476,7 +476,7 @@ export function buildAllocateAssetCapacityIx(
   });
 }
 
-/** `recredit_asset_capacity` — releases unused slot capital. */
+/** `asset_recredit_capacity` — releases unused slot capital. */
 export function buildRecreditAssetCapacityIx(
   programId: PublicKey | undefined,
   mint: PublicKey,
@@ -487,7 +487,7 @@ export function buildRecreditAssetCapacityIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('recredit_asset_capacity'),
+    anchorDiscriminator('asset_recredit_capacity'),
     le64(amount),
   ]);
   return new TransactionInstruction({
@@ -505,7 +505,7 @@ export function buildRecreditAssetCapacityIx(
   });
 }
 
-/** `set_kyc_root` — desk's provider-agnostic Merkle KYC root (Tier 2). */
+/** `asset_set_kyc_root` — desk's provider-agnostic Merkle KYC root (Tier 2). */
 export function buildSetKycRootIx(
   programId: PublicKey | undefined,
   riskCommitteeAuthority: PublicKey,
@@ -514,7 +514,7 @@ export function buildSetKycRootIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('set_kyc_root'),
+    anchorDiscriminator('asset_set_kyc_root'),
     Buffer.from(kycMerkleRoot),
   ]);
   return new TransactionInstruction({
@@ -529,7 +529,7 @@ export function buildSetKycRootIx(
   });
 }
 
-/** `settle_daily` — 24h clearing house settlement in the exact borrowed asset. */
+/** `asset_settle_daily` — 24h clearing house settlement in the exact borrowed asset. */
 export function buildSettleDailyIx(
   programId: PublicKey | undefined,
   mint: PublicKey,
@@ -542,7 +542,7 @@ export function buildSettleDailyIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('settle_daily'),
+    anchorDiscriminator('asset_settle_daily'),
     le64(principalPayment),
     le64(premiumPayment),
     le64(lateFeePayment),
@@ -563,7 +563,7 @@ export function buildSettleDailyIx(
   });
 }
 
-/** `deposit_asset_liquidity` — LP seeds a vault, mints ERC-4626 shares. */
+/** `asset_deposit_liquidity` — LP seeds a vault, mints ERC-4626 shares. */
 export function buildDepositAssetLiquidityIx(
   programId: PublicKey | undefined,
   mint: PublicKey,
@@ -574,7 +574,7 @@ export function buildDepositAssetLiquidityIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('deposit_asset_liquidity'),
+    anchorDiscriminator('asset_deposit_liquidity'),
     le64(amount),
   ]);
   return new TransactionInstruction({
@@ -595,7 +595,7 @@ export function buildDepositAssetLiquidityIx(
   });
 }
 
-/** `withdraw_asset_liquidity` — burn shares, redeem subject to solvency floor. */
+/** `asset_withdraw_liquidity` — burn shares, redeem subject to solvency floor. */
 export function buildWithdrawAssetLiquidityIx(
   programId: PublicKey | undefined,
   mint: PublicKey,
@@ -606,7 +606,7 @@ export function buildWithdrawAssetLiquidityIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('withdraw_asset_liquidity'),
+    anchorDiscriminator('asset_withdraw_liquidity'),
     le64(shares),
   ]);
   return new TransactionInstruction({
@@ -626,7 +626,7 @@ export function buildWithdrawAssetLiquidityIx(
   });
 }
 
-/** `withdraw_asset_fees` — treasury sweep of a fee vault (Tier 3: Council). */
+/** `asset_withdraw_fees` — treasury sweep of a fee vault (Tier 3: Council). */
 export function buildWithdrawAssetFeesIx(
   programId: PublicKey | undefined,
   upgradeAuthority: PublicKey,
@@ -636,7 +636,7 @@ export function buildWithdrawAssetFeesIx(
 ): TransactionInstruction {
   const pid = programId ?? ASSET_ENGINE_PROGRAM_ID;
   const data = Buffer.concat([
-    anchorDiscriminator('withdraw_asset_fees'),
+    anchorDiscriminator('asset_withdraw_fees'),
     le64(amount),
   ]);
   return new TransactionInstruction({

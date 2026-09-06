@@ -42,9 +42,12 @@ pub const POSITION_TRACKER_PROGRAM_ID: Pubkey =
 /// Escrow program (devnet).
 pub const ESCROW_PROGRAM_ID: Pubkey =
     solana_program::pubkey!("2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ");
-/// Credit line program (devnet).
+/// Credit line program (devnet) — now aliases the consolidated `netting-engine`
+/// host (19→4 consolidation: the standalone `noviscia-credit-line` was absorbed
+/// at Stage 3; see `docs/FROZEN.md` + `docs/CONSOLIDATION.md` §7). PDAs derive
+/// under the host ID.
 pub const CREDIT_LINE_PROGRAM_ID: Pubkey =
-    solana_program::pubkey!("8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg");
+    solana_program::pubkey!("68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56");
 /// nv-usdc-vault omni-pool program (devnet).
 pub const NV_USDC_VAULT_PROGRAM_ID: Pubkey =
     solana_program::pubkey!("CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC");
@@ -60,15 +63,21 @@ pub const NETTING_ENGINE_PROGRAM_ID: Pubkey =
 /// Liquidation vault program (devnet).
 pub const LIQUIDATION_VAULT_PROGRAM_ID: Pubkey =
     solana_program::pubkey!("Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz");
-/// JIT risk marketplace program (devnet).
+/// JIT risk marketplace program (devnet) — now aliases the consolidated
+/// `noviscia-capacity` host (19→4 consolidation: the standalone `jit-risk` was
+/// absorbed at Stage 2; see `docs/FROZEN.md` + `docs/CONSOLIDATION.md` §7).
+/// PDAs derive under the host ID.
 pub const JIT_RISK_PROGRAM_ID: Pubkey =
-    solana_program::pubkey!("3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh");
+    solana_program::pubkey!("JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc");
 /// Gateway auction program (devnet).
 pub const GATEWAY_AUCTION_PROGRAM_ID: Pubkey =
     solana_program::pubkey!("HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR");
-/// Sovereign netting program (devnet).
+/// Sovereign netting program (devnet) — now aliases the consolidated
+/// `netting-engine` host (19→4 consolidation: the standalone `sovereign-netting`
+/// was absorbed at Stage 3; see `docs/FROZEN.md` + `docs/CONSOLIDATION.md` §7).
+/// PDAs derive under the host ID.
 pub const SOVEREIGN_NETTING_PROGRAM_ID: Pubkey =
-    solana_program::pubkey!("9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk");
+    solana_program::pubkey!("68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56");
 
 /// USDC devnet mint.
 pub const USDC_MINT: Pubkey =
@@ -456,9 +465,12 @@ pub const GRACE_SLOTS: u64 = 18_000;
 pub const LATE_FEE_RATE_BPS: u64 = 50;
 pub const LATE_FEE_BASE: u64 = 10_000;
 
-/// On-chain program ID for `noviscia-asset-engine` (devnet).
+/// On-chain program ID for `noviscia-asset-engine` (devnet) — now aliases the
+/// consolidated `noviscia-capacity` host (19→4 consolidation: the standalone
+/// `noviscia-asset-engine` was absorbed at Stage 2; see `docs/FROZEN.md` +
+/// `docs/CONSOLIDATION.md` §7). PDAs derive under the host ID.
 pub const ASSET_ENGINE_PROGRAM_ID: Pubkey =
-    anchor_lang::solana_program::pubkey!("5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb");
+    anchor_lang::solana_program::pubkey!("JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc");
 
 /// Wrap-SOL mint (native-interop profile for SOL exposure).
 pub const WSOL_MINT: Pubkey =

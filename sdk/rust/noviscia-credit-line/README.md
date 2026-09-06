@@ -19,7 +19,7 @@ transaction rolls back and the pool is untouched.
 
 ## Repository layout
 
-- **`programs/active/noviscia-credit-line/`** — the on-chain Anchor program
+- **`programs/cluster-1-clearing-core/noviscia-credit-line/`** — the on-chain Anchor program
   (the credit-line ledger, the alpha-sleeve credit vault, per-borrower
   registries, the dynamic toll engine, and the balance-state constraint).
 - **`sdk/`** — this crate: the offline instruction builder

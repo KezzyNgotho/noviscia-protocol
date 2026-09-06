@@ -44,13 +44,18 @@ const B = (s: string): Buffer => Buffer.from(s);
 /**
  * CreditLineClient — SDK surface for the Noviscia Credit Line.
  *
+ * The credit-line handlers were folded into the netting-engine host (Stage 3
+ * of the 19→4 consolidation); `CREDIT_LINE_PROGRAM_ID` resolves to the host
+ * address and every instruction here is the host's `cl_*` handler. The PDA
+ * seeds and account layouts are unchanged from the standalone program.
+ *
  * Single-block, collateralized credit for institutional desks. Four
  * instructions bundle into one Solana ~400ms slot:
  *
- *   1. `pullCredit`    draw USDC from the alpha-sleeve credit vault
+ *   1. `clPullCredit`    draw USDC from the alpha-sleeve credit vault
  *   2. external swap   (e.g. Raydium) buy the target asset low
  *   3. external swap   (e.g. Meteora) sell the asset high
- *   4. `repayAndSettle` the Atomic Balance-State Constraint
+ *   4. `clRepayAndSettle` the Atomic Balance-State Constraint
  *
  * The toll is dynamic (interpolates with utilization, clamped to
  * `[base, max]` bps) and spliced 90/10: 90% is swept natively into the
@@ -122,7 +127,7 @@ export class CreditLineClient {
 
   /**
    * One-time bootstrap: creates the ledger + alpha-sleeve credit vault + 90%
-   * toll staging vault. Re-runnable via init_if_needed semantics at the CLI.
+   * toll staging vault (host handler `cl_initialize`).
    */
   initialize(params: {
     authority: PublicKey;
@@ -134,7 +139,7 @@ export class CreditLineClient {
     globalOutstandingCap: number | bigint;
   }) {
     return this.program.methods
-      .initialize(
+      .clInitialize(
         params.tollRecipient,
         this.bn(params.baseTollBps) as never,
         this.bn(params.maxTollBps) as never,
@@ -152,10 +157,10 @@ export class CreditLineClient {
       } as never);
   }
 
-  /** Authority-only: whitelist (or revoke) a desk and set its credit limit. */
+  /** Authority-only: whitelist (or revoke) a desk and set its credit limit (host `cl_register_borrower`). */
   registerBorrower(borrowerOwner: PublicKey, creditLimit: number | bigint, authority?: PublicKey) {
     return this.program.methods
-      .registerBorrower(this.bn(creditLimit) as never)
+      .clRegisterBorrower(this.bn(creditLimit) as never)
       .accountsStrict({
         authority: authority ?? this.provider.publicKey,
         creditLine: this.creditLine(),
@@ -170,11 +175,11 @@ export class CreditLineClient {
   /**
    * Step 1 — the Pull. Atomically release `amount` USDC (base-6) from the
    * alpha-sleeve credit vault into the borrower's USDC token account, inside
-   * the same transaction as the adjacent arbitrage swaps and the final repay.
+   * the same transaction as the adjacent arbitrage swaps and the final repay. Host handler `cl_pull_credit`.
    */
   pullCredit(borrowerOwner: PublicKey, amount: number | bigint, signer?: { publicKey: PublicKey; secretKey: Uint8Array }) {
     const builder = this.program.methods
-      .pullCredit(this.bn(amount) as never)
+      .clPullCredit(this.bn(amount) as never)
       .accountsStrict({
         borrowerOwner,
         creditLine: this.creditLine(),
@@ -195,6 +200,7 @@ export class CreditLineClient {
    * Because both the principal return and the toll split are enforced here,
    * if the borrower cannot cover `principal + toll` the transfer CPI reverts
    * and the entire transaction rolls back — the pool is never left short.
+   * Host handler `cl_repay_and_settle`.
    */
   repayAndSettle(
     borrowerOwner: PublicKey,
@@ -204,7 +210,7 @@ export class CreditLineClient {
   ) {
     const { vaultConfig, vaultUsdc } = this.vaultAccounts();
     const builder = this.program.methods
-      .repayAndSettle(this.bn(principal) as never)
+      .clRepayAndSettle(this.bn(principal) as never)
       .accountsStrict({
         borrowerOwner,
         creditLine: this.creditLine(),

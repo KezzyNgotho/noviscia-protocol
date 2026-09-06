@@ -28,7 +28,8 @@ use noviscia_credit_line_sdk::{
     borrower_pda, credit_line_pda, credit_vault_pda, toll_vault_pda, NovisciaCreditLineClient,
 };
 
-/// Program ID from the deployed `noviscia-credit-line` program.
+/// Program ID from the consolidated `netting-engine` host (Stage 3 absorption
+/// of the standalone `noviscia-credit-line`; see `docs/FROZEN.md`).
 const CREDIT_LINE_PROGRAM_ID: Pubkey = noviscia_credit_line_sdk::CREDIT_LINE_PROGRAM_ID;
 
 /// Placeholder: venue A (Raydium) swap instruction builder.

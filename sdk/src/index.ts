@@ -112,6 +112,13 @@ export {
   type AssembleBundleOptions,
 } from './jito';
 export {
+  leaderIsJito,
+  guardNonJitoLeaderSlot,
+  assertJitoLeader,
+  NonJitoLeaderError,
+  type LeaderEligibility,
+} from './ability';
+export {
   referenceTvvParams,
   defaultTvvParams,
   seniorTrancheUsdCents,

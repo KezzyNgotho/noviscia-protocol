@@ -24,26 +24,59 @@
 //! no reentrancy.
 //!
 //! The toll fee is **dynamic**: it scales with utilization of the shared credit
-//! cap and is clamped to `[base, max]` basis points on-chain. See
-//! [`noviscia_credit_line::toll_and_utilization`].
+//! cap and is clamped to `[base, max]` basis points on-chain.
 
-use anchor_lang::InstructionData;
 use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::pubkey::Pubkey;
 
-/// Convenience re-export of the on-chain program's types.
-pub use noviscia_credit_line::{
-    BORROWER_SEED, CREDIT_LINE_SEED, CREDIT_VAULT_SEED, TOLL_VAULT_SEED, CreditLine, Borrower,
+/// Convenience re-export of the on-chain account types, seeds, and program IDs.
+///
+/// Both the in-crate references below and downstream consumers rely on these
+/// being available from the crate root.
+pub use noviscia_types::{
+    BORROWER_SEED, CREDIT_LINE_SEED, CREDIT_VAULT_SEED, TOLL_VAULT_SEED, Borrower, CreditLine,
 };
 
 /// Client-side mirror of the deployed program ID.
+///
+/// 19→4 consolidation: the standalone `noviscia-credit-line` (`8usJu6...`) was
+/// frozen at Stage 0 and absorbed into the `netting-engine` host at Stage 3
+/// (its `pull_credit`/`repay_and_settle` handlers are forwarded as
+/// `cl_pull_credit`/`cl_repay_and_settle`). All PDAs derive under the host ID.
+/// See `docs/FROZEN.md` + `docs/CONSOLIDATION.md` §7.
 pub const CREDIT_LINE_PROGRAM_ID: Pubkey =
-    noviscia_credit_line::ID;
+    solana_program::pubkey!("68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56");
 
 /// The `nv-usdc-vault` omni-pool program that receives the 90% LP-NAV sweep
 /// (via `accumulate_protocol_fees`).
 pub const NV_USDC_VAULT_PROGRAM_ID: Pubkey =
     solana_program::pubkey!("CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC");
+
+/// Anchor instruction discriminator for the host's `cl_pull_credit` handler:
+/// `sha256("global:cl_pull_credit")[..8]` = `c10dbe259191f0ff`.
+const CL_PULL_CREDIT_DISCRIMINATOR: [u8; 8] = [0xc1, 0x0d, 0xbe, 0x25, 0x91, 0x91, 0xf0, 0xff];
+
+/// Anchor instruction discriminator for the host's `cl_repay_and_settle`:
+/// `sha256("global:cl_repay_and_settle")[..8]` = `2702cc5342f34817`.
+const CL_REPAY_AND_SETTLE_DISCRIMINATOR: [u8; 8] = [0x27, 0x02, 0xcc, 0x53, 0x42, 0xf3, 0x48, 0x17];
+
+/// Assemble an Anchor-style instruction: `[discriminator][borsh args]` with the
+/// trailing `u64` written little-endian (matching the host's `cl_*` handlers).
+fn anchor_instruction(
+    discriminator: [u8; 8],
+    arg: u64,
+    program_id: Pubkey,
+    accounts: Vec<AccountMeta>,
+) -> Instruction {
+    let mut data = Vec::with_capacity(8 + 8);
+    data.extend_from_slice(&discriminator);
+    data.extend_from_slice(&arg.to_le_bytes());
+    Instruction {
+        program_id,
+        accounts,
+        data,
+    }
+}
 
 /// Offline credit-line client. Holds only public addresses — never keys.
 pub struct NovisciaCreditLineClient {
@@ -116,14 +149,12 @@ impl NovisciaCreditLineClient {
             AccountMeta::new_readonly(self.token_program, false), // token_program
         ];
 
-        let ix = noviscia_credit_line::instruction::PullCredit {
-            amount: requested_amount,
-        };
-        Ok(Instruction {
-            program_id: self.program_id,
+        Ok(anchor_instruction(
+            CL_PULL_CREDIT_DISCRIMINATOR,
+            requested_amount,
+            self.program_id,
             accounts,
-            data: ix.data(),
-        })
+        ))
     }
 
     /// Step 4 — build the final "repay and settle" instruction.
@@ -149,12 +180,12 @@ impl NovisciaCreditLineClient {
             AccountMeta::new_readonly(self.token_program, false), // token_program
         ];
 
-        let ix = noviscia_credit_line::instruction::RepayAndSettle { principal };
-        Ok(Instruction {
-            program_id: self.program_id,
+        Ok(anchor_instruction(
+            CL_REPAY_AND_SETTLE_DISCRIMINATOR,
+            principal,
+            self.program_id,
             accounts,
-            data: ix.data(),
-        })
+        ))
     }
 }
 
@@ -188,8 +219,6 @@ pub fn toll_vault_pda(program_id: Pubkey) -> Pubkey {
 /// Errors surfaced while building instructions.
 #[derive(Debug)]
 pub enum SdkError {
-    /// On-chain instruction serialization failed.
-    Serialize(anchor_lang::error::Error),
     /// A caller-supplied value was invalid.
     InvalidInput(String),
 }
@@ -197,19 +226,12 @@ pub enum SdkError {
 impl std::fmt::Display for SdkError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SdkError::Serialize(e) => write!(f, "instruction serialization error: {e}"),
             SdkError::InvalidInput(msg) => write!(f, "invalid input: {msg}"),
         }
     }
 }
 
 impl std::error::Error for SdkError {}
-
-impl From<anchor_lang::error::Error> for SdkError {
-    fn from(e: anchor_lang::error::Error) -> Self {
-        SdkError::Serialize(e)
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -240,7 +262,8 @@ mod tests {
         assert!(ix.accounts[0].is_writable);
         assert_eq!(ix.accounts.len(), 6, "pull has 6 accounts (no toll recipient)");
         assert!(!ix.accounts[5].is_writable, "token program is readonly");
-        assert!(!ix.data.is_empty());
+        assert_eq!(&ix.data[..8], &CL_PULL_CREDIT_DISCRIMINATOR, "cl_pull_credit discriminator");
+        assert_eq!(u64::from_le_bytes(ix.data[8..16].try_into().unwrap()), 2_000_000);
     }
 
     #[test]
@@ -252,6 +275,8 @@ mod tests {
         assert_eq!(ix.accounts[6].pubkey, c.toll_vault, "index 6 = toll staging vault");
         assert!(!ix.accounts[9].is_writable, "nv_usdc_vault_program is readonly");
         assert!(!ix.accounts[10].is_writable, "token program is readonly");
+        assert_eq!(&ix.data[..8], &CL_REPAY_AND_SETTLE_DISCRIMINATOR, "cl_repay_and_settle discriminator");
+        assert_eq!(u64::from_le_bytes(ix.data[8..16].try_into().unwrap()), 2_000_000);
     }
 
     #[test]

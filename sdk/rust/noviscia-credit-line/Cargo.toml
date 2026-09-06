@@ -6,10 +6,9 @@ description = "Low-latency instruction builder for the Noviscia Credit Line (ato
 license = "Apache-2.0"
 
 [dependencies]
-anchor-lang = "0.31.1"
 solana-program = "2"
 spl-token = "7"
-noviscia-credit-line = { path = "../../../programs/active/noviscia-credit-line", features = ["cpi"] }
+noviscia-types = { version = "0.2.2", path = "../noviscia-types" }
 
 [lib]
 name = "noviscia_credit_line_sdk"

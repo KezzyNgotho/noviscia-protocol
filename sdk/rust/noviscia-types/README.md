@@ -46,7 +46,7 @@ assert_eq!(LP_NAV_SPLIT_BPS, 9_000);
 
 ## Repository
 
-- Programs: `programs/active/*`
+- Programs: `programs/cluster-*/`
 - SDK crates: `sdk/rust/*`
 - On-chain layout and governance: see `docs/ARCHITECTURE.md` in the Noviscia
   mono-repo — [https://github.com/KezzyNgotho/Noviscia-protocal](https://github.com/KezzyNgotho/Noviscia-protocal)

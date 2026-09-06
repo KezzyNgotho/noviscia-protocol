@@ -1,6 +1,6 @@
 {
   "name": "@noviscia/sdk",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Universal Noviscia developer SDK — program IDs + address derivation, anchor program wrappers, the Unified Collateral Gateway, payload translators, a simulate-first sandbox, Jito Block Engine bundle submission, and the quantified TVV risk-pack economics.",
   "license": "MIT",
   "main": "dist/index.js",
@@ -39,7 +39,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "npm run clean && tsc -p tsconfig.build.json && npm run copy:idls",
-    "copy:idls": "mkdir -p dist/idl && for f in ../target/idl/*.json; do name=$(basename \"$f\"); case \"$name\" in benchmarks.json|bug_bounty.json|burn_engine.json|escrow.json|protocol_lp_vault.json|sol_vault.json) continue;; esac; cp -n \"$f\" dist/idl/; done; ls dist/idl/*.json 2>/dev/null | wc -l | xargs -I{} echo 'Copied {} IDLs'",
+    "copy:idls": "mkdir -p dist/idl && for f in ../app/web/app/idl/*.json; do name=$(basename \"$f\"); case \"$name\" in benchmarks.json|bug_bounty.json|burn_engine.json|escrow.json|protocol_lp_vault.json|sol_vault.json) continue;; esac; cp -n \"$f\" dist/idl/; done; ls dist/idl/*.json 2>/dev/null | wc -l | xargs -I{} echo 'Copied {} IDLs'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test src/**/*.test.ts",
     "prepublishOnly": "npm run typecheck && npm run build && npm test"
