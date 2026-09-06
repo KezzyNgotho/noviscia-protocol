@@ -64,6 +64,23 @@ export const SLICE_SETTLED = 1;
 export const SLICE_DEFAULTED = 2;
 export const SLICE_REAPED = 3;
 
+/** Per-MM credit ceiling cap = single-desk cap C_desk ($1.5M) from the quantified risk pack. */
+export const MAX_MM_CEILING_USDC = 1_500_000_000_000n;
+
+/** Admission contract must mirror on-chain `validate_mm_ceiling`: ceiling > 0 and ≤ C_desk. */
+export function assertValidMmCeilingUsdc(creditCeilingUsdc: number | bigint): void {
+  const ceiling = BigInt(creditCeilingUsdc);
+  if (ceiling <= 0n) {
+    throw new Error(`Desk admission rejected: ceiling must be greater than zero (got ${ceiling})`);
+  }
+  if (ceiling > MAX_MM_CEILING_USDC) {
+    throw new Error(
+      `Desk admission rejected: ceiling $${Number(ceiling) / 1_000_000} exceeds the ` +
+        `single-desk cap C_desk ($${Number(MAX_MM_CEILING_USDC) / 1_000_000})`,
+    );
+  }
+}
+
 export const JIT_RISK_PROGRAM_ID = PROGRAM_IDS.jitRisk;
 
 const B = (s: string): Buffer => Buffer.from(s);
@@ -215,6 +232,7 @@ export class JitRiskClient {
 
   /** Admin: onboard a market maker with a per-MM credit ceiling. */
   riskRegisterMm(mm: PublicKey, creditCeilingUsdc: number | bigint) {
+    assertValidMmCeilingUsdc(creditCeilingUsdc);
     return this.program.methods
       .risk_register_mm(mm, this.bn(creditCeilingUsdc) as never)
       .accountsStrict({
@@ -230,6 +248,18 @@ export class JitRiskClient {
   riskSuspendMm(mm: PublicKey) {
     return this.program.methods
       .risk_suspend_mm(mm)
+      .accountsStrict({
+        marketplace: this.marketplace(),
+        mmRegistration: this.mmRegistration(mm),
+        mm,
+        authority: this.provider.publicKey,
+      } as never);
+  }
+
+  /** Admin: reinstate a suspended market maker. Idempotent for active desks. */
+  riskActivateMm(mm: PublicKey) {
+    return this.program.methods
+      .risk_activate_mm(mm)
       .accountsStrict({
         marketplace: this.marketplace(),
         mmRegistration: this.mmRegistration(mm),

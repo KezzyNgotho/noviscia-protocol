@@ -88,7 +88,7 @@ live emulator (`services/sandbox-hub`). If a flow breaks here, do **not** try it
 |---|---|---|
 | Master Loan Agreement / KYB review | No (off-chain, enforced by issuer) | Contract in `docs/MASTER_LOAN_AGREEMENT.md`; Sumsub KYB flow is **scaffolded** in the web app |
 | Three-tier RBAC (breaker/committee/council) | Yes — `AssetRegistry` pins 3 keys | **Cold-start = single deployer key** `pm2tUw22…`; Squads split is a mainnet target |
-| Desk registration (`register_mm` whitelist) | Yes (jit_risk registry) | Devnet = test desks via scripts; no production whitelist process |
+| Desk registration (`register_mm` whitelist) | Yes (jit_risk registry) | Admission runbook + ceiling cap gate (§15) — devnet test desks via `scripts/devnet/register-mm-admission-devnet.ts` |
 | Merkle KYC proof | Yes — `credit_line.kyc_merkle_root` | **Root unset → proof is skipped** (see §9) |
 
 If your desk needs its own identity (not the deployer), generate a keypair and provision it
@@ -296,12 +296,95 @@ cap-wiring" for the live numbers) if you hold a drawn window.
 | Mainnet liquidity + real yield | Devnet only | mainnet TGE/governance Q1 2027; Jito landing untested on mainnet |
 | Three-tier governed multisig | Cold-start single key | Squads ceremony is mainnet scope (`KEY_MANAGEMENT_GOVERNANCE.md` §3) |
 | Sumsub/KYB on-ramp + Merkle proof | Scaffolded; root unset on-chain | KYB integration wiring |
-| Desk whitelist / `register_mm` admission | Test desks only | operations process |
+| Desk whitelist / `register_mm` admission | Admission runbook + ceiling cap gate; `suspend_mm`/`activate_mm` live (deployed to `3w9Gr`, §15) | Per-desk KYB attestation (signing authority) is a committee/off-chain step; no trustless link from the credit line's `kyc_merkle_root` to a desk yet (honest note below) |
 | API tokens (`X-Noviscia-App-Token`) | Issuance + authz wiring live | Scoped reads enforced on the indexer; per-desk/admission-derived providers are production scope (`/developer/api-tokens`) |
 | C++ SDK crate | Roadmap | — |
 
 Everything in §4–§13 is the **developer-grade** path that works on devnet today. Treat devnet
 results as engineering evidence, not deployment-readiness.
+
+---
+
+## 15. Desk Admission & Lifecycle (ops process)
+
+`register_mm` is the single on-chain whitelist gate into the Jit-Risk marketplace. A desk cannot
+buy, rent, reserve, or settle any capacity without an entry in `MmRegistration` (status ACTIVE).
+This section pins the *operating procedure* around that gate — who may be admitted, at what
+ceiling, and how a desk moves between ACTIVE and SUSPENDED.
+
+### 15.1 Admission gates
+
+A desk is admitted only when **all** of these hold, in order:
+
+1. **KYB attestation** — desk principal passed review (Sumsub/alternate acceptable attester; §14).
+   On-chain this is a *precedent committed by the signing authority*, not an automated check —
+   see the honest note in §15.5.
+2. **Committee / risk sign-off** — the marketplace authority signs `risk_register_mm`; the
+   authority key is the same one the desk keys to in [`MASTER_LOAN_AGREEMENT.md`](MASTER_LOAN_AGREEMENT.md).
+3. **Ceiling within `C_desk`** — requested ceiling ≤ **$1,500,000** (single-desk cap from
+   [`QUANTIFIED_RISK_PACK.md`](QUANTIFIED_RISK_PACK.md) §desk_cap_bps = 1_500 bps). Enforced
+   **on-chain** (`validate_mm_ceiling` → `JitRiskError::CreditCeilingTooHigh`) and mirrored
+   client-side so a bad ceiling never reaches a submit.
+4. **Liquidity headroom** — ceiling ≤ writable base × ψ, i.e. ≤
+   `(pool vault balance − safety floor F) × writable_bps / 10_000`. This pool-liquidity
+   concentration guard is enforced by the admission runbook (pool liquidity changes with the
+   vault, so it cannot be a static constant) and re-checked before every admission.
+
+### 15.2 Ceiling sizing
+
+- Default / demo desk: **$20,000** (as `e2e-jit-risk-devnet.ts`).
+- Standard institutional desk: up to **$500,000** — the max slice default, without concentration.
+- Ceiling above $500k requires committee sign-off in the admission ticket; **$1.5M is the hard
+  cap** and needs the strongest review (desk collateral, volume track record, fresh KYB).
+
+### 15.3 Lifecycle
+
+| State | Entered by | Blocks |
+|---|---|---|
+| ACTIVE (status 1) | `register_mm` | — |
+| SUSPENDED (status 2) | `suspend_mm` (authority) | new slices refused on-chain (`MmNotActive`/`MmSuspended`) |
+| ACTIVE (status 1) | `activate_mm` (authority) | — |
+
+Suspension is immediate and on-chain: the text starting *before* the suspension keeps its
+in-flight status and settles normally — only *new* capacity is barred. Reactivation restores the
+desk; both transitions are authority-only and auditable via `MmRegistered` / `MmSuspended` /
+`MmActive` events.
+
+### 15.4 Runbook
+
+```bash
+# Admit a desk at the default $20k ceiling — uses the persisted runbook desk
+# (scripts/devnet/.runbook-desk.json), funded once, reused on every run
+npx tsx scripts/devnet/register-mm-admission-devnet.ts
+
+# Admit a specific desk at a specific ceiling (liquidity-headroom checked live)
+npx tsx scripts/devnet/register-mm-admission-devnet.ts --desk=<desk-pubkey> --ceiling=120000
+
+# Include the suspend → capacity-refused probe + full lifecycle, ending ACTIVE
+npx tsx scripts/devnet/register-mm-admission-devnet.ts --with-activate
+```
+
+Notes
+- The admin signer must be the marketplace authority (`~/.config/solana/new-id.json`).
+- `--with-activate` is **live** (no longer post-breach gated): `activate_mm` was deployed to
+  `3w9Gr` together with the on-chain ceiling cap. Every run closes with the desk ACTIVE.
+- The refusal probe signs with the desk keypair (as in `e2e-jit-risk-devnet.ts`); for a
+  `--desk` whose secret is unknown it is skipped with the suspension itself proven on-chain.
+- **Layout change note:** the marketplace upgrade that deployed `activate_mm` + the ceiling cap
+  also extended `MmRegistration` (the consolidation-era layout, 107 B). The pre-upgrade deskA /
+  deskB accounts (90 B, from the e2e registry `scripts/e2e/.desks.json`) are **orphaned** on
+  3w9Gr — they predate the new layout and are no longer decodable by the program. Use a fresh or
+  persisted runbook desk for new admissions; `deskB` remains useful only as the USDC funder.
+
+### 15.5 Honest note
+
+Two distinct registries exist today: the credit-line's **desks** (`AssetRegistry`) and the
+marketplace's **MMs** (`MmRegistration`). They are operated by the same authority but are **not
+linked on-chain** — nothing yet proves that an active `MmRegistration` corresponds to a
+KYB-cleared credit-line desk. Closing that gap (a registry-consistency check or a proof that
+pins `kyc_merkle_root` to the `mm` key) is a follow-up; until then, treat desk admission as
+enforced by policy at the authority step, with on-chain program-level gates (status + ceiling +
+suspension) proven as engineered.
 
 ---
 
