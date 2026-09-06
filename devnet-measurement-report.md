@@ -1,6 +1,6 @@
 # Noviscia Devnet Measurement Report
 
-**Generated:** 2026-09-06T14:53:36.836Z
+**Generated:** 2026-09-06T18:44:12.253Z
 **RPC:** https://api.devnet.solana.com
 **Cluster version:** {"feature-set":2409014235,"solana-core":"4.3.0-beta.3"}
 
@@ -10,7 +10,7 @@
 |---|---|---|---|
 | netting-engine | `68s4vuWUXAaE...` | 🟢 | 36 bytes |
 | nv-usdc-vault | `CN92hAtnZxbM...` | 🟢 | 36 bytes |
-| noviscia-capacity | `JDsM18uSZ1UJ...` | 🔴 | — |
+| noviscia-capacity | `EDBr2VFWweFD...` | 🟢 | 36 bytes |
 | gateway-auction | `HQ26VTfoBVmG...` | 🟢 | 36 bytes |
 | clearing-registry | `Hg5QvSsnb22g...` | 🟢 | 36 bytes |
 | yield-router | `FKaAPPid8B6h...` | 🟢 | 36 bytes |
@@ -25,9 +25,10 @@
 ### Atomic Reversion Control
 - **Current status:** 🟢 Proven On Paper / Code
 - **Target:** $0 Capital Leakage on failed transactions
-- **Measured:** Programs not deployed
-- **Measurement status:** 🔴 probe-failed
-- **Notes:** Deploy netting-engine, nv-usdc-vault, noviscia-capacity first.
+- **Measured:** All 3 core programs live (netting-engine, nv-usdc-vault, noviscia-capacity EDBr2VFW) — integration test not yet run
+- **Measurement status:** 🟡 not-yet-measured
+- **Evidence artifact:** `scripts/devnet/measure-atomicity.ts`
+- **Notes:** All critical programs deployed at current IDs. Run `npx tsx scripts/devnet/measure-atomicity.ts` (validates deployment + writes devnet-measurement-atomicity.json), then the failing-repay integration test (`cargo test --test atomicity`) for the A === B byte-for-byte balance assertion.
 ### Geyser Data Processing Speed
 - **Current status:** 🟡 Simulated / Sandbox
 - **Target:** < 2ms local RAM cache updates
@@ -44,9 +45,10 @@
 ### Time-Accelerated Timeout Locks
 - **Current status:** 🟡 Simulated / Sandbox
 - **Target:** 60s Expiry Execution (1440x scale)
-- **Measured:** —
-- **Measurement status:** 🟡 not-yet-measured
-- **Notes:** Requires on-chain desk creation + time-advance to observe 24h/2h window behavior. The sandboxAccelerator.ts models this at 1440x acceleration. Live measurement: create desk on devnet, advance clock via warp-slot, observe when the facility freezes.
+- **Measured:** window_start_slot=494190470 observed_slot=494198176 posture=Open mature=494406470 (~24h) breach=494424470 (~26h)
+- **Measurement status:** 🟡 observation-in-progress
+- **Evidence artifact:** `devnet-window-observation.json + scripts/devnet/observe-capacity-window-devnet.ts`
+- **Notes:** Live 24h floating window opened on-chain (real asset_allocate_capacity, wSOL pool). Freeze is deterministic: run the observer at ~24h/26h to observe OverdueSlots/Breached.
 ### Senior Tranche Circuit Breakers
 - **Current status:** 🟡 Simulated / Sandbox
 - **Target:** Hard Freeze at 50% Junior Pool Drain

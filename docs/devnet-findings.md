@@ -1,8 +1,9 @@
 # Devnet Deployment Findings — Verified 2026-09-06
 
 Real ground truth measured against `https://api.devnet.solana.com`
-(solana-core `4.3.0-beta.3`, feature-set `2409014235`, slot `494114654`).
+(solana-core `4.3.0-beta.3`, feature-set `2409014235`, slot `494198156`).
 Not simulation, not assumption — probe output from `scripts/devnet/run-all-probes.ts`.
+Re-verified after the 2026-09-06 capacity redeploy (see `docs/DEVNET.md`).
 
 ## 1 · Compiled programs (local, real)
 
@@ -38,35 +39,43 @@ Program IDs *documented* in `Anchor.toml [programs.devnet]` vs *actually live*:
 
 | Program | Documented ID | Actually deployed | Account data |
 |---|---|---:|---|
-| netting-engine | `68s4vuWU…` | ✅ | 36 B loader stub |
-| nv-usdc-vault | `CN92hAtn…` | ✅ | 36 B loader stub |
-| gateway-auction | `HQ26VTfo…` | ✅ | 36 B |
-| clearing-registry | `Hg5QvSsn…` | ✅ | 36 B |
-| yield-router | `FKaAPPid…` | ✅ | 36 B |
-| burn-engine | `nFgJEQSr…` | ✅ | 36 B |
-| escrow | `2WPb3wsy…` | ✅ | 36 B |
-| bug-bounty | `A8Uk9WuH…` | ✅ | 36 B |
-| protocol-lp-vault | `2WUt24rR…` | ✅ | 36 B |
-| spot-dex | `8C4try8m…` | ✅ | 36 B |
-| **noviscia-capacity** | `JDsM18uS…` | ❌ **AccountNotFound** | — |
+| netting-engine | `68s4vuWU…` | ✅ | loader-stub |
+| nv-usdc-vault | `CN92hAtn…` | ✅ | loader-stub |
+| gateway-auction | `HQ26VTfo…` | ✅ | loader-stub |
+| clearing-registry | `Hg5QvSsn…` | ✅ | loader-stub |
+| yield-router | `FKaAPPid…` | ✅ | loader-stub |
+| burn-engine | `nFgJEQSr…` | ✅ | loader-stub |
+| escrow | `2WPb3wsy…` | ✅ | loader-stub |
+| bug-bounty | `A8Uk9WuH…` | ✅ | loader-stub |
+| protocol-lp-vault | `2WUt24rR…` | ✅ | loader-stub |
+| spot-dex | `8C4try8m…` | ✅ | loader-stub |
+| **noviscia-capacity** | `EDBr2VFW…` | ✅ **live** | 892,416 B program data |
 
 **Findings:**
-1. **10/11 documented devnet IDs are live.** QED from
-   `devnet-measurement-report.md`.
-2. **`noviscia-capacity` is NOT deployed** — `AccountNotFound` on the
-   documented `JDsM18uS…`. Its documented ID is provably absent.
-3. **Local keypair mismatch:** every `.so`'s `target/deploy/*-keypair.json`
-   pubkey differs from the documented devnet ID (e.g. netting-engine local
-   keypair `BgpBUpc…` ≠ documented `68s4vuWU…`). So a fresh `anchor deploy`
-   would land at *new* addresses, not the documented ones. The original
-   deploy keypairs are not in this tree — recover them before any redeploy,
-   or accept new IDs and update `Anchor.toml` + client maps.
+1. **11/11 documented devnet IDs are live.** QED from
+   `devnet-measurement-report.{json,md}`.
+2. **`noviscia-capacity` is deployed at `EDBr2VFW…`.** The original deploy keypair
+   for `JDsM18uS…` was lost (AccountNotFound, not present in git/config), so the
+   host was redeployed at `EDBr2VFW…` and *every* client/PDA derivation migrated
+   (`Anchor.toml`, `sdk/src/*.ts`, `app/web/lib/*`, `services/indexer`). The
+   deployed ELF is byte-identical to `target/deploy/noviscia_capacity.so`
+   (.so hash `011f6882…e9`, verified against ProgramData at the 45-byte header).
+3. **Known quirks to remember:** (a) the credit line account at
+   `AifRX9…cw5` still stores `bump = 0` (canonical = 254) from its creation — the
+   deployed program no longer reads the stored bump (`bump = credit_line.bump` →
+   plain `bump`, 6 sites in `asset_engine.rs`), so it is inert; do **not**
+   re-initialize the credit line. (b) `nv-usdc-vault`'s deployed binary still
+   embeds the pre-redeploy `CAPACITY_PROGRAM_ID` constant (inert until a vault
+   upgrade; source carries a NOTE).
 
 **Consequence for the claims table:** the "atomic reversion / capacity /
-circuit-breaker" code-review claims are proven *on paper*, and most program
-artifacts are deployed live, but **capacity enforcement cannot be exercised
-on devnet yet** because `noviscia-capacity` is absent. Any claim that capacity
-gating was observed on-chain is a false claim today.
+circuit-breaker" program hosts are all live, so the on-paper claims are
+executable; capacity enforcement **is** observable on devnet now — a real 24h
+window was opened via `asset_allocate_capacity` (slot 494190470, posture
+`Open`; see `devnet-window-observation.json`). The remaining un-flipped probes
+are ones that by definition need either an integration run (atomicity byte-level
+assertion), a service (Geyser), a counterparty (Jito landing / desks), or time
+(24h → Breached observer).
 
 ## 3 · How to re-verify (reproducible)
 
@@ -74,14 +83,18 @@ gating was observed on-chain is a false claim today.
 RPC_URL=https://api.devnet.solana.com \
   npx tsx scripts/devnet/run-all-probes.ts        # → devnet-measurement-report.{json,md}
 npx tsx scripts/devnet/update-claims-table.ts devnet-measurement-report.json   # → updated-claims-table.{md,json}
+# live window posture (writes devnet-window-observation.json)
+npx tsx scripts/devnet/observe-capacity-window-devnet.ts
 ```
 
-Regenerating after a capacity deploy should flip row 4 (atomicity) and the
-capacity-dependent claims to testnet-measured.
+When the observer reports `Overdue`/`Breached`, re-running
+`run-all-probes.ts` flips the timeout-locks claim to `testnet-measured`.
 
 ## 4 · Honest labels applied
 
 - Compiled .so inventory → `real` (local build artifact).
-- 10/11 devnet live IDs → `testnet-measured`.
-- Capacity gate enforcement → `pending` (absent program).
+- 11/11 devnet live IDs → `testnet-measured`.
+- Capacity enforcement → **live on devnet** (window open @ 494190470; breach ≈ 494424470).
+- Atomicity byte-assertion, Geyser latency, Jito landing, circuit-breaker live
+  drain, non-Jito pause → `pending`/`not-yet-measured` (see report).
 - All waterfall economics → `simulated` (unchanged).

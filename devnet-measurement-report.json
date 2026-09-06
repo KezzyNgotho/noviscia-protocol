@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-06T14:53:36.836Z",
+  "generatedAt": "2026-09-06T18:44:12.253Z",
   "rpc": "https://api.devnet.solana.com",
   "clusterVersion": "{\"feature-set\":2409014235,\"solana-core\":\"4.3.0-beta.3\"}",
   "programsDeployed": [
@@ -19,7 +19,7 @@
       "name": "noviscia-capacity",
       "programId": "EDBr2VFWweFDzKR4cTT5j3TPGvPd9imoP8F76YK1o9oe",
       "deployed": true,
-      "sizeBytes": 892416
+      "sizeBytes": 36
     },
     {
       "name": "gateway-auction",
@@ -76,10 +76,10 @@
       "category": "must-be-correct-on-paper",
       "currentStatus": "🟢 Proven On Paper / Code",
       "targetMetric": "$0 Capital Leakage on failed transactions",
-      "measuredValue": "All three core programs live on devnet: netting-engine, nv-usdc-vault, noviscia-capacity (EDBr2VFW). Atomicity probe ran: real token flow, no leakage.",
-      "measuredStatus": "🟢 testnet-measured",
+      "measuredValue": "All 3 core programs live (netting-engine, nv-usdc-vault, noviscia-capacity EDBr2VFW) — integration test not yet run",
+      "measuredStatus": "🟡 not-yet-measured",
       "evidenceArtifact": "scripts/devnet/measure-atomicity.ts",
-      "notes": "netting-engine deployed, nv-usdc-vault (CN92hA) live, capacity redeployed at EDBr2VFW after keypair migration. Re-run `npx tsx scripts/devnet/measure-atomicity.ts` to refresh."
+      "notes": "All critical programs deployed at current IDs. Run `npx tsx scripts/devnet/measure-atomicity.ts` (validates deployment + writes devnet-measurement-atomicity.json), then the failing-repay integration test (`cargo test --test atomicity`) for the A === B byte-for-byte balance assertion."
     },
     {
       "claim": "Geyser Data Processing Speed",
@@ -106,10 +106,10 @@
       "category": "needs-live-technical-validation",
       "currentStatus": "🟡 Simulated / Sandbox",
       "targetMetric": "60s Expiry Execution (1440x scale)",
-      "measuredValue": "Window opened on devnet at slot 494190470 (2026-09-06). Open posture confirmed; mature at slot 494406470 (+216,000 ≈ 24h), breach at 494424470 (+234,000 ≈ 26h). OverdueSlots/Breached observation pending 26h observer.",
       "measuredStatus": "🟡 observation-in-progress",
       "evidenceArtifact": "devnet-window-observation.json + scripts/devnet/observe-capacity-window-devnet.ts",
-      "notes": "Real `asset_allocate_capacity` moved wSOL tokens into the EDBr2VFW capacity host (live ERC-4626 deposit + allocation). No warp-slot: frozen window will be proven by devnet observer at ~24h/26h real wall-clock (2026-09-07). Flip claim to testnet-measured once OverdueSlots or Breached observed."
+      "measuredValue": "window_start_slot=494190470 observed_slot=494198176 posture=Open mature=494406470 (~24h) breach=494424470 (~26h)",
+      "notes": "Live 24h floating window opened on-chain (real asset_allocate_capacity, wSOL pool). Freeze is deterministic: run the observer at ~24h/26h to observe OverdueSlots/Breached."
     },
     {
       "claim": "Senior Tranche Circuit Breakers",
@@ -137,6 +137,6 @@
     "provenOnPaper": 1,
     "simulated": 5,
     "pending": 0,
-    "flippedToMeasured": 1
+    "flippedToMeasured": 0
   }
 }

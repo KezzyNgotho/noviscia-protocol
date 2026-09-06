@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-06T14:53:36.836Z",
+  "generatedAt": "2026-09-06T18:44:12.253Z",
   "claims": [
     {
       "claim": "Reconciled slot-level economics",
@@ -24,10 +24,10 @@
     },
     {
       "claim": "Atomic Reversion Control",
-      "status": "🟢 testnet-measured",
+      "status": "🟢 Proven On Paper / Code",
       "target": "$0 Capital Leakage on failed transactions",
       "evidence": "scripts/devnet/measure-atomicity.ts",
-      "measurement": "All three core programs live on devnet: netting-engine, nv-usdc-vault, noviscia-capacity (EDBr2VFW). Atomicity probe ran: real token flow, no leakage."
+      "measurement": "All 3 core programs live (netting-engine, nv-usdc-vault, noviscia-capacity EDBr2VFW) — integration test not yet run"
     },
     {
       "claim": "Geyser Data Processing Speed",
@@ -48,7 +48,7 @@
       "status": "🟡 Simulated / Sandbox",
       "target": "60s Expiry Execution (1440x scale)",
       "evidence": "devnet-window-observation.json + scripts/devnet/observe-capacity-window-devnet.ts",
-      "measurement": "Window opened on devnet at slot 494190470 (2026-09-06). Open posture confirmed; mature at slot 494406470 (+216,000 ≈ 24h), breach at 494424470 (+234,000 ≈ 26h). OverdueSlots/Breached observation pending 26h observer."
+      "measurement": "window_start_slot=494190470 observed_slot=494198176 posture=Open mature=494406470 (~24h) breach=494424470 (~26h)"
     },
     {
       "claim": "Senior Tranche Circuit Breakers",
