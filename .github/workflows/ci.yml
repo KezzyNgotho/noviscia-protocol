@@ -48,7 +48,7 @@ jobs:
       - name: Build SBF programs (required by ProgramTest e2e tests)
         run: |
           cargo build-sbf --tools-version v1.49 --manifest-path vendor/pyth-solano-receiver/Cargo.toml
-          for d in programs/active/*/ programs/later/*/; do
+          for d in programs/active/*/ programs/cluster-4-governance/*/; do
             if [ -f "$d/Cargo.toml" ]; then
               cargo build-sbf --tools-version v1.49 --manifest-path "$d/Cargo.toml"
             fi
@@ -157,7 +157,7 @@ jobs:
       - name: Build programs
         run: |
           cargo build-sbf --tools-version v1.49 --manifest-path vendor/pyth-solano-receiver/Cargo.toml
-          for d in programs/active/*/ programs/later/*/; do
+          for d in programs/active/*/ programs/cluster-4-governance/*/; do
             if [ -f "$d/Cargo.toml" ]; then
               cargo build-sbf --tools-version v1.49 --manifest-path "$d/Cargo.toml"
             fi

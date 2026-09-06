@@ -1,7 +1,7 @@
 /**
  * Cross-tier RBAC evidence proof — reads the three-tier authority mapping
- * (breaker / risk-committee / upgrade) purely from the on-chain asset-engine
- * registry, WITHOUT trusting the SDK's decoder or its account layout.
+ * (breaker / risk-committee / upgrade) purely from the on-chain capacity-host
+ * asset registry, WITHOUT trusting the SDK's decoder or its account layout.
  *
  * Trust-free guarantees:
  *   1. The account is proven to be an `AssetRegistry` by recomputing the
@@ -24,7 +24,7 @@
  * Guard against drift between the program source and this proof: the
  * `TIERS` table encodes the source-level `has_one = <tier>_authority` binding
  * for a representative instruction of each tier (see
- * noviscia-asset-engine/src/lib.rs). If the program ever rebinds a tier to a
+ * noviscia-capacity/src/lib.rs). If the program ever rebinds a tier to a
  * different authority these assertions fail locally.
  *
  * Run (no RPC, offline — validates the whole pipeline):
@@ -52,9 +52,9 @@ import { ASSET_ENGINE_PROGRAM_ID, USDC_MINT, NVSC_MINT } from '../../sdk/src/ids
 const RPC = process.env.SOLANA_RPC_DEVNET || 'https://api.devnet.solana.com';
 
 // ── Hardcoded program constant (independent of the SDK ids module) ─────────────
-// Mirrors `declare_id!` in noviscia-asset-engine/src/lib.rs. If these drift,
-// the registry-PDA recomputation below will fail loudly.
-const PROGRAM_ID = new PublicKey('5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb');
+// Mirrors `declare_id!` of the noviscia-capacity host (asset_* handlers). If
+// these drift, the registry-PDA recomputation below will fail loudly.
+const PROGRAM_ID = new PublicKey('JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc');
 const REGISTRY_SEED = Buffer.from('asset-registry');
 
 // ── Anchor primitives, recomputed locally ───────────────────────────────────────
@@ -106,7 +106,7 @@ function mk(i: number): PublicKey {
 /**
  * Source-level tier contract: for each tier, a representative anchor
  * instruction and the captured `has_one` field it is sealed to
- * (noviscia-asset-engine/src/lib.rs). The `builder` is a function that takes
+ * (noviscia-capacity/src/lib.rs). The `builder` is a function that takes
  * the tier authority and returns the instruction; we then require the FIRST
  * signer it emits to equal the raw key for that tier. This turns the SDK into
  * a falsifiable oracle cross-checked against the raw registry.
@@ -162,7 +162,7 @@ function runEvidence(
     disc.equals(REGISTRY_DISCRIMINATOR),
     `${disc.toString('hex')}`
   );
-  check('registry owned by asset-engine program', owner.equals(PROGRAM_ID), owner.toBase58());
+  check('registry owned by capacity host', owner.equals(PROGRAM_ID), owner.toBase58());
   check('registry executable flag is false (CA holds data, not a program)', !executable);
 
   const reg = decodeRegistry(data);
@@ -189,7 +189,7 @@ function runEvidence(
   // Cross-validate each tier against the SDK instruction builders: the tier
   // authority MUST be among the signers each builder emits. This catches
   // either registry drift or builder drift. (Some instructions — e.g.
-  // `initialize_credit_line` — are legitimately co-signed by an institution
+  // `asset_initialize_credit_line` — are legitimately co-signed by an institution
   // key, so membership, not lead-signer identity, is the correct contract.)
   for (const t of TIERS) {
     const rawKey =
@@ -206,15 +206,15 @@ function runEvidence(
   // registry explicitly and names the correct signer key — the mapping is not
   // an artifact of a single builder.
   const extraSigners: Array<[string, PublicKey, (k: PublicKey) => ReturnType<typeof buildSetPausedIx>]> = [
-    ['set_paused (T1)', reg.breaker, (k) => buildSetPausedIx(PROGRAM_ID, k, true)],
-    ['set_credit_frozen (T1)', reg.breaker, (k) => buildSetCreditFrozenIx(PROGRAM_ID, k, PublicKey.default, true)],
-    ['set_asset_support (T2)', reg.riskCommittee, (k) => buildSetAssetSupportIx(PROGRAM_ID, k, USDC_MINT, true)],
-    ['update_asset_params (T2)', reg.riskCommittee, (k) => buildUpdateAssetParamsIx(PROGRAM_ID, k, USDC_MINT, { decimals: 6, basePremiumRateBps: 500, premiumCapBps: 2000, maxCapacity: 1n, minPremiumLamports: 1_000n, lpYieldSplitBps: 8000 })],
-    ['initialize_credit_line (T2)', reg.riskCommittee, (k) => buildInitializeCreditLineIx(PROGRAM_ID, PublicKey.default, k, 1n)],
-    ['update_credit_limit (T2)', reg.riskCommittee, (k) => buildUpdateCreditLimitIx(PROGRAM_ID, k, PublicKey.default, 1n)],
-    ['set_kyc_root (T2)', reg.riskCommittee, (k) => buildSetKycRootIx(PROGRAM_ID, k, PublicKey.default, Buffer.alloc(32))],
-    ['register_asset (T3)', reg.upgrade, (k) => buildRegisterAssetIx(PROGRAM_ID, k, NVSC_MINT, { decimals: 9, basePremiumRateBps: 500, premiumCapBps: 2000, maxCapacity: 1n, minPremiumLamports: 1_000n, lpYieldSplitBps: 8000 })],
-    ['initialize (T3)', reg.upgrade, (k) =>
+    ['asset_set_paused (T1)', reg.breaker, (k) => buildSetPausedIx(PROGRAM_ID, k, true)],
+    ['asset_set_credit_frozen (T1)', reg.breaker, (k) => buildSetCreditFrozenIx(PROGRAM_ID, k, PublicKey.default, true)],
+    ['asset_set_support (T2)', reg.riskCommittee, (k) => buildSetAssetSupportIx(PROGRAM_ID, k, USDC_MINT, true)],
+    ['asset_update_params (T2)', reg.riskCommittee, (k) => buildUpdateAssetParamsIx(PROGRAM_ID, k, USDC_MINT, { decimals: 6, basePremiumRateBps: 500, premiumCapBps: 2000, maxCapacity: 1n, minPremiumLamports: 1_000n, lpYieldSplitBps: 8000 })],
+    ['asset_initialize_credit_line (T2)', reg.riskCommittee, (k) => buildInitializeCreditLineIx(PROGRAM_ID, PublicKey.default, k, 1n)],
+    ['asset_update_credit_limit (T2)', reg.riskCommittee, (k) => buildUpdateCreditLimitIx(PROGRAM_ID, k, PublicKey.default, 1n)],
+    ['asset_set_kyc_root (T2)', reg.riskCommittee, (k) => buildSetKycRootIx(PROGRAM_ID, k, PublicKey.default, Buffer.alloc(32))],
+    ['asset_register (T3)', reg.upgrade, (k) => buildRegisterAssetIx(PROGRAM_ID, k, NVSC_MINT, { decimals: 9, basePremiumRateBps: 500, premiumCapBps: 2000, maxCapacity: 1n, minPremiumLamports: 1_000n, lpYieldSplitBps: 8000 })],
+    ['asset_initialize (T3)', reg.upgrade, (k) =>
       buildInitializeIx(PROGRAM_ID, {
         upgradeAuthority: k,
         breakerAuthority: reg.breaker,
@@ -224,7 +224,7 @@ function runEvidence(
         nvscMint: NVSC_MINT,
       }),
     ],
-    ['withdraw_asset_fees (T3)', reg.upgrade, (k) => buildWithdrawAssetFeesIx(PROGRAM_ID, k, USDC_MINT, PublicKey.default, 1n)],
+    ['asset_withdraw_fees (T3)', reg.upgrade, (k) => buildWithdrawAssetFeesIx(PROGRAM_ID, k, USDC_MINT, PublicKey.default, 1n)],
   ];
   for (const [label, key, build] of extraSigners) {
     const isTierSigner = build(key).keys.some((k) => k.isSigner && k.pubkey.equals(key));
@@ -318,9 +318,9 @@ async function main() {
   // 1. Deployment gate.
   const programInfo = await connection.getAccountInfo(PROGRAM_ID);
   check(
-    'asset-engine program deployed on devnet',
+    'capacity host deployed on devnet',
     !!programInfo,
-    programInfo ? `owner=${programInfo.owner.toBase58()}` : 'MISSING — deploy first (needs the 5qpo…ZrMKb program keypair)'
+    programInfo ? `owner=${programInfo.owner.toBase58()}` : 'MISSING — deploy first (host needs the JDsM18…BaBiMc program keypair)'
   );
 
   // 2. Registry presence + discriminator + ownership.
@@ -329,8 +329,8 @@ async function main() {
   check('asset-registry account exists', !!info);
   if (!info) {
     console.log('\nRegistry is absent on-chain (program not deployed / not initialized).');
-    console.log('The evidence proof cannot be completed until the engine is live at the');
-    console.log('canonical program id and `initialize` has pinned the three-tier keys.');
+    console.log('The evidence proof cannot be completed until the host is live at the');
+    console.log('canonical program id and `asset_initialize` has pinned the three-tier keys.');
     console.log(`\n${pass} passed, ${fail} failed`);
     process.exit(fail > 0 ? 1 : 0);
   }

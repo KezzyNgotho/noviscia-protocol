@@ -12,7 +12,7 @@ mkdir -p "$TMPDIR" "$CARGO_TARGET_DIR/deploy" target/deploy
 solana config set --url devnet
 
 echo "Building nv-usdc-vault (TMPDIR=$TMPDIR)..."
-cargo build-sbf --manifest-path programs/active/nv-usdc-vault/Cargo.toml --tools-version v1.49 -- --locked
+cargo build-sbf --manifest-path programs/cluster-3-vault-registry/nv-usdc-vault/Cargo.toml --tools-version v1.49 -- --locked
 anchor idl build -p nv_usdc_vault -o target/idl/nv_usdc_vault.json
 
 for src in "$CARGO_TARGET_DIR/deploy/nv_usdc_vault.so" "$CARGO_TARGET_DIR/deploy/nv-usdc-vault.so"; do

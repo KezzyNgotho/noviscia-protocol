@@ -13,7 +13,7 @@ mkdir -p "$TMPDIR" "$CARGO_TARGET_DIR/deploy" target/deploy
 solana config set --url devnet
 
 echo "Building noviscia_clearing (TMPDIR=$TMPDIR)..."
-cargo build-sbf --manifest-path programs/active/noviscia-clearing/Cargo.toml --tools-version v1.49 -- --locked
+cargo build-sbf --manifest-path programs/cluster-1-clearing-core/noviscia-clearing/Cargo.toml --tools-version v1.49 -- --locked
 anchor idl build -p noviscia_clearing -o target/idl/noviscia_clearing.json
 
 for src in "$CARGO_TARGET_DIR/deploy/noviscia_clearing.so"; do

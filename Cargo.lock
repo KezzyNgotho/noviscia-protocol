@@ -2943,10 +2943,11 @@ name = "netting-engine"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "anchor-spl",
+ "nv-usdc-vault",
  "solana-program",
  "solana-program-test",
  "solana-sdk",
- "sovereign-netting",
  "tokio",
 ]
 
@@ -3004,7 +3005,7 @@ dependencies = [
 
 [[package]]
 name = "noviscia-asset-engine-sdk"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anchor-lang",
  "noviscia-types",
@@ -3019,6 +3020,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "nv-usdc-vault",
  "sha3",
  "solana-program",
  "solana-security-txt",
@@ -3095,8 +3097,7 @@ dependencies = [
 name = "noviscia-credit-line-sdk"
 version = "0.1.0"
 dependencies = [
- "anchor-lang",
- "noviscia-credit-line",
+ "noviscia-types",
  "solana-program",
  "spl-token",
 ]
@@ -3156,7 +3157,7 @@ dependencies = [
 
 [[package]]
 name = "noviscia-types"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anchor-lang",
  "solana-program",

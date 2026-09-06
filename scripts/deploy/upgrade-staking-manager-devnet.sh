@@ -14,7 +14,7 @@ mkdir -p "$TMPDIR" "$CARGO_TARGET_DIR/deploy" target/deploy
 solana config set --url devnet
 
 echo "Building staking-manager (TMPDIR=$TMPDIR)..."
-cargo build-sbf --manifest-path programs/active/staking-manager/Cargo.toml --tools-version v1.49 -- --locked
+cargo build-sbf --manifest-path programs/cluster-4-governance/staking-manager/Cargo.toml --tools-version v1.49 -- --locked
 anchor idl build -p staking_manager -o target/idl/staking_manager.json
 
 for src in "$CARGO_TARGET_DIR/deploy/staking_manager.so" "$CARGO_TARGET_DIR/deploy/staking-manager.so"; do

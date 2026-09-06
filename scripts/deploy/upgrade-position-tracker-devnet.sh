@@ -25,7 +25,7 @@ if (( $(echo "$BALANCE < 15" | bc -l) )); then
 fi
 
 echo "Building position_tracker (Switchboard removed, optimized)..."
-cargo build-sbf --manifest-path programs/active/position-tracker/Cargo.toml --tools-version v1.49
+cargo build-sbf --manifest-path programs/cluster-1-clearing-core/position-tracker/Cargo.toml --tools-version v1.49
 
 # Copy from SBF build output
 SBF_OUT="$ROOT/target/sbpf-solana-solana/release/position_tracker.so"

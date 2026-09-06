@@ -3,15 +3,15 @@
  *
  * Boots an isolated `solana-test-validator` (local RPC only, no devnet), mints
  * fresh local USDC + NVSC (wSOL = native), funds an operator keypair, and
- * provisions a cold-start asset-engine registry exactly the way the devnet
- * cap-wire does (`e2e-asset-engine-capwire-devnet.ts`) but with the C_sys /
- * C_desk economics re-derived from the $10M reference pool.
+ * provisions a cold-start capacity-host asset registry exactly the way the
+ * devnet cap-wire does (`e2e-asset-engine-capwire-devnet.ts`) but with the
+ * C_sys / C_desk economics re-derived from the $10M reference pool.
  *
- * The asset-engine program keypair must exist at the canonical
- * `target/deploy/noviscia_asset_engine-keypair.json` (the committed, devnet-
- * provisioned ID). Mounting it with `--bpf-program` gives the sandbox the SAME
- * program address + same on-chain verification semantics as devnet, so the
- * Tier-1 ledger is byte-compatible with the pools the Tier-2 stream simulates.
+ * The capacity host binary (`target/deploy/noviscia_capacity.so`) is mounted
+ * with `--bpf-program JDsM18…BaBiMc:<noviscia_capacity.so>` using the address
+ * form, so the sandbox exposes the SAME canonical host address (`asset_*` +
+ * `risk_*` handlers) as devnet and the Tier-1 ledger is byte-compatible with
+ * the pools the Tier-2 stream simulates.
  *
  * Usage:
  *   npx tsx scripts/sandbox/provision-local-ledger.ts            # dry run
@@ -107,10 +107,13 @@ function usdCentsToRaw(usdCents: bigint, decimals: number, priceCentsPerUnit: bi
   return (usdCents * scale) / priceCentsPerUnit;
 }
 
-function loadProgramKeypair(): Keypair {
-  const p = path.join(process.cwd(), 'target/deploy/noviscia_asset_engine-keypair.json');
-  if (!fs.existsSync(p)) throw new Error(`Asset-engine keypair not found at ${p}`);
-  return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(p, 'utf-8'))));
+/** The capacity host binary path — mounted at the canonical host address. */
+const CAPACITY_SO = path.join(process.cwd(), 'target/deploy/noviscia_capacity.so');
+
+/** Resolve the canonical capacity host address (guards that the .so exists). */
+function loadProgramAddress(): PublicKey {
+  if (!fs.existsSync(CAPACITY_SO)) throw new Error(`Capacity host binary not found at ${CAPACITY_SO}`);
+  return ASSET_ENGINE_PROGRAM_ID;
 }
 
 function validatorAlive(): boolean {
@@ -122,9 +125,9 @@ function validatorAlive(): boolean {
   }
 }
 
-function startValidator(programKp: Keypair) {
+function startValidator(programId: PublicKey) {
   console.log('Starting isolated solana-test-validator…');
-  const progMount = `${programKp.publicKey.toBase58()}:${path.join(process.cwd(), 'target/deploy/noviscia_asset_engine.so')}`;
+  const progMount = `${programId.toBase58()}:${CAPACITY_SO}`;
   fs.mkdirSync(SANDBOX_DIR, { recursive: true });
   const proc = cp.spawn(
     'solana-test-validator',
@@ -194,17 +197,17 @@ async function readCreditLine(connection: Connection, institution: PublicKey) {
 }
 
 async function main() {
-  const programKp = loadProgramKeypair();
+  const programId = loadProgramAddress();
   const operator = ensureOperatorKeypair(SANDBOX_DIR);
 
   if (!validatorAlive()) {
-    startValidator(programKp);
+    startValidator(programId);
   }
   const connection = new Connection(LOCAL_RPC, 'confirmed');
 
   console.log(`RPC:        ${LOCAL_RPC}`);
   console.log(`mode:       ${APPLY ? 'APPLY (sends transaction)' : 'DRY-RUN (validator up, nothing sent)'}${UP_ONLY ? ' / UP-ONLY' : ''}`);
-  console.log(`program:    ${programKp.publicKey.toBase58()}`);
+  console.log(`program:    ${programId.toBase58()}`);
   console.log(`operator:   ${operator.publicKey.toBase58()}`);
 
   // 1. Airdrop the operator.
@@ -276,8 +279,8 @@ async function main() {
     if (!registry) {
       console.log('\nStep A — initialize registry (three-tier = operator, cold start):');
       await sendTx(
-        'initialize(wsol/usdc/nvsc)',
-        buildInitializeIx(programKp.publicKey, {
+        'asset_initialize(wsol/usdc/nvsc)',
+        buildInitializeIx(programId, {
           upgradeAuthority: operator.publicKey,
           breakerAuthority: operator.publicKey,
           riskCommitteeAuthority: operator.publicKey,
@@ -294,7 +297,7 @@ async function main() {
       const pool = await readPool(connection, a.mint);
       if (!pool) {
         const desired = usdCentsToRaw(C_desk, a.profile.decimals, a.priceCents);
-        await sendTx(`register_asset(${a.symbol}) maxCapacity=${desired}`, buildRegisterAssetIx(programKp.publicKey, operator.publicKey, a.mint, { ...a.profile, maxCapacity: desired }), [operator]);
+        await sendTx(`asset_register(${a.symbol}) maxCapacity=${desired}`, buildRegisterAssetIx(programId, operator.publicKey, a.mint, { ...a.profile, maxCapacity: desired }), [operator]);
       }
     }
 
@@ -302,14 +305,14 @@ async function main() {
     for (const a of assets) {
       const pool = await readPool(connection, a.mint);
       if (pool && !pool.supported) {
-        await sendTx(`set_asset_support(${a.symbol}, true)`, buildSetAssetSupportIx(programKp.publicKey, operator.publicKey, a.mint, true), [operator]);
+        await sendTx(`asset_set_support(${a.symbol}, true)`, buildSetAssetSupportIx(programId, operator.publicKey, a.mint, true), [operator]);
       }
     }
 
     console.log('\nStep D — aggregate credit line = C_sys (Tier-2):');
     const creditLine = await readCreditLine(connection, operator.publicKey);
     if (!creditLine) {
-      await sendTx(`initialize_credit_line(operator) C_sys=${desiredLimit}`, buildInitializeCreditLineIx(programKp.publicKey, operator.publicKey, operator.publicKey, desiredLimit), [operator]);
+      await sendTx(`asset_initialize_credit_line(operator) C_sys=${desiredLimit}`, buildInitializeCreditLineIx(programId, operator.publicKey, operator.publicKey, desiredLimit), [operator]);
     }
 
     console.log('\nStep E — enforce per-asset C_desk (Tier-2):');
@@ -317,7 +320,7 @@ async function main() {
       const pool = await readPool(connection, a.mint);
       const desired = usdCentsToRaw(C_desk, a.profile.decimals, a.priceCents);
       if (pool && pool.maxCapacity !== desired) {
-        await sendTx(`update_asset_params(${a.symbol}) maxCapacity=${desired}`, buildUpdateAssetParamsIx(programKp.publicKey, operator.publicKey, a.mint, { ...a.profile, maxCapacity: desired }), [operator]);
+        await sendTx(`asset_update_params(${a.symbol}) maxCapacity=${desired}`, buildUpdateAssetParamsIx(programId, operator.publicKey, a.mint, { ...a.profile, maxCapacity: desired }), [operator]);
       }
     }
   }

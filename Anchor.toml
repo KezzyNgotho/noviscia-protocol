@@ -3,26 +3,30 @@ anchor_version = "0.31.1"
 
 [workspace]
 members = [
-    "programs/later/escrow",
-    "programs/active/nv-usdc-vault",
-    "programs/active/staking-manager",
-    "programs/active/yield-distributor",
-    "programs/active/position-tracker",
-    "programs/active/noviscia-clearing",
-    "programs/active/netting-engine",
-    "programs/active/liquidation-vault",
-    "programs/active/clearing-registry",
-    "programs/active/token-nvsc",
-    "programs/active/yield-router",
-    "programs/active/jit-risk",
-    "programs/active/sovereign-netting",
-    "programs/active/ve-nvs",
-    "programs/active/gateway-auction",
-    "programs/active/noviscia-credit-line",
-    "programs/later/burn-engine",
-    "programs/later/spot-dex",
-    "programs/later/bug-bounty",
-    "programs/later/protocol-lp-vault",
+    "programs/cluster-4-governance/escrow",
+    "programs/cluster-3-vault-registry/nv-usdc-vault",
+    "programs/cluster-4-governance/staking-manager",
+    "programs/cluster-4-governance/yield-distributor",
+    "programs/cluster-1-clearing-core/position-tracker",
+    "programs/cluster-1-clearing-core/noviscia-clearing",
+    "programs/cluster-1-clearing-core/netting-engine",
+    "programs/cluster-4-governance/liquidation-vault",
+    "programs/cluster-1-clearing-core/clearing-registry",
+    "programs/cluster-4-governance/token-nvsc",
+    "programs/cluster-2-tvv-gate/yield-router",
+    "programs/cluster-2-tvv-gate/jit-risk",
+    "programs/cluster-1-clearing-core/sovereign-netting",
+    "programs/cluster-4-governance/ve-nvs",
+    "programs/cluster-2-tvv-gate/gateway-auction",
+    "programs/cluster-1-clearing-core/noviscia-credit-line",
+    "programs/cluster-3-vault-registry/noviscia-permissioned-pool",
+    "programs/cluster-2-tvv-gate/noviscia-capacity",
+    "programs/cluster-3-vault-registry/noviscia-tranche-vault",
+    "programs/cluster-2-tvv-gate/noviscia-asset-engine",
+    "programs/cluster-4-governance/burn-engine",
+    "programs/cluster-4-governance/spot-dex",
+    "programs/cluster-4-governance/bug-bounty",
+    "programs/cluster-4-governance/protocol-lp-vault",
 ]
 
 [features]
@@ -38,44 +42,50 @@ burn_engine = "nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id"
 escrow = "2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ"
 nv_usdc_vault = "CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC"
 position_tracker = "6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws"
-staking_manager = "HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb"
-token_nvsc = "HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT"
-yield_distributor = "CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw"
 noviscia_clearing = "GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe"
-liquidation_vault = "Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz"
 protocol_lp_vault = "2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd"
 bug_bounty = "A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK"
 netting_engine = "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56"
+noviscia_capacity = "JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc"
 yield_router = "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4"
 clearing_registry = "Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo"
 spot_dex = "8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN"
-jit_risk = "3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh"
-sovereign_netting = "9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk"
-ve_nvs = "ACJRBrD3h7RHP9UWWffv7Hw8SLFeeJHAH5P31eHnwj5j"
 gateway_auction = "HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR"
-noviscia_credit_line = "8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg"
+# C4 LOCKED (phase-1 sandbox no-upgrade — removed from deploy map, see docs/FROZEN.md §4):
+# staking_manager = "HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb"
+# token_nvsc = "HSaBJHaGa4Hiv1uBYPHQC4ijmnh8237a5LzM8Lyuz1YT"
+# yield_distributor = "CrN1o75FGwcSo6ted7eKxw2kYgkaXDVeWmUaTZCTsLtw"
+# liquidation_vault = "Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz"
+# ve_nvs = "ACJRBrD3h7RHP9UWWffv7Hw8SLFeeJHAH5P31eHnwj5j"
+# FOLDED (Stage 2/3 — removed from deploy map, see docs/FROZEN.md):
+# jit_risk = "3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh"
+# sovereign_netting = "9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk"
+# noviscia_credit_line = "8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg"
 
 [programs.localnet]
 burn_engine = "Fjv2sL1UN5vndcYJLjUjFR6NwFe5PASwrWT46jSVWTti"
 escrow = "2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ"
 nv_usdc_vault = "CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC"
 position_tracker = "6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws"
-staking_manager = "HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb"
-token_nvsc = "3RXGctRZX25dcVHAdgmVuVKnPUsB1NSeQppLSn8hfaNK"
-yield_distributor = "Bg7Es69512z86iXNBnA9nqQJDyuyf6DhQqTty1rdsW7"
 noviscia_clearing = "GtTJWLa6MXjZoNucGHWVnE9LpZTw6Dsr5K1gxpM1Q4fe"
-liquidation_vault = "Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz"
 protocol_lp_vault = "2WUt24rRNWsdi8sE56y74b7rJGgKbxSBsu7ntDkGAJkd"
 bug_bounty = "A8Uk9WuHumfiuuZAHt4y3t3sXmT3cpXVXaFMhpDinjSK"
 netting_engine = "68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56"
+noviscia_capacity = "JDsM18uSZ1UJEP49XdKSjumdftpuZ8cJbpb8CkBaBiMc"
 yield_router = "FKaAPPid8B6hUme4w8bFCDzmvE6DpekXpeiR1sgyLwB4"
 clearing_registry = "Hg5QvSsnb22gHexUTnvvfff3EJZxWnsFKRM8bZ8n7Jmo"
 spot_dex = "8C4try8mEHukT4Z99Dpi3x1rNaBYhXms81uoU47JwLiN"
-jit_risk = "3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh"
-sovereign_netting = "9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk"
-ve_nvs = "ACJRBrD3h7RHP9UWWffv7Hw8SLFeeJHAH5P31eHnwj5j"
 gateway_auction = "HQ26VTfoBVmGFY1JsFp5HmMT3rjLNoLJH6zurm8TL9xR"
-noviscia_credit_line = "8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg"
+# C4 LOCKED (phase-1 sandbox no-upgrade — removed from deploy map, see docs/FROZEN.md §4):
+# staking_manager = "HjxcKV51A7jxE2iqMCDY7EvWFL9XsheuM43DamWGabqb"
+# token_nvsc = "3RXGctRZX25dcVHAdgmVuVKnPUsB1NSeQppLSn8hfaNK"
+# yield_distributor = "Bg7Es69512z86iXNBnA9nqQJDyuyf6DhQqTty1rdsW7"
+# liquidation_vault = "Cwma3FfMKhoLkgfrGYgErVPoFWEtHpx7DNc4wArpRHBz"
+# ve_nvs = "ACJRBrD3h7RHP9UWWffv7Hw8SLFeeJHAH5P31eHnwj5j"
+# FOLDED (Stage 2/3 — removed from deploy map, see docs/FROZEN.md):
+# jit_risk = "3w9GrHBXpMNSc3P3kBWmHwkhEr1u5FBQrTiD4k3NAXwh"
+# sovereign_netting = "9YxL2Gk3cphCjxeKgfj2cnY4wCBDzej3L83jLGJ52Dyk"
+# noviscia_credit_line = "8usJu6agjifCXYwSsRVoMWqm22h2HUSfebw1zEEHAMYg"
 
 [programs.mainnet]
 # Replace ALL placeholder IDs with real mainnet deployment addresses before mainnet launch.
@@ -84,16 +94,13 @@ burn_engine = "11111111111111111111111111111111"
 escrow = "11111111111111111111111111111111"
 nv_usdc_vault = "11111111111111111111111111111111"
 position_tracker = "11111111111111111111111111111111"
-staking_manager = "11111111111111111111111111111111"
-token_nvsc = "11111111111111111111111111111111"
-yield_distributor = "11111111111111111111111111111111"
 noviscia_clearing = "11111111111111111111111111111111"
-liquidation_vault = "11111111111111111111111111111111"
 protocol_lp_vault = "11111111111111111111111111111111"
 bug_bounty = "11111111111111111111111111111111"
 clearing_registry = "11111111111111111111111111111111"
+netting_engine = "11111111111111111111111111111111"
+noviscia_capacity = "11111111111111111111111111111111"
 spot_dex = "11111111111111111111111111111111"
-sovereign_netting = "11111111111111111111111111111111"
 
 [scripts]
 test = "echo 'Use cargo test --workspace for Rust tests and npm test in app/web for frontend tests'"
