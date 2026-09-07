@@ -79,6 +79,7 @@
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | 96 | Live (mainnet = placeholder) | Deploy & maintenance: frontend, programs, services, troubleshooting |
 | [`E2E_TEST.md`](E2E_TEST.md) | 55 | Live | Scripted e2e proofs (`scripts/e2e/*`) + UI flow checklist |
 | [`SANDBOX_HUB.md`](SANDBOX_HUB.md) | — | Live (Module 4) | 3-tier sandbox: local ledger, mock gRPC stream, Jito bundle emulator + 4-test institutional verification + Module 4 day-stepped settlement ledger (no-drain proofs) |
+| [`VDY.md`](VDY.md) | — | Pinned | Velocity-Driven Yield fact-sheet: per-slot micro-premium ($0.004566 exact), 80/20 net split, annual finality, pitch corrections (decimal place, $0.004565 drift, net-vs-gross wording) |
 | [`INSTITUTIONAL_ROLLOUT.md`](INSTITUTIONAL_ROLLOUT.md) | — | Live (checklist closed) | Three-tier frontend architecture + 11-point institutional system checklist (PASS/PARTIAL/GAP + acceptance commands) |
 
 ## 6. Integration surfaces

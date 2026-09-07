@@ -1,6 +1,16 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { referenceTvvParams, deskCapUsdCents, type TvvParams } from './economics';
+import {
+  referenceTvvParams,
+  deskCapUsdCents,
+  type TvvParams,
+  mulDiv,
+  ECONOMICS_BPS,
+  MICRO_DOLLARS_PER_CENT,
+  totalSlotsPerYear,
+} from './economics';
+import { BASE_RATE_BPS } from './assumptions';
+import { slotPremiumScalingFactor } from './velocity';
 import {
   REF_MISMATCH_BPS,
   REF_TIP_SHARE_BPS,
@@ -32,6 +42,27 @@ describe('feasibility (TVV Module 3 — borrower economics)', () => {
       deskSlotTollMicroUsd(p, USD_CENTS(750_000)) >= 2_282n &&
         deskSlotTollMicroUsd(p, USD_CENTS(750_000)) <= 2_283n,
     );
+  });
+
+  it('the slot toll is the 24% facility rate scaled to a 400ms slot (VDY equivalence)', () => {
+    const p = referenceTvvParams();
+    const desk = USD_CENTS(1_500_000);
+    const slots = totalSlotsPerYear();
+    // Per-slot premium = desk × R_base / S_total = 24.0% annualized ÷ 78,840,000
+    // slots. As a fraction of the borrowed principal this is 3.044140030e-9 —
+    // exactly the Module-2 F_slot velocity premium factor.
+    const toll = deskSlotTollMicroUsd(p, desk);
+    // Reconstruct from first principles: 24% of $1.5M in µUSD ÷ slots/yr.
+    const fromRate = mulDiv(mulDiv(desk, BASE_RATE_BPS, ECONOMICS_BPS), MICRO_DOLLARS_PER_CENT, slots);
+    assert.equal(toll, fromRate);
+    assert.equal(toll, 4_566n); // = $0.004566 (marketing's "$0.004565" rounds down)
+    // F_slot q1e18: fraction ×1e18. The analytic velocity factor uses the exact
+    // rational (24% ÷ 78,840,000) while the toll path floors at the µUSD level,
+    // so the two agree within 0.01% relative (∈ 3.0440e-9 … 3.0441e-9).
+    const f = slotPremiumScalingFactor(p);
+    const q1e18 = mulDiv(toll, 1_000_000_000_000_000_000n, desk * MICRO_DOLLARS_PER_CENT);
+    const diff = q1e18 > f ? q1e18 - f : f - q1e18;
+    assert.ok(mulDiv(diff, 10_000n, f) <= 100n, `q1e18=${q1e18} f=${f}`);
   });
 
   it('borrower P&L on the reference route: $2,250 gross, $1,350 tip, exact $900 net', () => {
