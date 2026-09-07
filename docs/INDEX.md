@@ -78,7 +78,7 @@
 | [`DEVNET.md`](DEVNET.md) | 322 | Live | Devnet runbook: program IDs, deploy flow, troubleshooting, RPC, e2e verification, cap-wiring |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | 96 | Live (mainnet = placeholder) | Deploy & maintenance: frontend, programs, services, troubleshooting |
 | [`E2E_TEST.md`](E2E_TEST.md) | 55 | Live | Scripted e2e proofs (`scripts/e2e/*`) + UI flow checklist |
-| [`SANDBOX_HUB.md`](SANDBOX_HUB.md) | — | Live (Module 3) | 3-tier sandbox: local ledger, mock gRPC stream, Jito bundle emulator + 4-test institutional verification |
+| [`SANDBOX_HUB.md`](SANDBOX_HUB.md) | — | Live (Module 4) | 3-tier sandbox: local ledger, mock gRPC stream, Jito bundle emulator + 4-test institutional verification + Module 4 day-stepped settlement ledger (no-drain proofs) |
 | [`INSTITUTIONAL_ROLLOUT.md`](INSTITUTIONAL_ROLLOUT.md) | — | Live (checklist closed) | Three-tier frontend architecture + 11-point institutional system checklist (PASS/PARTIAL/GAP + acceptance commands) |
 
 ## 6. Integration surfaces

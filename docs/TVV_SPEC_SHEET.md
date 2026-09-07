@@ -277,6 +277,7 @@ block (B36–B41) is the borrower-side proof from §5b, so an Excel reviewer see
 
 - Tranche split, waterfall, circuit breaker (the other side of the sheet): [`QUANTIFIED_RISK_PACK.md`](QUANTIFIED_RISK_PACK.md)
 - Borrower feasibility (Module 3, §5b) + independent Python ledger: `sdk/src/feasibility.ts`, `scripts/financial-model/verify-real-yield.py`
+- Dynamic settlement ledger (Module 4) — day-stepped replay + no-drain proofs: `sdk/src/ledger.ts`, `scripts/financial-model/verify-settlement-ledger.py`, [`SANDBOX_HUB.md`](SANDBOX_HUB.md)
 - Full TVV financial engineering & risk register: [`TVV_FINANCIAL_ENGINEERING.md`](TVV_FINANCIAL_ENGINEERING.md)
 - JIT time-slice marketplace, TVV ↔ CCP one-balance-sheet truth: [`TVV_CCP_INTEGRATION_AUDIT.md`](TVV_CCP_INTEGRATION_AUDIT.md) 
 - Bundle economics & tip handling: [`PARTICIPANT_ACCESS.md`](PARTICIPANT_ACCESS.md), [`sdk/README.md`](../sdk/README.md)

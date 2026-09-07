@@ -5,7 +5,7 @@
 > real program binaries and the production gRPC schema, without ever touching devnet fees, MEV
 > land mines, or mainnet keys.
 >
-> **Status:** Live (Module 3) · **Last updated:** September 2026
+> **Status:** Live (Module 4) · **Last updated:** September 2026
 
 ---
 
@@ -180,7 +180,73 @@ End-to-end proof used for acceptance: `cargo test` (24 tests, incl. the spec bun
 lifecycle + control-plane math + a base58 round-trip), `cargo run --example spec_smoke`
 against the live binary, and the legacy e2e harness (§5) still passing against `:8898`.
 
----
+## 7. Module 4 — the day-stepped settlement ledger (no-drain proof)
+
+The three tiers exercise the *plumbing*. The settlement ledger (`sdk/src/ledger.ts`,
+bigint-only, no floats) proves the *money mechanics* with a dynamic, day-stepped replay of
+every clearing batch — answering, in one deterministic simulation: **how yield forms, how
+HFT desks interact and deploy capital, what the 24h window does, how the fee split lands,
+and how money can (and cannot) leave Noviscia.**
+
+### What it replays
+
+Each simulated day settles through the documented waterfall in exact cents:
+
+1. **Toll accrual** — every desk's per-slot toll (Module 3 `deskSlotTollMicroUsd`) × the
+   day's landed slots (172,800 of 216,000 at 80% Jito eligibility) is floored to cents —
+   this is the 24h clearing batch.
+2. **Validator tip** — 1.5% of gross (the Jito auction share).
+3. **Infrastructure** — $50,000/yr, charged every day whether or not tolls cover it.
+4. **Net → DIF → LP** — DIF 20%, LP 80%.
+5. **Senior hurdle first** — 4.50%/365 ($863.01/day) drawn before anything reaches junior;
+   junior gets the residual (sandwich).
+6. **Breach path** — a desk that stops settling at the 24h window + 2h grace collapses
+   through L1 collateral (30%) → LoC at the 25% haircut → DIF → junior → senior.
+7. **Hard lock** — cumulative junior drain ≥ 50% trips the circuit breaker and freezes
+   further settlement (matches `hardLockTriggered`).
+
+### The no-drain proofs it pins (checked every single day)
+
+- **C1 conservation** — every cent is accounted: initial + Σtolls = balances + tips +
+  infra + covered losses + uncovered losses, exactly, day by day.
+- **C2 caps** — no desk can borrow past its per-desk / systemic cap.
+- **C3 senior safety** — senior principal cannot be impaired while DIF or junior tier
+  capital still exists.
+- **Break-even reality** — if tolls can't cover the infrastructure bill, the shortfall is
+  **funded from protected layers** (DIF → junior → senior), never created out of nothing.
+
+### Headlines it reproduces
+
+- Reference year closes to the Module-1 workbook within 1%: ≈ $460,800 gross →
+  ≈ $403,888 net → ≈ $80,777.60 DIF → ≈ $323,110.40 LP (senior $315,000 + junior
+  $8,110.40).
+- **Yield is volume-backed, not inflationary**: senior hurdle and junior residual are paid
+  only from realized net revenue; a "payout drought" withholds them rather than minting.
+- **Money leaves Noviscia via exactly three doors**: validator tips, the operating bill,
+  and a *realized* default loss — nothing else (the debug runaway) can drain the pool.
+- Four saturating defaults drain > 50% of junior and the breaker freezes the pool with
+  zero uncovered loss; senior principal is never impaired.
+
+### The four anchored scenarios
+
+| Scenario | Schedule | What it proves |
+|---|---|---|
+| Reference | desk-a 100% + desk-b 60% ($2.4M μ) | closes to the audited sheet within 1%, no violations, 365 days |
+| Full utilization | 4 max desks ($6M μ) | junior APY ≈ 18.4% at full stack, still no violations |
+| Starving | 1 desk at 1% of cap | ops shortfall funded from layers; senior principal untouched |
+| Breaching | non-settling desk + 4 saturating | L1→L5 cascade, zero uncovered loss, breaker trips at 50% junior drain |
+
+Run the twin suites and the independent Python verifier:
+
+```bash
+node --import tsx --test src/*.test.ts        # 170 tests, all green
+python3 scripts/financial-model/verify-settlement-ledger.py   # integer replay, exit 0
+```
+
+`verify-settlement-ledger.py` is a deliberate zero-dependency, integer-only recomputation
+that shares no code with the TS naive ledger: it re-derives the day tolls, the fee split,
+the C1 identity, the ops-shortfall rule and the L1/L2 breach mechanics from first
+principles, and pins the workbook numbers.
 
 ## 3. Reference implementations
 
@@ -194,6 +260,8 @@ against the live binary, and the legacy e2e harness (§5) still passing against 
 | Live spec smoke client | `services/sandbox-hub/examples/spec_smoke.rs` |
 | Tier-1 provisioning | `scripts/sandbox/provision-local-ledger.ts` |
 | Verification session | `scripts/sandbox/e2e-sandbox-verification.ts` |
+| Day-stepped settlement ledger | `sdk/src/ledger.ts` + `src/ledger.test.ts` |
+| Ledger Python verifier | `scripts/financial-model/verify-settlement-ledger.py` |
 
 `posture.rs`, `sandboxClock.ts` and the harness must agree **to the slot**; both are pinned by
 tests (`cargo test` in `services/sandbox-hub`; `src/sandboxClock.test.ts` in the SDK). The
