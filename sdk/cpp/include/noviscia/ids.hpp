@@ -10,6 +10,7 @@
 
 #include "noviscia/pubkey.hpp"
 
+#include <cstddef>
 #include <cstdint>
 
 namespace noviscia {
@@ -28,10 +29,15 @@ inline const Pubkey LEGACY_MARKETPLACE = [] { Pubkey k; from_base58("3w9GrHBXpMN
 
 inline const Pubkey USDC_MINT = [] { Pubkey k; from_base58("Cx2bfKM7hcpnreSZxiDaN8q4Ca9i5ViCLxqRTs12JhS5", k); return k; }();
 inline const Pubkey WSOL_MINT = [] { Pubkey k; from_base58("So11111111111111111111111111111111111111112", k); return k; }();
+// NVSC devnet governance token mint.
+inline const Pubkey NVSC_MINT = [] { Pubkey k; from_base58("4BXiDT5o9J6aQdJNd36QE1L2YvQqedEKSP1wuQdSgJkg", k); return k; }();
+// nvscUSDC devnet yield-bearing share token mint.
+inline const Pubkey NVSCUSDC_MINT = [] { Pubkey k; from_base58("2TmaUey4Hh2om1kFR77Vw1RDh8H69qcW6UAACVidJeVk", k); return k; }();
 
 // Solana-native programs referenced by instruction builders.
 inline const Pubkey SYSTEM_PROGRAM = [] { Pubkey k; from_base58("11111111111111111111111111111111", k); return k; }();
 inline const Pubkey TOKEN_PROGRAM = [] { Pubkey k; from_base58("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", k); return k; }();
+inline const Pubkey RENT_PROGRAM = [] { Pubkey k; from_base58("SysvarRent111111111111111111111111111111111", k); return k; }();
 
 }  // namespace ids
 
@@ -51,14 +57,30 @@ inline constexpr std::string_view ASSET_FEES = "asset-fees";
 inline constexpr std::string_view ASSET_AUTHORITY = "asset-authority";
 inline constexpr std::string_view CREDIT_LINE = "credit-line";
 inline constexpr std::string_view DESK_POSITION = "desk-position";
+inline constexpr std::string_view ASSET_LP_MINT = "asset-lp-mint";
+inline constexpr std::string_view ASSET_LP_POSITION = "asset-lp-position";
 }  // namespace seeds
 
 // Numeric constants mirroring the on-chain programs.
 constexpr std::uint64_t BPS = 10'000;
 constexpr std::uint64_t BPS_U128 = 10'000;
-constexpr std::uint64_t WINDOW_SLOTS = 216'000;  // ~24h @ 400ms slots
-constexpr std::uint64_t GRACE_SLOTS = 18'000;    // ~2h late-fee grace
+constexpr std::uint64_t WAD = 1'000'000'000'000;  // per-slot premium rate (jit-risk)
+constexpr std::uint64_t WINDOW_SLOTS = 216'000;   // ~24h @ 400ms slots
+constexpr std::uint64_t GRACE_SLOTS = 18'000;     // ~2h late-fee grace
+constexpr std::uint64_t LATE_FEE_RATE_BPS = 50;   // micro-bps per overdue slot
+constexpr std::uint64_t LATE_FEE_BASE = 10'000;   // late-fee meter denominator
+constexpr std::uint64_t LP_PRICE_SCALE = 1'000'000;   // LP share-price scaling
 // Per-MM credit ceiling cap = C_desk ($1.5M).
 constexpr std::uint64_t MAX_MM_CEILING_USDC = 1'500'000'000'000;
+// Maximum merkle tree depth (supports up to 2^20 ≈ 1M verified clients).
+constexpr std::size_t MAX_MERKLE_DEPTH = 20;
+
+// jit-risk MM lifecycle + slice-receipt status enums.
+constexpr std::uint8_t MM_STATUS_ACTIVE = 1;
+constexpr std::uint8_t MM_STATUS_SUSPENDED = 2;
+constexpr std::uint8_t SLICE_RESERVED = 0;
+constexpr std::uint8_t SLICE_SETTLED = 1;
+constexpr std::uint8_t SLICE_DEFAULTED = 2;
+constexpr std::uint8_t SLICE_REAPED = 3;
 
 }  // namespace noviscia

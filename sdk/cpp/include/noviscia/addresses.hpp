@@ -63,6 +63,9 @@ Pda asset_authority(const Pubkey& mint, const Pubkey& program_id = ids::HOST);
 Pda credit_line(const Pubkey& institution, const Pubkey& program_id = ids::HOST);
 Pda desk_position(const Pubkey& institution, const Pubkey& mint,
                   const Pubkey& program_id = ids::HOST);
+Pda asset_lp_mint(const Pubkey& mint, const Pubkey& program_id = ids::HOST);
+Pda asset_lp_position(const Pubkey& mint, const Pubkey& lp,
+                      const Pubkey& program_id = ids::HOST);
 
 }  // namespace addresses
 }  // namespace noviscia

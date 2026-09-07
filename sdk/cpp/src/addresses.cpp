@@ -38,6 +38,12 @@ Pda credit_line(const Pubkey& institution, const Pubkey& program_id) {
 Pda desk_position(const Pubkey& institution, const Pubkey& mint, const Pubkey& program_id) {
     return derive(program_id, seeds::DESK_POSITION, institution, mint);
 }
+Pda asset_lp_mint(const Pubkey& mint, const Pubkey& program_id) {
+    return derive(program_id, seeds::ASSET_LP_MINT, mint);
+}
+Pda asset_lp_position(const Pubkey& mint, const Pubkey& lp, const Pubkey& program_id) {
+    return derive(program_id, seeds::ASSET_LP_POSITION, mint, lp);
+}
 
 }  // namespace addresses
 }  // namespace noviscia

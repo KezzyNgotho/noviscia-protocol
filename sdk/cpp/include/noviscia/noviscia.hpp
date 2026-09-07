@@ -4,9 +4,11 @@
 #pragma once
 
 #include "noviscia/addresses.hpp"
+#include "noviscia/compute.hpp"
 #include "noviscia/curve25519.hpp"
 #include "noviscia/hash.hpp"
 #include "noviscia/ids.hpp"
 #include "noviscia/instruction.hpp"
 #include "noviscia/merkle.hpp"
 #include "noviscia/pubkey.hpp"
+#include "noviscia/types.hpp"
