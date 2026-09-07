@@ -1,6 +1,6 @@
 # Audit Gap Analysis — Current vs Architecture Graph
 
-> **Status:** Living; refreshed after each protocol delivery. **Last updated:** September 5, 2026.
+> **Status:** Living; refreshed after each protocol delivery. **Last updated:** September 7, 2026.
 
 This audit-gap note lists missing pieces or partial areas relative to the architecture graph
 and recommended priorities. It is refreshed after each protocol delivery. Items are tracked to
@@ -97,6 +97,19 @@ the commit that closed them where applicable.
     (4 new tests; `noviscia-clearing` now 48 green). Instruction-level batch CPI remains covered
     only at the unit level; an end-to-end program test of the sweep is a follow-up nice-to-have.
 
+12. **C++ SDK full parity vs the Rust twin (byte-verified)**
+    - `sdk/cpp/` now covers the full institutional surface — capacity
+      `initialize`…`withdraw_treasury` + asset-engine `asset_initialize`…`asset_withdraw_fees` —
+      with every builder rendering the byte-identical account order, signer/writable flags, and
+      borsh payload of its Rust twin (30/30, cross-checked via dump harness against the Rust
+      builders). Includes LP PDAs (`asset_lp_mint` / `asset_lp_position`), keccak Merkle leaves,
+      U128 math mirroring the Rust formulas, and numeric constants at `noviscia::` scope. Regression
+      caught during cross-checks and fixed: `purchase_capacity` client / `slot_ledger` were readonly
+      → writable (new regression checks). Commit `b618431`; 199 C++ checks green.
+    - Two **npm-twin divergences** documented: npm `asset_initialize` hashes `"asset_initialize"`
+      (on-chain / C++ / Rust use `"initialize"`) and npm `asset_register` swaps `asset_lp_mint` /
+      `asset_authority`. C++ and Rust follow the on-chain layout; see current-state gap 7.
+
 ## Open gaps (from the legacy CCP suite)
 
 1. **Gateway production auth** — `sdk/gateway` supports WalletAdapter signing + sandbox, but
@@ -131,11 +144,15 @@ the commit that closed them where applicable.
    SDK constant) and the shared public engine rate-limits txn-requests to 1/s per IP without an API
    key (HTTP 429). The client must rotate tips live and back off; see sdk README § Jito.
 6. **Derived-cap → on-chain wiring** — **CLOSED**: the quantified economics module derives reference
-   caps (`$6M` aggregate / `$1.5M` desk), and `scripts/e2e/e2e-asset-engine-capwire-devnet.ts`
-   provisioned them on devnet at `5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb` (cold-start
-   `initialize` + `register_asset` + Tier-2 `update_credit_limit` / per-asset `update_asset_params`
-   `max_capacity`); 15/15 check pass, on-chain `C_sys` = `$6,000,000`, per-asset `C_desk` exact.
-   See `docs/DEVNET.md` § "Asset engine cap-wiring".
+    caps (`$6M` aggregate / `$1.5M` desk), and `scripts/e2e/e2e-asset-engine-capwire-devnet.ts`
+    provisioned them on devnet at `5qpohgfMvV89oRJqcV7MrBxJJ95i7TgZ9VvUNdyZrMKb` (cold-start
+    `initialize` + `register_asset` + Tier-2 `update_credit_limit` / per-asset `update_asset_params`
+    `max_capacity`); 15/15 check pass, on-chain `C_sys` = `$6,000,000`, per-asset `C_desk` exact.
+    See `docs/DEVNET.md` § "Asset engine cap-wiring".
+7. **npm twin encoding divergences** — the published `@noviscia/sdk` (0.6.0) `asset_initialize`
+    hashes `"asset_initialize"` (on-chain / C++ / Rust use `"initialize"`) and `asset_register`
+    swaps `asset_lp_mint`/`asset_authority`. Both the C++ and Rust twins are already correct; a
+    corrected npm `0.6.x` (builder fixes + jest expectation updates) is pending.
 
 ## Recommended priorities
 

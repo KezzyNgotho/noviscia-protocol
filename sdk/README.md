@@ -2,6 +2,9 @@
 
 Universal developer SDK for the **Noviscia** clearing-house protocol on Solana.
 
+In-lockstep twins ship in this repo: `sdk/rust/` (Rust crates, on crates.io) and `sdk/cpp/` (C++
+twin, byte-verified against the Rust builders — see `sdk/cpp/README.md`).
+
 ## Features
 
 - **16 program IDs** — env-overridable, with PDA derivation for every program

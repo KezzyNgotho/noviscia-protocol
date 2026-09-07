@@ -17,7 +17,7 @@
 | New engineer / contributor | `README.md` → `ARCHITECTURE.md` → `DOMAIN.md` (repo layout) → this index |
 | Auditor (on-chain) | `DOC_GAPS.md` → `ACCOUNT_MAP.md` → `ERROR_REFERENCE.md` → `THREAT_MODEL.md` → `AUDIT_PREP.md` |
 | Operator / on-call | `ONCALL_RUNBOOK.md` → `MONITORING.md` → `MAINNET_READINESS.md` → `DEPLOYMENT.md` → `DEVNET.md` |
-| Integrator (SDK / API) | `sdk/README.md` → `API.md` → `PARTICIPANT_ACCESS.md` |
+| Integrator (SDK / API) | `sdk/README.md` → `sdk/cpp/README.md` (C++ twin) → `API.md` → `PARTICIPANT_ACCESS.md` |
 | Governance / legal | `KEY_MANAGEMENT_GOVERNANCE.md` → `MASTER_LOAN_AGREEMENT.md` → `INSOLVENCY_POLICY.md` → `LEGAL.md` |
 | Product / investor | `NOVISCIA_NARRATIVE.md` → `WHITEPAPER.md` → `TOKENOMICS.md` → `QUANTIFIED_RISK_PACK.md` → `USER_GUIDE.md` |
 
@@ -87,6 +87,7 @@
 |---|---|---|---|
 | [`API.md`](API.md) | 239 | Live | REST / WS / TradingView API reference for the proxy + indexer surface |
 | [`PARTICIPANT_ACCESS.md`](PARTICIPANT_ACCESS.md) | 165 | v1.0 | Institutional access flows: HFT borrower (headless) vs LP (dashboard) |
+| [`sdk/cpp/README.md`](../sdk/cpp/README.md) | 68 | Live (byte parity) | C++ twin of the npm + Rust SDKs: 30/30 builders byte-verified vs Rust (account order + flags + payload), LP PDAs, keccak/U128 math, npm-divergence warnings |
 
 ## 7. Economics, risk & token model
 

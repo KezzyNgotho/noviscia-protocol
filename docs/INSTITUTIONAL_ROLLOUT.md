@@ -7,7 +7,7 @@
 > evidence, and its current status ahead of the Broady strategic review sessions.
 >
 > **Status:** Live · **Last updated:** September 2026 · **Verification basis:** commit
-> `d7ee9e7` + the checklist-closure work in this pass.
+> `d7ee9e7` + `b618431` (C++/Rust byte-parity) + the checklist-closure work in this pass.
 
 ---
 
@@ -47,7 +47,7 @@ retail LP never sees HFT tooling and a quant desk never sees yield-farming chrom
 |---|---|---|
 | Headless API documentation + simulation console | the official headless spec implemented in `services/sandbox-hub` (gRPC `:10000`, bundles `:10001`, control plane `:10002` — see `SANDBOX_HUB.md` §6) | implemented |
 | Token registration + `X-Noviscia-App-Token` credentials | developer shell `app/web/app/developer/api-tokens` — issue scoped (`read`/`write`/`admin`) tokens, revoke, one-time display; indexer enforces token-scoped authz (`INDEXER_AUTHZ=strict`) | **implemented** |
-| Rust/C++ open-source SDK crates | `sdk/` (TS) + `sdk/rust/` (Rust twin) + `sdk/cpp/` (C++ twin) | present (all three) |
+| Rust/C++ open-source SDK crates | `sdk/` (TS) + `sdk/rust/` (Rust twin) + `sdk/cpp/` (C++ twin) | present (all three); C++ twin byte-parity vs Rust 30/30 builders + 199 checks (`b618431`) |
 | Latency logs (<2ms stream proof) | `scripts/sandbox/e2e-sandbox-verification.ts` Test 2 (median < 2ms) | verified |
 | Jito Bundle Emulator metrics (zero capital leakage) | `emulator.rs` spec surface + 50,000-bundle test | verified |
 | Non-Jito leader safety switch | `sdk/src/ability.ts` `guardNonJitoLeaderSlot` / `NonJitoLeaderError` | **new** |

@@ -1,6 +1,6 @@
 # Noviscia Institutional Desk Onboarding — Devnet Runbook
 
-> **Status:** Live on devnet · **Last updated:** 2026-09-06
+> **Status:** Live on devnet · **Last updated:** 2026-09-07
 > **Target reader:** a quant/HFT desk (or an LP) that wants to test the institutional capacity
 > engine for real. This is the operational step-by-step — for *why* each gate exists, see
 > `PARTICIPANT_ACCESS.md` (borrower court), `TVV_FINANCIAL_ENGINEERING.md` (rental market),
@@ -309,7 +309,7 @@ cap-wiring" for the live numbers) if you hold a drawn window.
 | Sumsub/KYB on-ramp + Merkle proof | **Live + enforced**: `credit_line.kyc_merkle_root` posted on-chain (keccak sorted-pair tree), allocation verifies the proof → invalid proof rejected (`KycProofInvalid`) on EDBr devnet, runbook §15.6 | Sumsub UI/kid-the-key material is production scope; leaf schema is provider-agnostic (`keccak256(institution ‖ expiry)`) |
 | Desk whitelist / `register_mm` admission | Admission runbook + ceiling cap gate; `suspend_mm`/`activate_mm` live (deployed to `3w9Gr`, §15) | Per-desk KYB attestation (signing authority) is a committee/off-chain step; no trustless link from the credit line's `kyc_merkle_root` to a desk yet (honest note below) |
 | API tokens (`X-Noviscia-App-Token`) | Issuance + authz wiring live | Scoped reads enforced on the indexer; per-desk/admission-derived providers are production scope (`/developer/api-tokens`) |
-| C++ SDK crate | **Live (devnet parity)**: `@noviscia/sdk` TS twin mirrored at `sdk/cpp/` (PDA derivations, ed25519 off-curve checks, keccak Merkle leaves, instruction serialization; cross-verified against the npm twin's reference vectors) | mainnet scope |
+| C++ SDK crate | **Live (byte parity)**: `sdk/cpp/` full twin of the npm + Rust SDKs — 30/30 builders byte-verified against the **Rust** twin (account order + signer/writable flags + borsh payload): capacity `initialize`…`withdraw_treasury` and asset-engine `asset_initialize`…`asset_withdraw_fees`; LP PDAs, ed25519 off-curve checks, keccak Merkle leaves, U128 math — see `sdk/cpp/README.md` § Parity notes (incl. two known npm-twin divergences) | mainnet scope |
 
 Everything in §4–§13 is the **developer-grade** path that works on devnet today. Treat devnet
 results as engineering evidence, not deployment-readiness.
@@ -446,3 +446,4 @@ expiry)`. The expiry is *committed into the leaf*, so expiration is enforced by 
   `AE_INSTITUTION_KEYPAIR_PATH` for a distinct desk)
 - Contracts: `MASTER_LOAN_AGREEMENT.md` · `PARTICIPANT_ACCESS.md` · `TVV_FINANCIAL_ENGINEERING.md`
 - Keys/ops: `KEY_MANAGEMENT_GOVERNANCE.md` · `THREAT_MODEL.md` · `ONCALL_RUNBOOK.md`
+- C++ twin + parity notes: `sdk/cpp/README.md` (30/30 byte-parity vs Rust twin; known npm divergences)

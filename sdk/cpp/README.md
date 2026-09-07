@@ -1,5 +1,7 @@
 # Noviscia C++ SDK
 
+> **Status:** Live — byte-verified vs the Rust twin · **Last updated:** 2026-09-07
+
 C++ twin of the Noviscia institutional API surface, mirroring the npm SDK
 (`sdk/`) and the Rust SDKs (`sdk/rust/noviscia-*-sdk`). All three twins stay in
 lockstep with the on-chain seed layouts in `asset_engine.rs`, `jit_risk.rs` and
