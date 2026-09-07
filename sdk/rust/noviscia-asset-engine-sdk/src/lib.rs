@@ -34,6 +34,7 @@ pub use noviscia_types::{AssetEngineRegistry, AssetPool, DeskPosition, Instituti
 
 pub mod economics;
 pub mod velocity;
+pub mod feasibility;
 
 // ── Anchor Discriminator ───────────────────────────────────────────────────
 

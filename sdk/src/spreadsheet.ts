@@ -44,6 +44,13 @@
  *            B32 Senior LP Actual Net APY = B31/B29            = 4.5000%
  *            B33 Junior LP Annual Return  = B26-B31            =    8,110.40
  *            B34 Junior LP Actual Net APY = B33/B30            = 0.2703%
+ *
+ *   DESK FEAS  B36 Max-Desk Slot Toll ($)        = (B19*B9)/B16 = 0.004566 (exact)
+ *            B37 Max-Desk Annual Toll @ Full Landing = B36*B17  =  287,986.75
+ *            B38 Borrower Gross Spread @ 15 bps = B19*0.15%     =    2,250.00
+ *            B39 Jito MEV Tip @ 60%             = B38*0.60      =    1,350.00
+ *            B40 Borrower Net Above Toll        = B38-B39-toll¢ =      900.00
+ *            B41 Toll Share of Spread (ppb)     = B36/B38       =      2,029
  */
 import {
   ECONOMICS_BPS,
@@ -65,6 +72,16 @@ import {
   type TvvParams,
 } from './economics';
 import { perSlotRevenueUsdCents, formulaDReconciles } from './velocity';
+import {
+  REF_MISMATCH_BPS,
+  REF_TIP_SHARE_BPS,
+  maxDeskSlotTollMicroUsd,
+  borrowerGrossSpreadUsdCents,
+  borrowerTipUsdCents,
+  borrowerNetUsdCents,
+  tollShareOfGrossPpb,
+  deskAnnualTollUsdCentsAtFullLanding,
+} from './feasibility';
 
 /** The B2:B13 raw input cells (Parameters — the only cells a risk desk edits). */
 export interface SpreadsheetInputs {
@@ -145,6 +162,18 @@ export interface Workbook {
   b22PerSlotRouteUsd: number;
   /** True when the closed-form and per-slot routes reconcile (<1% drift). */
   reconciles: boolean;
+  /** B36 — max-desk slot toll in USD ($0.004566). */
+  b36: number;
+  /** B37 — max-desk annual toll at full Jito landing in USD ($287,986.75). */
+  b37: number;
+  /** B38 — borrower gross spread on the reference route ($2,250). */
+  b38: number;
+  /** B39 — aggressive Jito MEV tip (60%, $1,350). */
+  b39: number;
+  /** B40 — borrower net above the toll ($900.00). */
+  b40: number;
+  /** B41 — toll share of the gross spread in ppb (2,029 ≈ 0.0002%). */
+  b41: number;
 }
 
 /**
@@ -173,6 +202,16 @@ export function computeWorkbook(inputs: SpreadsheetInputs = DEFAULT_INPUTS): Wor
   const b33 = b26 - b31;
   const b34 = b33 / b30;
 
+  const b22PerSlotRouteUsd = centsToUsd(perSlotRevenueUsdCents(p));
+  const desk = deskCapUsdCents(p);
+  const deskGross = borrowerGrossSpreadUsdCents(desk, REF_MISMATCH_BPS);
+  const b36 = Number(maxDeskSlotTollMicroUsd(p)) / 1_000_000; // µUSD → $
+  const b37 = centsToUsd(deskAnnualTollUsdCentsAtFullLanding(p, desk));
+  const b38 = centsToUsd(deskGross);
+  const b39 = centsToUsd(borrowerTipUsdCents(deskGross, REF_TIP_SHARE_BPS));
+  const b40 = centsToUsd(borrowerNetUsdCents(p, desk, REF_MISMATCH_BPS, REF_TIP_SHARE_BPS));
+  const b41 = Number(tollShareOfGrossPpb(p, desk, REF_MISMATCH_BPS));
+
   return {
     b16: sTotal,
     b17: sElig,
@@ -191,8 +230,14 @@ export function computeWorkbook(inputs: SpreadsheetInputs = DEFAULT_INPUTS): Wor
     b32,
     b33,
     b34,
-    b22PerSlotRouteUsd: centsToUsd(perSlotRevenueUsdCents(p)),
+    b22PerSlotRouteUsd,
     reconciles: formulaDReconciles(p),
+    b36,
+    b37,
+    b38,
+    b39,
+    b40,
+    b41,
   };
 }
 
@@ -324,6 +369,13 @@ export function buildWorkbookCsv(inputs: SpreadsheetInputs = DEFAULT_INPUTS): st
     ...cell('TRANCHES', 'Senior LP Actual Net APY', 'B32', wb.b32, 'Percentage', 'Realized Senior yield'),
     ...cell('TRANCHES', 'Junior LP Annual Return ($)', 'B33', wb.b33, 'Currency', 'Upside to First-Loss Layer'),
     ...cell('TRANCHES', 'Junior LP Actual Net APY', 'B34', wb.b34, 'Percentage', 'Realized Junior LP yield'),
+    ['', '', '', '', '', ''],
+    ...cell('DESK FEASIBILITY', 'Max-Desk Slot Toll ($)', 'B36', wb.b36, 'Currency', 'Per-slot toll on a $1.5M desk (exact $0.004566)'),
+    ...cell('DESK FEASIBILITY', 'Max-Desk Annual Toll @ Full Landing ($)', 'B37', wb.b37, 'Currency', 'Single desk on every eligible slot'),
+    ...cell('DESK FEASIBILITY', 'Borrower Gross Spread @ 15 bps ($)', 'B38', wb.b38, 'Currency', 'Cross-DEX arb on $1.5M'),
+    ...cell('DESK FEASIBILITY', 'Jito MEV Tip @ 60% ($)', 'B39', wb.b39, 'Currency', 'Tip to win the bundle auction'),
+    ...cell('DESK FEASIBILITY', 'Borrower Net Above Toll ($)', 'B40', wb.b40, 'Currency', 'Gross − tip − toll (toll < 1¢)'),
+    ...cell('DESK FEASIBILITY', 'Toll Share of Spread (ppb)', 'B41', wb.b41, 'Integer', '≈ 0.0002% — the "imperceptible" claim'),
   ];
   return rows
     .map((r) => r.join(','))

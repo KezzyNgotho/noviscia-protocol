@@ -86,14 +86,25 @@ test('stress: 100% utilization lifts junior APY (formula-exact 18.43%)', () => {
   assert.ok(Math.abs(juniorApy - 18.4259) < 0.01, `juniorApy=${juniorApy}`);
 });
 
+test('B36–B41 — desk feasibility block (the borrower-side "real yield" proof)', () => {
+  const wb = referenceWorkbook();
+  assert.ok(Math.abs(wb.b36 - 0.004566) < 1e-9, `b36=${wb.b36}`); // exact max-desk toll
+  assert.ok(Math.abs(wb.b37 - 287_986.75) < 1e-9, `b37=${wb.b37}`); // full-landing annual
+  assert.equal(wb.b38, 2_250); // gross spread on $1.5M @ 15 bps
+  assert.equal(wb.b39, 1_350); // 60% Jito tip
+  assert.equal(wb.b40, 900); // net above the sub-cent toll
+  assert.equal(wb.b41, 2_029); // toll share of spread in ppb
+});
+
 test('buildWorkbookCsv emits the ready-to-paste sheet', () => {
   const csv = buildWorkbookCsv();
   assert.match(csv, /Total Pool Size \(P\),B2,10000000/);
   assert.match(csv, /Gross Annualized Revenue \(\$\),B22/);
   assert.match(csv, /Junior LP Actual Net APY,B34/);
+  assert.match(csv, /Desk Feasibility Block|Max-Desk Slot Toll \(\$\),B36/);
   assert.match(csv, /Value,Format,Description/);
   const lines = csv.split('\n');
-  assert.ok(lines.length >= 32);
+  assert.ok(lines.length >= 38);
 });
 
 test('inputsToParams round-trips the audited reference pool', () => {

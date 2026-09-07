@@ -87,6 +87,7 @@
 |---|---|---|---|
 | [`API.md`](API.md) | 239 | Live | REST / WS / TradingView API reference for the proxy + indexer surface |
 | [`PARTICIPANT_ACCESS.md`](PARTICIPANT_ACCESS.md) | 165 | v1.0 | Institutional access flows: HFT borrower (headless) vs LP (dashboard) |
+| [`HFT_DESK_PRIMER.md`](HFT_DESK_PRIMER.md) | — | Living | HFT-desk framing: Noviscia as an execution-velocity primitive (15× sizing, atomic shield, 5 ppm toll) — not a loan; numbers twin-pinned |
 | [`sdk/cpp/README.md`](../sdk/cpp/README.md) | 68 | Live (byte parity) | C++ twin of the npm + Rust SDKs: 30/30 builders byte-verified vs Rust (account order + flags + payload), LP PDAs, keccak/U128 math, npm-divergence warnings |
 
 ## 7. Economics, risk & token model

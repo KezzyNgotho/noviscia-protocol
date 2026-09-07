@@ -4,10 +4,11 @@
 > an organic 15%–35% APY without inflation?"* — the exact velocity metrics, turnover formulas, and
 > integer-math proofs behind the Noviscia TVV engine. Module 2 builds on the economics sheet
 > (`QUANTIFIED_RISK_PACK.md`, Module 1) and re-derives its `$460,800` gross purely from ledger
-> velocity.
+> velocity. **Module 3** (added below) closes the circle with the *borrower-side* feasibility proof.
 >
 > **Status:** Living; pinned by twin tests (TypeScript `sdk/src/velocity.ts` + Rust
-> `noviscia-asset-engine-sdk::velocity`, 21 assertions). **Last updated:** September 5, 2026.
+> `noviscia-asset-engine-sdk::velocity`, 21 assertions) and an independent Python verifier
+> (`scripts/financial-model/verify-real-yield.py`, 17 checks). **Last updated:** September 7, 2026.
 
 ---
 
@@ -137,6 +138,78 @@ same integer cents/e-6 scale.
 
 ---
 
+## 5b. Module 3 — Desk-level borrower feasibility (why the toll is paid)
+
+Module 1 proves the *pool* waterfall and Module 2 the *velocity* that generates it. Module 3
+(`sdk/src/feasibility.ts` + Rust `feasibility.rs`) answers the question a quantitative reviewer
+asks first: **why would a searcher pay the micro-premium at all?**
+
+The answer is a structural-credit argument, quantified to the integer: the toll is such a tiny
+fraction of the spread the borrower is already capturing that opting into Noviscia (full-size
+borrow, no balance-sheet split) is strictly NPV-positive for the searcher.
+
+### 5b.1 The maximum desk toll is `$0.004566`/slot
+
+On the reference pool the single-desk cap is `C_desk = $1,500,000`. Spreading the 24% annual
+facility rate across every 400ms slot:
+
+```text
+toll_slot = C_desk × R_base / S_total
+          = $1,500,000 × 0.24 / 78,840,000 = 4,566 µUSD = $0.004566  (exact integer floor)
+```
+
+Module: `maxDeskSlotTollMicroUsd(p)` = `4,566` µUSD.
+
+> **Precision note for reviewers:** the `$0.004565` printed in marketing material rounds the exact
+> floor `$0.004566` **down** by one micro-dollar. The twins and the Python verifier pin `4,566`.
+
+### 5b.2 The borrower P&L on the reference route
+
+A `$1.5M` cross-DEX route at a 15-bps mismatch, paying an aggressive 60% Jito bundle tip:
+
+```text
+gross spread   = $1,500,000 × 15bps / 10,000 = $2,250.00
+Jito MEV tip   = $2,250 × 60%                 = $1,350.00
+Noviscia toll  = $0.004566  (floors to $0.00 at cent precision — sub-cent)
+borrower net   = $2,250 − $1,350 − $0.00      = $900.00
+```
+
+| Metric | Value | Module |
+|---|---|---|
+| Toll share of gross spread | **2,029 ppb** (≈ 0.0002%) | `tollShareOfGrossPpb` |
+| Toll share of borrower net | **≈ 5 ppm** | `tollShareOfNetPpm` |
+| Max-desk annual toll @ full landing | **$287,986.75** | `deskAnnualTollUsdCentsAtFullLanding` |
+
+> **Precision notes for reviewers:** (1) the borrower net is an exact **`$900.00`**
+> (`$2,250 − $1,350`); the `$895` figure that appears in some decks is an approximation, not the
+> pinned value. (2) The toll is **~2 ppm of the borrower's net profit** — an order of magnitude
+> below Solana's network priority fees, i.e. genuinely imperceptible against the spread.
+
+### 5b.3 The concentration ceiling
+
+If a single desk borrowed at the cap on **every** eligible landing slot for a year, it would pay
+`4,566 µUSD × 63,072,000 = $287,986.75` — ≈ **62%** of the reference `$460,800` gross. That is the
+precise reason the systemic utilization cap is enforced per-desk (`C_desk` 15%) *and* aggregate
+(`C_sys` 60%): revenue concentration is bounded structurally, not left to market outcomes. The
+per-slot route reconciles to the closed form `C_desk × R_base × L_jito = $288,000` within 1% under
+integer flooring (`deskAnnualTollReconciles`, the desk-level mirror of `formulaDReconciles`).
+
+### 5b.4 Independent ledger verification (the "python-verified" claim, made true)
+
+A third, independent implementation recomputes the entire ledger from first principles — no shared
+code with the TS/Rust twins — so a reviewer can replay it:
+
+```bash
+python3 scripts/financial-model/verify-real-yield.py    # 17 checks, exit 0 = ledger closes
+```
+
+It asserts the clock (`78,840,000` / `63,072,000` slots), `F_slot` at q1e18, the desk toll
+(`4,566` µUSD), the borrower P&L (`$2,250 / $1,350 / $900`), the ppb/ppm shares, the full-landing
+annual toll, and every waterfall line through the junior residual `$8,110.40`. All integer floor
+division — no floats.
+
+---
+
 ## 6. The copy-pasteable Excel/CSV workbook (cell map)
 
 The institutional sheet is a **two-layer artifact**, generated from — never independent of — the
@@ -170,10 +243,18 @@ Cell architecture (strict **Parameters B2:B13** → **Formulas B16:B26** → **T
 | B32 | Senior LP Net APY | `4.5000%` | `B31/B29` |
 | B33 | Junior LP Annual Return | `$8,110.40` | `B26−B31` |
 | B34 | Junior LP Net APY | `0.2703%` | `B33/B30` |
+| B36 | Max-Desk Slot Toll | `$0.004566` | `maxDeskSlotTollMicroUsd` |
+| B37 | Max-Desk Annual Toll @ Full Landing | `$287,986.75` | `deskAnnualTollUsdCentsAtFullLanding` |
+| B38 | Borrower Gross Spread @ 15 bps | `$2,250.00` | `borrowerGrossSpreadUsdCents` |
+| B39 | Jito MEV Tip @ 60% | `$1,350.00` | `borrowerTipUsdCents` |
+| B40 | Borrower Net Above Toll | `$900.00` | `borrowerNetUsdCents` |
+| B41 | Toll Share of Spread | `2,029 ppb` | `tollShareOfGrossPpb` |
 
 Every B-cell is recomputed by `computeWorkbook()` from the audited integer functions — editing an
 input cell in the sheet propagates identically in the code path. The workbook round-trips through
-`buildWorkbookCsv()` and is pinned by `spreadsheet.test.ts` (9 assertions).
+`buildWorkbookCsv()` and is pinned by `spreadsheet.test.ts` (10 assertions). The `DESK FEASIBILITY`
+block (B36–B41) is the borrower-side proof from §5b, so an Excel reviewer sees the whole
+"why searchers pay" chain next to the pool waterfall.
 
 ### Stress-testing the sheet (replaces the ⚠️ blurb with real math)
 
@@ -195,6 +276,8 @@ input cell in the sheet propagates identically in the code path. The workbook ro
 ## Cross-references
 
 - Tranche split, waterfall, circuit breaker (the other side of the sheet): [`QUANTIFIED_RISK_PACK.md`](QUANTIFIED_RISK_PACK.md)
+- Borrower feasibility (Module 3, §5b) + independent Python ledger: `sdk/src/feasibility.ts`, `scripts/financial-model/verify-real-yield.py`
 - Full TVV financial engineering & risk register: [`TVV_FINANCIAL_ENGINEERING.md`](TVV_FINANCIAL_ENGINEERING.md)
 - JIT time-slice marketplace, TVV ↔ CCP one-balance-sheet truth: [`TVV_CCP_INTEGRATION_AUDIT.md`](TVV_CCP_INTEGRATION_AUDIT.md) 
 - Bundle economics & tip handling: [`PARTICIPANT_ACCESS.md`](PARTICIPANT_ACCESS.md), [`sdk/README.md`](../sdk/README.md)
+- The HFT-desk framing + the same math in sell-side language (incl. honest corrections): [`HFT_DESK_PRIMER.md`](HFT_DESK_PRIMER.md)

@@ -30,3 +30,10 @@ TRANCHES,Senior LP Annual Return ($),B31,315000,Currency,Fixed return to Senior 
 TRANCHES,Senior LP Actual Net APY,B32,0.045,Percentage,Realized Senior yield
 TRANCHES,Junior LP Annual Return ($),B33,8110.4,Currency,Upside to First-Loss Layer
 TRANCHES,Junior LP Actual Net APY,B34,0.002703,Percentage,Realized Junior LP yield
+,,,,,
+DESK FEASIBILITY,Max-Desk Slot Toll ($),B36,0.004566,Currency,Per-slot toll on a $1.5M desk (exact $0.004566)
+DESK FEASIBILITY,Max-Desk Annual Toll @ Full Landing ($),B37,287986.75,Currency,Single desk on every eligible slot
+DESK FEASIBILITY,Borrower Gross Spread @ 15 bps ($),B38,2250,Currency,Cross-DEX arb on $1.5M
+DESK FEASIBILITY,Jito MEV Tip @ 60% ($),B39,1350,Currency,Tip to win the bundle auction
+DESK FEASIBILITY,Borrower Net Above Toll ($),B40,900,Currency,Gross − tip − toll (toll < 1¢)
+DESK FEASIBILITY,Toll Share of Spread (ppb),B41,2029,Integer,≈ 0.0002% — the "imperceptible" claim

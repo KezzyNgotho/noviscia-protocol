@@ -11,6 +11,10 @@
 > The reference scenario is the **$10,000,000 pool**. Both implementations
 > scale to any pool size through `TvvParams` (`referenceTvvParams()` /
 > `TvvParams::reference_10m()`).
+>
+> **Borrower-side feasibility (Module 3)** — *why searchers pay the toll* — plus the independent
+> Python ledger verifier live in `TVV_SPEC_SHEET.md §5b` (`sdk/src/feasibility.ts` +
+> `feasibility.rs`; `scripts/financial-model/verify-real-yield.py`).
 
 ---
 
