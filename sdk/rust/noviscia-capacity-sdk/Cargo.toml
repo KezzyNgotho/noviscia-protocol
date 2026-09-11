@@ -6,7 +6,7 @@ description = "Single-slot clearing & risk engine instruction builders for the N
 license = "Apache-2.0"
 
 [dependencies]
-solana-sdk = "2"
+solana-sdk = "4"
 solana-program = "2"
 anchor-lang = "0.31.1"
 spl-token = "7"

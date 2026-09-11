@@ -15,7 +15,7 @@ categories = ["cryptography::cryptocurrencies", "no-std"]
 doctest = false
 
 [dependencies]
-solana-sdk = "2"
+solana-sdk = "4"
 solana-program = "2"
 anchor-lang = "0.31.1"
 spl-token = "7"
