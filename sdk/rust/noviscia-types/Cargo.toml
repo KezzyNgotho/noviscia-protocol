@@ -13,4 +13,4 @@ categories = ["cryptography::cryptocurrencies", "no-std"]
 
 [dependencies]
 solana-program = "2"
-anchor-lang = "0.31.1"
+anchor-lang = "1.0.3"

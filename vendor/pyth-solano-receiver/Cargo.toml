@@ -17,7 +17,7 @@ cpi = ["no-entrypoint"]
 test-bpf = []
 
 [dependencies]
-anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
+anchor-lang = { version = "1.0.3", features = ["init-if-needed"] }
 solana-program = "2"
 pythnet-sdk = { version = "2.1.0", features = [
     "solana-program",

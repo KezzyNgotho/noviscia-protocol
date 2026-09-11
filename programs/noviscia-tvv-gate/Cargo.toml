@@ -8,7 +8,7 @@ crate-type = ["cdylib", "lib"]
 name = "noviscia_tvv_gate"
 
 [dependencies]
-anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
+anchor-lang = { version = "1.0.3", features = ["init-if-needed"] }
 anchor-spl = { version = "0.31.1" }
 spl-token = "7"
 
