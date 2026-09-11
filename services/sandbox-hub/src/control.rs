@@ -18,6 +18,13 @@ pub struct ControlPlaneConfig {
     pub simulate_clearing_failure: bool,
     /// Wallet observed for the sentinel/clearing-failure drill.
     pub target_institution_wallet: String,
+    /// When `true` the slot is treated as led by a non-Jito block builder:
+    /// every pool-state update streams `allocation_frozen = true` and the
+    /// client SDK freezes allocation (the EXCLUSIVITY checklist probe).
+    pub simulate_non_jito_leader: bool,
+    /// When `true` the mock subscriber accrues per-block premium into vault
+    /// NAV while a window is deployed (the COMPOUNDING checklist probe).
+    pub premium_compounding_enabled: bool,
 }
 
 impl Default for ControlPlaneConfig {
@@ -26,6 +33,8 @@ impl Default for ControlPlaneConfig {
             time_compression_multiplier: 1_440,
             simulate_clearing_failure: false,
             target_institution_wallet: "sandbox-institution".into(),
+            simulate_non_jito_leader: false,
+            premium_compounding_enabled: true,
         }
     }
 }
@@ -50,6 +59,8 @@ pub struct ControlPlaneRequest {
     pub time_compression_multiplier: Option<u64>,
     pub simulate_clearing_failure: Option<bool>,
     pub target_institution_wallet: Option<String>,
+    pub simulate_non_jito_leader: Option<bool>,
+    pub premium_compounding_enabled: Option<bool>,
 }
 
 /// Apply a `PUT /api/v1/sandbox/control-plane` body to the shared config and
@@ -73,6 +84,12 @@ pub fn apply_put(body: &str, config: &mut ControlPlaneConfig) -> serde_json::Val
     if let Some(w) = req.target_institution_wallet {
         config.target_institution_wallet = w;
     }
+    if let Some(f) = req.simulate_non_jito_leader {
+        config.simulate_non_jito_leader = f;
+    }
+    if let Some(f) = req.premium_compounding_enabled {
+        config.premium_compounding_enabled = f;
+    }
     build_response(config)
 }
 
@@ -89,7 +106,7 @@ pub fn build_response(config: &ControlPlaneConfig) -> serde_json::Value {
     let window_s = effective_24h_window_duration_seconds(mult);
     let grace_s = effective_2h_grace_period_seconds(mult);
     let wallet = &config.target_institution_wallet;
-    let logs = if config.simulate_clearing_failure {
+    let mut logs = if config.simulate_clearing_failure {
         vec![
             format!("[00:00:01] System boot. Clock acceleration multiplier active at {mult}x."),
             format!("[00:00:15] Wallet {wallet} initiated JIT allocation. Countdown active."),
@@ -104,12 +121,26 @@ pub fn build_response(config: &ControlPlaneConfig) -> serde_json::Value {
             format!("[00:01:15] 24h Window Cleared ({window_s}s Real-time). Settlement verified. Clearing path healthy."),
         ]
     };
+    if config.premium_compounding_enabled {
+        logs.push(
+            "[00:00:01] COMPOUNDING: per-block premium accrual active — micro-premiums drip into vault NAV on every slot."
+                .to_string(),
+        );
+    }
+    if config.simulate_non_jito_leader {
+        logs.push(
+            "[00:00:30] NODAL ARM: current slot led by a non-Jito builder — allocation frozen on every desk (EXCLUSIVITY gate arm)."
+                .to_string(),
+        );
+    }
     serde_json::json!({
         "sandbox_state": "MODIFIED",
         "parameters": {
             "effective_24h_window_duration_seconds": window_s,
             "effective_2h_grace_period_seconds": grace_s,
             "simulated_action": SIMULATED_ACTION,
+            "premium_compounding_enabled": config.premium_compounding_enabled,
+            "simulate_non_jito_leader": config.simulate_non_jito_leader,
         },
         "system_logs": logs,
     })
@@ -131,6 +162,8 @@ mod tests {
             effective_2h_grace_period_seconds(cfg.time_compression_multiplier),
             5
         );
+        assert_eq!(cfg.simulate_non_jito_leader, false);
+        assert_eq!(cfg.premium_compounding_enabled, true);
     }
 
     #[test]
@@ -158,7 +191,8 @@ mod tests {
             "ENFORCE_HARD_TIMEOUT_ON_EXPIRY"
         );
         let logs = resp["system_logs"].as_array().unwrap();
-        assert_eq!(logs.len(), 5);
+        // 5 canonical clearing-failure logs + 1 compounding clock line.
+        assert_eq!(logs.len(), 6);
         let joined = logs
             .iter()
             .map(|l| l.as_str().unwrap())
@@ -167,11 +201,46 @@ mod tests {
         assert!(joined.contains("Clock acceleration multiplier active at 1440x."));
         assert!(joined.contains("W1ntMute1111111111111111111111111111111111"));
         assert!(joined.contains("status flipped to OVERDUE. Borrowing capacity locked."));
+        assert!(joined.contains("COMPOUNDING: per-block premium accrual active"));
         assert_eq!(cfg.simulate_clearing_failure, true);
         assert_eq!(
             cfg.target_institution_wallet,
             "W1ntMute1111111111111111111111111111111111"
         );
+    }
+
+    #[test]
+    fn non_jito_leader_arm_adds_nodal_log() {
+        let mut cfg = ControlPlaneConfig::default();
+        let resp = apply_put(
+            r#"{"simulate_non_jito_leader":true}"#,
+            &mut cfg,
+        );
+        assert_eq!(resp["sandbox_state"], "MODIFIED");
+        assert_eq!(resp["parameters"]["simulate_non_jito_leader"], true);
+        let joined = resp["system_logs"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|l| l.as_str().unwrap())
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(joined.contains("allocation frozen on every desk"));
+        assert_eq!(cfg.simulate_non_jito_leader, true);
+    }
+
+    #[test]
+    fn compounding_switch_is_mutable() {
+        let mut cfg = ControlPlaneConfig::default();
+        let resp = apply_put(
+            r#"{"premium_compounding_enabled":false}"#,
+            &mut cfg,
+        );
+        assert_eq!(
+            resp["parameters"]["premium_compounding_enabled"],
+            false
+        );
+        assert_eq!(cfg.premium_compounding_enabled, false);
     }
 
     #[test]
@@ -183,10 +252,16 @@ mod tests {
         let resp = build_response(&cfg);
         assert_eq!(resp["sandbox_state"], "MODIFIED");
         let logs = resp["system_logs"].as_array().unwrap();
-        assert_eq!(logs.len(), 3);
+        // 3 canonical healthy-path logs + 1 compounding clock line (no
+        // sentinel, no nodal arm).
+        assert_eq!(logs.len(), 4);
         assert!(logs
             .iter()
             .find(|l| l.as_str().unwrap().contains("Settlement verified"))
+            .is_some());
+        assert!(logs
+            .iter()
+            .find(|l| l.as_str().unwrap().contains("COMPOUNDING: per-block premium accrual active"))
             .is_some());
     }
 

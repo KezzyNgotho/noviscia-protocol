@@ -18,7 +18,7 @@ describe('ids', () => {
 
   it('devnet defaults match Anchor.toml', () => {
     assert.equal(PROGRAM_IDS.positionTracker.toBase58(), '6uvr2JcP2iMQooG76RjpCtJLoJ4NuptGyRCiMKuDR1ws');
-    assert.equal(PROGRAM_IDS.nvUsdcVault.toBase58(), 'CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC');
+    assert.equal(PROGRAM_IDS.nvUsdcVault.toBase58(), '5fmZJ4XsMfQpnM1wMH6DW5KNBAgCQF88762xtDEb94ST');
     assert.equal(PROGRAM_IDS.burnEngine.toBase58(), 'nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id');
     assert.equal(PROGRAM_IDS.nettingEngine.toBase58(), '68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56');
     assert.equal(PROGRAM_IDS.escrow.toBase58(), '2WPb3wsyp4G6zFPx8sTYf3bTDyySxwpo1Ja8H6RCHXCZ');

@@ -50,7 +50,7 @@ pub const CREDIT_LINE_PROGRAM_ID: Pubkey =
 /// The `nv-usdc-vault` omni-pool program that receives the 90% LP-NAV sweep
 /// (via `accumulate_protocol_fees`).
 pub const NV_USDC_VAULT_PROGRAM_ID: Pubkey =
-    solana_program::pubkey!("CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC");
+    solana_program::pubkey!("5fmZJ4XsMfQpnM1wMH6DW5KNBAgCQF88762xtDEb94ST");
 
 /// Anchor instruction discriminator for the host's `cl_pull_credit` handler:
 /// `sha256("global:cl_pull_credit")[..8]` = `c10dbe259191f0ff`.

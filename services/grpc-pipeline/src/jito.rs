@@ -1,5 +1,11 @@
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
+use solana_sdk::hash::Hash;
+use solana_sdk::pubkey::Pubkey;
+use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::system_instruction;
+use solana_sdk::transaction::Transaction;
+use std::str::FromStr;
 
 /// Jito tip account pubkeys (mainnet). These are the accounts that receive
 /// bundle tips.
@@ -32,23 +38,16 @@ impl JitoClient {
     ///
     /// The bundle contains base64-encoded serialized transactions. Returns
     /// the bundle ID on success.
-    pub async fn submit_bundle(
-        &self,
-        transaction_bytes: &[u8],
-        tip_lamports: u64,
-    ) -> Result<String> {
-        self.submit_bundle_many(&[transaction_bytes.to_vec()], tip_lamports)
-            .await
+    pub async fn submit_bundle(&self, transaction_bytes: &[u8]) -> Result<String> {
+        self.submit_bundle_many(&[transaction_bytes.to_vec()]).await
     }
 
-    /// Submit an atomic multi-transaction bundle (Transaction A + Transaction
-    /// B + any settlement legs). Every transaction lands in the same slot or
-    /// none do — this is how the premium and the desk trade are sealed.
-    pub async fn submit_bundle_many(
-        &self,
-        transactions: &[Vec<u8>],
-        _tip_lamports: u64,
-    ) -> Result<String> {
+    /// Atomic multi-transaction submission: every transaction lands in the
+    /// same slot or none do — this is how the premium and the desk trade are
+    /// sealed. Callers that want a leader tip must append a tip leg (see
+    /// [`JitoClient::submit_bundle_with_conditional_tip`]); the bare method
+    /// submits exactly what it is given, tip-free.
+    pub async fn submit_bundle_many(&self, transactions: &[Vec<u8>]) -> Result<String> {
         let endpoint = format!("{}/api/v1/bundles", self.block_engine_url);
 
         let encoded: Vec<String> = transactions
@@ -141,6 +140,111 @@ impl JitoClient {
         }
 
         Ok(10_000)
+    }
+
+    /// Build and sign a standalone leader-tip transfer: `lamports` of SOL from
+    /// the tip payer to a Jito tip account. Returns the serialized transaction
+    /// bytes ready to slot into a bundle.
+    ///
+    /// The transfer is constructed with the SDK's `system_instruction::transfer`
+    /// so any block engine retains the canonical "SOL transferred to a tip
+    /// account" recognition.
+    pub fn build_tip_transaction(
+        tip_payer: &Keypair,
+        tip_account: &Pubkey,
+        lamports: u64,
+        recent_blockhash: Hash,
+    ) -> Result<Vec<u8>> {
+        if lamports == 0 {
+            bail!("tip lamports must be non-zero");
+        }
+        let ix = system_instruction::transfer(&tip_payer.pubkey(), tip_account, lamports);
+        let tx = Transaction::new_signed_with_payer(
+            &[ix],
+            Some(&tip_payer.pubkey()),
+            &[tip_payer],
+            recent_blockhash,
+        );
+        bincode::serialize(&tx).context("serialize tip transaction")
+    }
+
+    /// Pick one tip account deterministically (rotating by wall-clock nanos) to
+    /// reduce contention across searchers for the same leader without pulling
+    /// in a RNG dependency.
+    pub fn choose_tip_account() -> Result<Pubkey> {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.subsec_nanos())
+            .unwrap_or(0) as usize;
+        JITO_TIP_ACCOUNTS[nanos % JITO_TIP_ACCOUNTS.len()]
+            .parse()
+            .map_err(|e: solana_sdk::pubkey::ParsePubkeyError| anyhow::anyhow!("parse tip account: {e}"))
+    }
+
+    /// Fetch a recent blockhash from the block engine to timestamp freshly
+    /// constructed bundle legs.
+    pub async fn get_recent_blockhash(&self) -> Result<Hash> {
+        let endpoint = format!("{}/api/v1/bundles", self.block_engine_url);
+
+        let payload = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getLatestBlockhash",
+            "params": []
+        });
+
+        let resp = self
+            .http
+            .post(&endpoint)
+            .json(&payload)
+            .send()
+            .await
+            .context("jito blockhash query failed")?;
+
+        let body: serde_json::Value = resp.json().await.context("parse jito blockhash response")?;
+
+        if let Some(result) = body.get("result") {
+            if let Some(value) = result.get("value") {
+                if let Some(blockhash) = value.get("blockhash").and_then(|b| b.as_str()) {
+                    if let Ok(hash) = Hash::from_str(blockhash) {
+                        return Ok(hash);
+                    }
+                }
+            }
+        }
+
+        bail!("block engine did not return a recent blockhash")
+    }
+
+    /// Conditional leader tip: append a signed tip transfer as the final leg
+    /// of an otherwise arbitrage bundle.
+    ///
+    /// Semantics: Jito bundles are atomic, so the tip leg lands if and only if
+    /// every leg — including the on-chain gate's `tvv_gate_settle` with its
+    /// Post-Swap Invariant Constraint — succeeds. A losing execution reverts
+    /// the whole bundle and the tip is never paid. The separate-leg shape is
+    /// pragmatic here (the pipeline receives pre-signed legs); embedding the
+    /// tip *inside* the arm transaction (per-leg conditionality, so a builder
+    /// cannot strip it) is enforced where the pipeline constructs the arm
+    /// itself — the SDK keeper.
+    pub async fn submit_bundle_with_conditional_tip(
+        &self,
+        legs: &[Vec<u8>],
+        tip_lamports: u64,
+        tip_payer: &Keypair,
+    ) -> Result<String> {
+        if legs.is_empty() {
+            bail!("cannot submit an empty bundle");
+        }
+        let blockhash = self.get_recent_blockhash().await?;
+        let tip_account = Self::choose_tip_account()?;
+        let tip_leg = Self::build_tip_transaction(tip_payer, &tip_account, tip_lamports, blockhash)?;
+
+        let mut bundle: Vec<Vec<u8>> = Vec::with_capacity(legs.len() + 1);
+        bundle.extend_from_slice(legs);
+        bundle.push(tip_leg);
+
+        self.submit_bundle_many(&bundle).await
     }
 
     /// Poll the status of a submitted bundle by its ID.
@@ -314,5 +418,75 @@ mod tests {
         assert_eq!(txs.len(), 2);
         assert_eq!(txs[0].as_str(), Some("AQID"));
         assert_eq!(txs[1].as_str(), Some("BAUG"));
+    }
+
+    #[test]
+    fn build_tip_transaction_transfers_sol_to_a_tip_account() {
+        use solana_sdk::signer::Signer as _;
+
+        let payer = Keypair::new();
+        let tip_account: Pubkey = JITO_TIP_ACCOUNTS[0].parse().expect("tip pubkey");
+        let blockhash = Hash::new_unique();
+
+        let bytes = JitoClient::build_tip_transaction(&payer, &tip_account, 1_234_567, blockhash)
+            .expect("build tip tx");
+        let tx: Transaction = bincode::deserialize(&bytes[..]).expect("deserialize tip tx");
+
+        assert_eq!(tx.signatures.len(), 1);
+        let payer_pk = payer.pubkey();
+        // Fee payer is the last required signature key in the message.
+        let fee_payer_idx = tx.message.header.num_required_signatures as usize - 1;
+        assert_eq!(tx.message.account_keys[fee_payer_idx], payer_pk);
+        assert!(tx.message.account_keys.contains(&tip_account));
+
+        // Single system transfer instruction carrying the full lamport amount.
+        assert_eq!(tx.message.instructions.len(), 1);
+        let ix = &tx.message.instructions[0];
+        let program_id = tx.message.account_keys[ix.program_id_index as usize];
+        assert_eq!(program_id, solana_sdk::system_program::id());
+        let expected =
+            solana_sdk::system_instruction::transfer(&payer_pk, &tip_account, 1_234_567).data;
+        assert_eq!(ix.data, expected);
+    }
+
+    #[test]
+    fn build_tip_transaction_rejects_zero_tip() {
+        let payer = Keypair::new();
+        let tip_account: Pubkey = JITO_TIP_ACCOUNTS[1].parse().expect("tip pubkey");
+        assert!(
+            JitoClient::build_tip_transaction(&payer, &tip_account, 0, Hash::new_unique())
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn build_tip_transaction_is_signed_by_payer_only() {
+        use solana_sdk::signer::Signer as _;
+
+        let payer = Keypair::new();
+        let tip_account: Pubkey = JITO_TIP_ACCOUNTS[2].parse().expect("tip pubkey");
+
+        let bytes = JitoClient::build_tip_transaction(&payer, &tip_account, 100, Hash::new_unique())
+            .expect("build tip tx");
+        let tx: Transaction = bincode::deserialize(&bytes[..]).expect("deserialize tip tx");
+
+        // The payer is the only signer — the transfer needs nothing else.
+        assert_eq!(tx.signatures.len(), 1);
+        let payer_pk = payer.pubkey();
+        assert!(
+            tx.signatures[0].verify(payer_pk.as_ref(), &tx.message.serialize()),
+            "signature must belong to the payer keypair"
+        );
+    }
+
+    #[test]
+    fn choose_tip_account_returns_a_known_account() {
+        let account = JitoClient::choose_tip_account().expect("tip account");
+        assert!(
+            JITO_TIP_ACCOUNTS
+                .iter()
+                .any(|s| s.parse::<Pubkey>().expect("valid") == account),
+            "selected account must be one of the 8 canonical tip accounts"
+        );
     }
 }

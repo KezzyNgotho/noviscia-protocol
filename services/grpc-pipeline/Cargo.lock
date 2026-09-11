@@ -2080,6 +2080,7 @@ name = "noviscia-grpc-pipeline"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bincode",
  "chrono",
  "dashmap",
  "futures",

@@ -13,7 +13,7 @@
 
 There is no JWT/session-token layer. On-chain actions (open/close/deposit/withdraw) are signed transactions sent directly from the wallet to Solana; the frontend talks to `position-tracker`/`nv-usdc-vault` via RPC, not through an authenticated backend API. The Next.js API routes under `app/web/app/api/` are largely read-only/proxy endpoints. Pro-trader API-key management (`/api/v1/keys`, `/api/v1/copy`) is proxied to the indexer service and requires its own credentials.
 
-**Institutional API tokens (`X-Noviscia-App-Token`).** The indexer mints `nvk_…` tokens bound to a wallet with a `read`/`write`/`admin` scope. Secrets are hashed (SHA-256) at rest and shown once. A presented token scopes every private read to its bound wallet — a disagreeing `?wallet=` is rejected 403 — and `read` tokens cannot place/cancel orders or modify copy settings. In `INDEXER_AUTHZ=strict` mode private routes require a token outright. Self-service management: `/developer/api-tokens`.
+**Institutional API tokens (`X-Noviscia-App-Token`).** The indexer mints `nvk_…` tokens bound to a wallet with a `read`/`write`/`admin` scope. Secrets are hashed (SHA-256) at rest and shown once. A presented token scopes every private read to its bound wallet — a disagreeing `?wallet=` is rejected 403 — and `read` tokens cannot place/cancel orders or modify copy settings. In `INDEXER_AUTHZ=strict` mode private routes require a token outright. Self-service management: `/developer/api`.
 
 ## Rate Limits
 

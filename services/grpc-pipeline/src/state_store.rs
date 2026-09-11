@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
 
 use dashmap::DashMap;
@@ -159,6 +160,12 @@ pub struct StateStore {
     capacities: DashMap<String, CapacityState>,
     tranches: DashMap<String, TrancheState>,
     desks: DashMap<String, DeskState>,
+    /// Cross-DEX price book consumed by the searcher's IDENTIFY stage. Keyed by
+    /// `"{venue}:{pool}"`; entries carry integer reserves the searcher math
+    /// expects.
+    arb_book: DashMap<String, crate::searcher::PoolState>,
+    /// Highest slot observed so far, used to stamp detected opportunities.
+    last_slot: AtomicU64,
 }
 
 impl StateStore {
@@ -171,7 +178,41 @@ impl StateStore {
             capacities: DashMap::new(),
             tranches: DashMap::new(),
             desks: DashMap::new(),
+            arb_book: DashMap::new(),
+            last_slot: AtomicU64::new(0),
         }
+    }
+
+    // ── Searcher pool book ──
+
+    /// The last slot observed from any parsed event feed.
+    pub fn last_slot(&self) -> u64 {
+        self.last_slot.load(Ordering::Relaxed)
+    }
+
+    /// Remember the highest slot seen so far.
+    pub fn note_slot(&self, slot: u64) {
+        self.last_slot.fetch_max(slot, Ordering::Relaxed);
+    }
+
+    /// Upsert one cross-DEX pool quote into the searcher's book.
+    pub fn update_searcher_pool(&self, pool: crate::searcher::PoolState) {
+        let key = format!("{}:{}", pool.venue.as_str(), pool.pool);
+        self.arb_book.insert(key, pool);
+    }
+
+    /// Snapshot of the current cross-DEX book (non-stale entries only).
+    pub fn arb_book(&self) -> Vec<crate::searcher::PoolState> {
+        self.arb_book
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect()
+    }
+
+    /// Drop a pool from the book (e.g. closed market or evicted feed).
+    pub fn remove_searcher_pool(&self, venue: crate::searcher::Venue, pool: &str) {
+        let key = format!("{}:{}", venue.as_str(), pool);
+        self.arb_book.remove(&key);
     }
 
     // ── Market ──
@@ -265,6 +306,7 @@ impl StateStore {
     /// Apply a parsed event to update the appropriate state bucket.
     pub fn apply_event(&self, event: &crate::event_parser::ParsedEvent) {
         use crate::event_parser::ParsedEvent;
+        self.note_slot(event.slot());
         match event {
             ParsedEvent::CreditPulled {
                 borrower,

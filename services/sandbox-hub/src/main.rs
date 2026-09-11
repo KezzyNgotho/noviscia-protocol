@@ -12,7 +12,9 @@
 //!   headless surface (`Noviscia Sandbox API Specification v1`) is served
 //!   here too:
 //!     - `:10000` gRPC `noviscia.sandbox.v1.MarketVelocityStream.SubscribePoolState`
-//!     - `:10001` REST `POST /api/v1/bundles` (Jito bundle emulator, spec §2)
+//!     - `:10001` REST `POST /api/v1/bundles` (Jito bundle emulator, spec §2),
+//!       `GET /api/v1/sandbox/vault` + `POST /api/v1/sandbox/settle` (NAV /
+//!       institutional settlement ledger)
 //!     - `:10002` control plane `PUT /api/v1/sandbox/control-plane` (spec §3)
 //! * **Tier 3** — the Jito bundle emulator (emulator.rs) on a second port,
 //!   JSON-RPC-compatible with the production `JitoClient`, with A-before-B
@@ -26,6 +28,7 @@ mod control;
 mod emulator;
 mod posture;
 mod ring;
+mod vault;
 
 use std::collections::HashMap;
 use std::pin::Pin;
@@ -85,6 +88,8 @@ struct SandboxLedger {
     events: broadcast::Sender<EventEnvelope>,
     /// Control-plane config (spec §3): time compression + clearing-failure drill.
     control: Arc<RwLock<ControlPlaneConfig>>,
+    /// Vault NAV + institutional settlement ledger (per-block compounding).
+    vault: Arc<vault::VaultLedger>,
     /// Bounded lock-free ingestion ring (checklist II.6): subscriber → pump.
     ring: std::sync::Arc<ring::EventRing<EventEnvelope>>,
 }
@@ -119,6 +124,7 @@ impl SandboxLedger {
             desks: Arc::new(RwLock::new(desks)),
             events,
             control: Arc::new(RwLock::new(ControlPlaneConfig::default())),
+            vault: Arc::new(vault::VaultLedger::new()),
             ring: Arc::new(ring::EventRing::new(ring::DEFAULT_RING_CAPACITY)),
         }
     }
@@ -201,6 +207,41 @@ async fn run_mock_subscriber(ledger: SandboxLedger, cadence_ms: u64) {
                     // broadcast is the network fan-out, the ring is the local
                     // ingestion buffer).
                     let _ = ledger.ring.push(envelope);
+                }
+            }
+
+            // COMPOUNDING (control plane, spec §3): while a desk has capital
+            // deployed and has not breached, accrue the per-block premium
+            // straight into vault NAV and announce the drip — this is the
+            // "NAV appreciates block-by-block" proof an integrator can watch
+            // live through `GET /api/v1/sandbox/vault`.
+            if ctrl.premium_compounding_enabled {
+                for desk in desks.values() {
+                    if desk.active_principal <= 0 || desk.posture == Posture::Breached {
+                        continue;
+                    }
+                    let active_micro = (desk.active_principal as u64).saturating_mul(10_000);
+                    let drip = ledger.vault.compound_block(
+                        active_micro,
+                        vault::BASE_PREMIUM_RATE_TENTHS_BPS,
+                    );
+                    if drip > 0 {
+                        let envelope = EventEnvelope {
+                            event_type: "vault_compounding".into(),
+                            slot: slot as i64,
+                            timestamp: (slot * cadence_ms / 1000) as i64,
+                            data: serde_json::json!({
+                                "institution": desk.institution,
+                                "mint": desk.mint,
+                                "dripped_premium_units": drip,
+                                "vault_nav_units": ledger.vault.nav_units(),
+                            })
+                            .to_string(),
+                            tx_signature: String::new(),
+                        };
+                        let _ = ledger.events.send(envelope.clone());
+                        let _ = ledger.ring.push(envelope);
+                    }
                 }
             }
         }
@@ -471,6 +512,10 @@ mod async_stream_sandbox {
                 tick.tick().await;
                 let slot = ledger.current_slot();
                 let desks = ledger.desks.read().await;
+                // Exclusivity gate: while the control plane arms a non-Jito
+                // leader, every update streams `allocation_frozen = true` so
+                // client SDKs freeze allocation (checklist EXCLUSIVITY).
+                let allocation_frozen = ledger.control.read().await.simulate_non_jito_leader;
                 for mint in &mints {
                     let (total_idle, active) = match desks.get(&format!("sandbox-op:{mint}")) {
                         Some(desk) => {
@@ -491,6 +536,7 @@ mod async_stream_sandbox {
                             active_credit_utilization: active,
                             // Repo convention: greedy/tenths-bps APY (4.608%).
                             current_premium_rate_bps: 4_608,
+                            allocation_frozen,
                         })
                         .await
                         .is_err()
@@ -588,7 +634,7 @@ async fn main() -> anyhow::Result<()> {
     });
 
     let emulator_task = tokio::spawn(run_http_emulator(emulator_listener, emulator.clone()));
-    let bundles_task = tokio::spawn(run_http_bundles(bundles_listener, emulator));
+    let bundles_task = tokio::spawn(run_http_rest(bundles_listener, emulator, ledger.clone()));
     let control_task = tokio::spawn(run_http_control(control_listener, ledger.clone()));
 
     tokio::select! {
@@ -705,32 +751,100 @@ async fn run_http_emulator(
     }
 }
 
-/// Spec §2 — REST bundle execution gateway on `:10001`.
-/// `POST /api/v1/bundles` → emulator spec lifecycle (ACCEPTED / REVERTED).
-async fn run_http_bundles(
+/// Spec §2 + vault surface on `:10001`.
+///
+/// * `POST /api/v1/bundles`             → emulator spec lifecycle (ACCEPTED /
+///   REVERTED); landed PROFITABLE bundles open a clearing invoice.
+/// * `GET  /api/v1/sandbox/vault`        → NAV + open premium debt snapshot
+///   (the block-by-block compounding readout).
+/// * `POST /api/v1/sandbox/settle`       → pays the invoice (sweeps open debt
+///   into NAV) and unlocks every desk (posture → NoWindow).
+async fn run_http_rest(
     listener: tokio::net::TcpListener,
     emulator: Arc<emulator::BundleEmulator>,
+    ledger: SandboxLedger,
 ) -> anyhow::Result<()> {
     loop {
         let (mut socket, _) = listener.accept().await?;
-        let emu = emulator.clone();
+        let (emu, l) = (emulator.clone(), ledger.clone());
         tokio::spawn(async move {
             let req = match read_http_request(&mut socket).await {
                 Some(r) => r,
                 None => return,
             };
-            if req.method == "POST" && req.path == "/api/v1/bundles" {
-                let simulate_fail = std::env::var("SANDBOX_SIMULATE_FAIL")
-                    .map(|_| true)
-                    .unwrap_or(false);
-                let resp = emu.process_rest_bundle(&req.body, simulate_fail);
-                write_json_response(&mut socket, "HTTP/1.1 200 OK", &resp).await;
-            } else {
-                let resp = serde_json::json!({
-                    "status": "REJECTED",
-                    "error": { "code": "NOV_100_METHOD_NOT_ALLOWED", "message": "expected POST /api/v1/bundles" },
-                });
-                write_json_response(&mut socket, "HTTP/1.1 404 Not Found", &resp).await;
+            match (req.method.as_str(), req.path.as_str()) {
+                ("POST", "/api/v1/bundles") => {
+                    let simulate_fail = std::env::var("SANDBOX_SIMULATE_FAIL")
+                        .map(|_| true)
+                        .unwrap_or(false);
+                    let resp = emu.process_rest_bundle(&req.body, simulate_fail);
+                    // A landed PROFITABLE bundle opened an invoice: hand its
+                    // logged premium to the settlement ledger (COMPOUNDING).
+                    if resp["status"] == "ACCEPTED" {
+                        if let Some(premium) =
+                            resp["metrics"]["logged_premium_debt_units"].as_u64()
+                        {
+                            l.vault.observe_landed_bundle(premium);
+                        }
+                    }
+                    write_json_response(&mut socket, "HTTP/1.1 200 OK", &resp).await;
+                }
+                ("GET", "/api/v1/sandbox/vault") => {
+                    let slot = l.current_slot();
+                    let posture = l
+                        .desks
+                        .read()
+                        .await
+                        .get("sandbox-op:SandboxUsdcMint")
+                        .map(|d| d.posture.as_proto_i32())
+                        .unwrap_or(0);
+                    let resp = l.vault.snapshot_json(slot, posture);
+                    write_json_response(&mut socket, "HTTP/1.1 200 OK", &resp).await;
+                }
+                ("POST", "/api/v1/sandbox/settle") => {
+                    let slot = l.current_slot();
+                    let sweep = l.vault.pay_invoice(slot);
+                    let mut desks = l.desks.write().await;
+                    for desk in desks.values_mut() {
+                        desk.window_start_slot = 0;
+                    }
+                    drop(desks);
+                    let envelope = EventEnvelope {
+                        event_type: "clearing_settlement".into(),
+                        slot: slot as i64,
+                        timestamp: (slot * 400 / 1000) as i64,
+                        data: serde_json::json!({
+                            "institution": "sandbox-institution",
+                            "status": "SETTLED",
+                            "swept_invoice_units": sweep.swept,
+                            "nav_before": sweep.nav_before,
+                            "nav_after": sweep.nav_after,
+                            "desk_unlocked": true,
+                        })
+                        .to_string(),
+                        tx_signature: String::new(),
+                    };
+                    let _ = l.events.send(envelope.clone());
+                    let _ = l.ring.push(envelope);
+                    let resp = serde_json::json!({
+                        "status": "SETTLED",
+                        "swept_invoice_units": sweep.swept,
+                        "nav_before": sweep.nav_before,
+                        "nav_after": sweep.nav_after,
+                        "swept_at_slot": sweep.swept_at_slot,
+                        "sweep_count": l.vault.sweep_count(),
+                        "desk_unlocked": true,
+                        "desk_posture": 0,
+                    });
+                    write_json_response(&mut socket, "HTTP/1.1 200 OK", &resp).await;
+                }
+                _ => {
+                    let resp = serde_json::json!({
+                        "status": "REJECTED",
+                        "error": { "code": "NOV_100_METHOD_NOT_ALLOWED", "message": "expected POST /api/v1/bundles, GET /api/v1/sandbox/vault or POST /api/v1/sandbox/settle" },
+                    });
+                    write_json_response(&mut socket, "HTTP/1.1 404 Not Found", &resp).await;
+                }
             }
         });
     }

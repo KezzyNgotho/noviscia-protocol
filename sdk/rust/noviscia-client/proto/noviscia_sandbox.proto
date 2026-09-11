@@ -1,0 +1,34 @@
+// Noviscia Institutional Sandbox — headless API spec contract (v1).
+//
+// The ingestion-engine surface of the sandbox: an emulation of the Yellowstone
+// "Dragon's Mouth" Geyser pipeline. Instead of real Solana slots it streams
+// mock intra-slot pool states down in <2ms over HTTP/2 (TLS disabled for local
+// debugging), mirroring the exact wire shape institutional clients (Jump,
+// Wintermute, Auros) integrate against.
+//
+// Vendored into `noviscia-client` so the SDK ships self-contained; the wire
+// contract is shared 1:1 with `services/sandbox-hub/proto/` so a client cannot
+// tell the sandbox stream from the production feed.
+syntax = "proto3";
+
+package noviscia.sandbox.v1;
+
+// High-speed data stream of the TVV market-velocity feed.
+service MarketVelocityStream {
+  rpc SubscribePoolState(PoolSubscriptionRequest) returns (stream PoolStateUpdate);
+}
+
+message PoolSubscriptionRequest {
+  string app_token = 1;               // Sandbox-authorized bearer string
+  repeated string asset_mints = 2;    // Target mint addresses: ["USDC", "SOL", "NVSC"]
+}
+
+message PoolStateUpdate {
+  uint64 slot = 1;                     // Local Test Validator block height
+  string asset_mint = 2;               // Active asset token indicator
+  uint64 total_idle_capital = 3;       // Stored in base units (lamports / micro-USDC)
+  uint64 active_credit_utilization = 4; // Outstanding intra-slot borrowed volume
+  uint32 current_premium_rate_bps = 5; // Base slot rate modified by volatility indices
+  bool allocation_frozen = 6;          // Exclusivity gate: true while the current slot
+                                       // is NOT led by a Jito-compliant block builder
+}

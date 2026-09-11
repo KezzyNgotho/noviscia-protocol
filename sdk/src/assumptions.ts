@@ -88,6 +88,25 @@ export const DEBT_WINDOW_HOURS = 24n;
 export const GRACE_PERIOD_HOURS = 2n;
 
 /**
+ * Funding-carry yield inputs (the honest vault engine, `yieldEngine.ts`).
+ *
+ * These power the regime fan and cycle average. `lst_carry` and the regime
+ * fixtures are `assumed` design inputs; the live venue blend is fed by the
+ * devnet probe and is intended to become `production-measured` on mainnet.
+ * The funding legs are signed bps (negative = shorts pay in a bear-funding
+ * stretch).
+ */
+export const YIELD_LST_CARRY_BPS = 600n; // ≈ 6% (JitoSOL / Sanctum INF band)
+export const YIELD_HEDGE_EFFICIENCY_BPS = 9_000n; // 90% — roll/spread friction
+export const YIELD_VENUE_CREDIT_BPS = 9_000n; // 90% — venue default / depeg haircut
+export const YIELD_BORROW_COST_BPS = 900n; // 9% on the levered portion
+export const YIELD_COST_AUM_BPS = 150n; // 1.5% full-facing cost
+export const YIELD_LEVERAGE_CAP_BPS = 3_500n; // ≤35% of the book, never more
+export const YIELD_COMPRESSED_FUNDING_BPS = -500n; // regime fixture (assumed)
+export const YIELD_NEUTRAL_FUNDING_BPS = 100n; // regime fixture (assumed)
+export const YIELD_BULL_FUNDING_BPS = 1_000n; // regime fixture (assumed)
+
+/**
  * The full registry as a stable, ordered list. The order matches the
  * investor-checklist ordering so the claims table can index straight into it.
  */
@@ -161,6 +180,41 @@ export const ASSUMPTIONS: Assumption[] = [
     valueUsdCents: INFRA_USD_CENTS,
     provenance: 'assumed',
     basis: 'Node + gRPC + indexer footprint estimate.',
+  },
+  {
+    key: 'yield_lst_carry',
+    label: 'Funding-vault LST-carry base',
+    valueUsdCents: 0n,
+    provenance: 'assumed',
+    basis: 'yieldEngine.ts DEFAULT_LST_CARRY_BPS (≈6%, JitoSOL/Sanctum INF band 5.7–6.4%).',
+  },
+  {
+    key: 'yield_compressed_funding',
+    label: 'Funding-carry — compressed regime (bps)',
+    valueUsdCents: 0n,
+    provenance: 'assumed',
+    basis: 'yieldEngine.ts regime fixture: −500 bps annualized net funding (bear-funding stretches).',
+  },
+  {
+    key: 'yield_neutral_funding',
+    label: 'Funding-carry — neutral regime (bps)',
+    valueUsdCents: 0n,
+    provenance: 'assumed',
+    basis: 'yieldEngine.ts regime fixture: +100 bps annualized net funding.',
+  },
+  {
+    key: 'yield_bull_funding',
+    label: 'Funding-carry — bull regime (bps)',
+    valueUsdCents: 0n,
+    provenance: 'assumed',
+    basis: 'yieldEngine.ts regime fixture: +1000 bps annualized net funding.',
+  },
+  {
+    key: 'yield_live_blend',
+    label: 'Funding-carry — live venue blend',
+    valueUsdCents: 0n,
+    provenance: 'pending',
+    basis: 'Live weighted funding across Hyperliquid/Binance/Bybit/dYdX/Drift — fed by the devnet probe; intended to become production-measured.',
   },
 ];
 

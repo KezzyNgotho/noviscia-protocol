@@ -50,7 +50,7 @@ pub const CREDIT_LINE_PROGRAM_ID: Pubkey =
     solana_program::pubkey!("68s4vuWUXAaEFF1EM1RUQpw7SFdYZSV3opvtDqoBCs56");
 /// nv-usdc-vault omni-pool program (devnet).
 pub const NV_USDC_VAULT_PROGRAM_ID: Pubkey =
-    solana_program::pubkey!("CN92hAtnZxbMxPdho8tugi9GDK86UpGwmnbEvk5yzAWC");
+    solana_program::pubkey!("5fmZJ4XsMfQpnM1wMH6DW5KNBAgCQF88762xtDEb94ST");
 /// Burn engine program (devnet).
 pub const BURN_ENGINE_PROGRAM_ID: Pubkey =
     solana_program::pubkey!("nFgJEQSrKEi7FdAKC6vz5HsQ6f9QjQLBuQcQqQy45id");

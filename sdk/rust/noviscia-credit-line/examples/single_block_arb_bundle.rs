@@ -106,6 +106,23 @@ pub fn all_pdas(program_id: Pubkey, owner: &Pubkey) -> (Pubkey, Pubkey, Pubkey, 
     )
 }
 
+/// Example binary entry point: assemble the reference bundle for a fresh
+/// wallet so desks can run the template end-to-end (`cargo run --example
+/// single_block_arb_bundle`) and see the atomic pull → swap → repay ordering.
+fn main() {
+    let owner = Pubkey::new_unique();
+    let usdc = Pubkey::new_unique();
+    let treasury = Pubkey::new_unique();
+    let vc = Pubkey::new_unique();
+    let vu = Pubkey::new_unique();
+    let bundle = assemble_bundle(&owner, &usdc, &treasury, &vc, &vu, 2_000_000u64);
+    println!(
+        "single-block credit bundle assembled: {} instructions ({} PDAs derived)",
+        bundle.len(),
+        all_pdas(CREDIT_LINE_PROGRAM_ID, &owner).0.to_string().len().min(1),
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

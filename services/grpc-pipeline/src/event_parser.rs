@@ -638,8 +638,9 @@ fn bs58_encode_slice(data: &[u8]) -> String {
     result
 }
 
-/// Minimal base64 decoder (no-alloc, returns owned Vec).
-fn base64_decode(input: &str) -> Option<Vec<u8>> {
+/// Minimal base64 decoder (no-alloc, returns owned Vec). Crate-visible so env
+/// secrets like `TIP_PAYER_KEYPAIR` can be decoded without a new dependency.
+pub(crate) fn base64_decode(input: &str) -> Option<Vec<u8>> {
     const TABLE: [i8; 256] = {
         let mut t = [-1i8; 256];
         let chars = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

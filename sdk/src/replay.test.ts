@@ -11,7 +11,7 @@ describe('replay digest (reproducibility fingerprint)', () => {
     // deliberate, reviewed act — never a silent one.
     assert.equal(
       assumptionsDigest(),
-      'c78855952f1d9193a37b086c9515ec1cf2a0afbf464e83ea327ab0af844d8938',
+      'e807f11d441bb01a76a1eddbe228661036bdcf7a6c37f7fff7c9fa5cad41012a',
     );
   });
 

@@ -15,7 +15,8 @@
 | If you are… | Start with |
 |---|---|
 | New engineer / contributor | `README.md` → `ARCHITECTURE.md` → `DOMAIN.md` (repo layout) → this index |
-| Auditor (on-chain) | `DOC_GAPS.md` → `ACCOUNT_MAP.md` → `ERROR_REFERENCE.md` → `THREAT_MODEL.md` → `AUDIT_PREP.md` |
+| Auditor (on-chain) | `DOC_GAPS.md` → `ACCOUNT_MAP.md` → `ERROR_REFERENCE.md` → `FORMAL_VERIFICATION.md` → `THREAT_MODEL.md` → `AUDIT_PREP.md` |
+| Institutional reviewer / allocator | `INSTITUTIONAL_PROOF_PACKAGE.md` → `CODE_ACCESSIBILITY_MATRIX.md` → `FORMAL_VERIFICATION.md` → `QUANTIFIED_RISK_PACK.md` → `devnet-measurement-report.md` → `CCP_CURRENT_STATE.md` |
 | Operator / on-call | `ONCALL_RUNBOOK.md` → `MONITORING.md` → `MAINNET_READINESS.md` → `DEPLOYMENT.md` → `DEVNET.md` |
 | Integrator (SDK / API) | `sdk/README.md` → `sdk/cpp/README.md` (C++ twin) → `API.md` → `PARTICIPANT_ACCESS.md` |
 | Governance / legal | `KEY_MANAGEMENT_GOVERNANCE.md` → `MASTER_LOAN_AGREEMENT.md` → `INSOLVENCY_POLICY.md` → `LEGAL.md` |
@@ -58,6 +59,9 @@
 | [`AUDIT_PREP.md`](AUDIT_PREP.md) | 61 | Current | Third-party auditor engagement package: scope, known design choices, test artifacts |
 | [`AUDIT_REPORT.md`](AUDIT_REPORT.md) | 100 | Pre-audit (placeholder) | Post-audit report shell; current 7-item self-assessment |
 | [`THREAT_MODEL.md`](THREAT_MODEL.md) | — | Working | Formal security threat model: assets, trust boundaries, actors, attack paths, mitigations |
+| [`FORMAL_VERIFICATION.md`](FORMAL_VERIFICATION.md) | 201 | Live (source-verified) | **Proof package core**: post-swap carry invariant `final ≥ initial` (lib.rs:438–441), DIF 20% algebra, unit-test map, parity-fuzz evidence, CU-bound note, auditor repro script |
+| [`CODE_ACCESSIBILITY_MATRIX.md`](CODE_ACCESSIBILITY_MATRIX.md) | 69 | Live | Which layers are independently verifiable (whole repo) vs intentionally private (operational keys only); skeptic's verification recipe |
+| [`INSTITUTIONAL_PROOF_PACKAGE.md`](INSTITUTIONAL_PROOF_PACKAGE.md) | 69 | Live | Cover document: conviction checklist (assurance → method → artifact → status), evidence dossier, reproducible proof commands, explicit non-claims |
 
 ## 4. Security & operations
 
@@ -90,6 +94,7 @@
 | [`PARTICIPANT_ACCESS.md`](PARTICIPANT_ACCESS.md) | 165 | v1.0 | Institutional access flows: HFT borrower (headless) vs LP (dashboard) |
 | [`HFT_DESK_PRIMER.md`](HFT_DESK_PRIMER.md) | — | Living | HFT-desk framing: Noviscia as an execution-velocity primitive (15× sizing, atomic shield, 5 ppm toll) — not a loan; numbers twin-pinned |
 | [`sdk/cpp/README.md`](../sdk/cpp/README.md) | 68 | Live (byte parity) | C++ twin of the npm + Rust SDKs: 30/30 builders byte-verified vs Rust (account order + flags + payload), LP PDAs, keccak/U128 math, npm-divergence warnings |
+| [`sdk/rust/noviscia-client/README.md`](../sdk/rust/noviscia-client/README.md) | — | Live (sandbox-verified) | HFT client-SDK: `NovisciaTvvClient` (connect / check_slot_headroom / compile_atomic_jito_bundle), grpc feed + two-leg atomic bundle, zero capital leakage; 27/27 rust tests, example green vs sandbox |
 
 ## 7. Economics, risk & token model
 

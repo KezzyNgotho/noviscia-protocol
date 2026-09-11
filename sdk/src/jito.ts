@@ -27,6 +27,7 @@ import {
   TransactionInstruction,
   TransactionMessage,
   VersionedTransaction,
+  AddressLookupTableAccount,
 } from '@solana/web3.js';
 
 /** Hard cap enforced by the Block Engine on transactions per bundle. */
@@ -60,8 +61,14 @@ export const JITO_BLOCK_ENGINE_URLS = {
     'https://ny.mainnet.block-engine.jito.wtf',
     'https://tokyo.mainnet.block-engine.jito.wtf',
   ],
-  /** decommissioned — `devnet.block-engine.jito.wtf` is NXDOMAIN; kept for SDK compat only */
-  devnet: ['https://devnet.block-engine.jito.wtf'],
+  /**
+   * Private Devnet relay — the Noviscia Jito-Solana validator exposes its
+   * block engine at this URL. Override via `DEVNET_JITO_BLOCK_ENGINE_URL`
+   * env for remote validators.
+   */
+  devnet: [
+    process.env.DEVNET_JITO_BLOCK_ENGINE_URL || 'http://127.0.0.1:9000',
+  ],
 } as const;
 
 /**
@@ -146,6 +153,12 @@ export interface AssembleBundleOptions {
   /** Single recent blockhash shared by all transactions (one-slot atomicity). */
   recentBlockhash: string;
   /**
+   * Address lookup tables for each transaction group in `instructionGroups`
+   * (parallel, one entry per group). Jupiter route legs routinely reference
+   * tables; arm/settle do not. Pass `[]` per group when no tables are used.
+   */
+  lookupTables?: AddressLookupTableAccount[][];
+  /**
    * Leader tip. The transfer is appended to the first transaction only, so the
    * tip is conditional on that transaction's assertions. The tipPayer becomes a
    * required signer of the first transaction and must sign it downstream.
@@ -197,7 +210,7 @@ export function assembleVersionedTransactions(
       payerKey: feePayer,
       recentBlockhash,
       instructions,
-    }).compileToV0Message();
+    }).compileToV0Message(options.lookupTables?.[index] ?? []);
     return new VersionedTransaction(message);
   });
 }
@@ -208,8 +221,9 @@ export function assembleVersionedTransactions(
  */
 export class JitoBundleClient {
   /**
-   * Defaults to the mainnet engine — the devnet block engine is decommissioned
-   * (NXDOMAIN), so devnet work must mock `fetch` (see jito.test.ts).
+   * Defaults to the mainnet engine. For Devnet testing, pass one of the
+   * `JITO_BLOCK_ENGINE_URLS.devnet` URLs (the private relay) or set
+   * `DEVNET_JITO_BLOCK_ENGINE_URL` env.
    */
   constructor(readonly baseUrl: string = JITO_BLOCK_ENGINE_URLS.mainnet[0]) {}
 

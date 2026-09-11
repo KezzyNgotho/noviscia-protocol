@@ -25,4 +25,6 @@ message PoolStateUpdate {
   uint64 total_idle_capital = 3;       // Stored in base units (lamports / micro-USDC)
   uint64 active_credit_utilization = 4; // Outstanding intra-slot borrowed volume
   uint32 current_premium_rate_bps = 5; // Base slot rate modified by volatility indices
+  bool allocation_frozen = 6;          // Exclusivity gate: true while the current slot
+                                       // is NOT led by a Jito-compliant block builder
 }

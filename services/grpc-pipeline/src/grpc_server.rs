@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use solana_sdk::signature::Keypair;
 use tokio::sync::broadcast;
 use tonic::{Request, Response, Status};
 use tracing::{error, info, warn};
@@ -22,6 +23,9 @@ pub struct NovisciaGrpcServer {
     state: Arc<StateStore>,
     event_tx: broadcast::Sender<ParsedEvent>,
     jito: Arc<JitoClient>,
+    /// Searcher-owned keypair that pays leader tips. When present, bundle
+    /// submissions can carry a conditional leader tip.
+    tip_payer: Option<Keypair>,
 }
 
 impl NovisciaGrpcServer {
@@ -29,11 +33,13 @@ impl NovisciaGrpcServer {
         state: Arc<StateStore>,
         event_tx: broadcast::Sender<ParsedEvent>,
         jito: Arc<JitoClient>,
+        tip_payer: Option<Keypair>,
     ) -> Self {
         Self {
             state,
             event_tx,
             jito,
+            tip_payer,
         }
     }
 
@@ -334,17 +340,7 @@ impl NovisciaStream for NovisciaGrpcServer {
         // Decode the raw transaction.
         let tx_bytes = req.transaction;
         let signature = if req.use_jito {
-            // Jito bundle submission.
-            let tip = if req.tip_lamports > 0 {
-                req.tip_lamports as u64
-            } else {
-                self.jito
-                    .estimate_tip_lamports()
-                    .await
-                    .unwrap_or(10_000)
-            };
-
-            match self.jito.submit_bundle(&tx_bytes, tip).await {
+            match self.jito.submit_bundle(&tx_bytes).await {
                 Ok(bundle_id) => {
                     info!(bundle_id = %bundle_id, "jito bundle submitted");
                     return Ok(Response::new(SubmitTxResponse {
@@ -442,7 +438,25 @@ impl NovisciaStream for NovisciaGrpcServer {
             self.jito.estimate_tip_lamports().await.unwrap_or(10_000)
         };
 
-        match self.jito.submit_bundle_many(&req.transactions, tip).await {
+        // A configured tip payer enables conditional leader tips: the tip leg
+        // lands only if the whole bundle (arm → route → settle, sealed by the
+        // on-chain Post-Swap Invariant) succeeds. Without a tip payer the
+        // bundle is relayed tip-free, which the live auction skips.
+        let submission = match (&self.tip_payer, tip) {
+            (Some(payer), tip) if tip > 0 => {
+                self.jito
+                    .submit_bundle_with_conditional_tip(&req.transactions, tip, payer)
+                    .await
+            }
+            _ => {
+                if tip > 0 {
+                    warn!("tip requested but no TIP_PAYER_KEYPAIR configured; submitting tip-free");
+                }
+                self.jito.submit_bundle_many(&req.transactions).await
+            }
+        };
+
+        match submission {
             Ok(bundle_id) => {
                 info!(bundle_id = %bundle_id, legs = req.transactions.len(), "atomic bundle submitted");
                 // Surface the initial on-relay status for observability.

@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-09-07T15:10:52.901Z",
+  "institution": "pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA",
+  "currentSlot": 494642023,
+  "windowStartSlot": "494190470",
+  "posture": "Breached",
+  "frozen": false,
+  "totalCreditLimit": "6000000000000",
+  "activeUtilization": "200000000",
+  "accumulatedPremiums": "240000",
+  "poolIdleCapital": "0",
+  "poolOutstandingPrincipal": "0",
+  "passed": true
+}

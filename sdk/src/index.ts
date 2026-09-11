@@ -123,6 +123,14 @@ export {
   type AssembleBundleOptions,
 } from './jito';
 export {
+  JupiterSwapLegProvider,
+  JUPITER_V6_QUOTE_API,
+  JupSwapProviderError,
+  type JupiterQuoteRoute,
+  type JupiterSwapLeg,
+  type QuoteOptions,
+} from './jupiter';
+export {
   leaderIsJito,
   guardNonJitoLeaderSlot,
   assertJitoLeader,
@@ -176,6 +184,31 @@ export {
   jitoTipSlippageUsdCents,
   compoundedApyTenthsBps,
 } from './velocity';
+export {
+  YIELD_BPS,
+  LEVERAGE_CAP_BPS,
+  DEFAULT_LST_CARRY_BPS,
+  DEFAULT_HEDGE_EFFICIENCY_BPS,
+  DEFAULT_VENUE_CREDIT_BPS,
+  DEFAULT_BORROW_COST_APY_BPS,
+  DEFAULT_COST_AUM_BPS,
+  DEFAULT_BUYBACK_APY_BPS,
+  mulDivFloor,
+  effectiveLeverageRateBps,
+  weightedVenueFundingApyBps,
+  fundingNetApyBps,
+  leverageBoostApyBps,
+  decomposeApy,
+  closesApy,
+  referenceRegimeFixtures,
+  regimeFanBps,
+  cycleAverageApyBps,
+  REGIME_WEIGHTS_BPS,
+  type VenueFunding,
+  type FundingCarryInputs,
+  type ApyDecomposition,
+  type RegimeFixture,
+} from './yieldEngine';
 export {
   ACCELERATION,
   REAL_SLOTS_PER_DAY,
@@ -235,6 +268,15 @@ export {
   REFERENCE_RESERVE_USD_CENTS,
   DEBT_WINDOW_HOURS,
   GRACE_PERIOD_HOURS,
+  YIELD_LST_CARRY_BPS,
+  YIELD_HEDGE_EFFICIENCY_BPS,
+  YIELD_VENUE_CREDIT_BPS,
+  YIELD_BORROW_COST_BPS,
+  YIELD_COST_AUM_BPS,
+  YIELD_LEVERAGE_CAP_BPS,
+  YIELD_COMPRESSED_FUNDING_BPS,
+  YIELD_NEUTRAL_FUNDING_BPS,
+  YIELD_BULL_FUNDING_BPS,
   assumptionByKey,
   isMeasured,
   type Provenance,
@@ -294,3 +336,9 @@ export {
   scenarioDigestOf,
   replayDigest,
 } from './replay';
+export * from './tvv';
+export * from './accrual';
+export * from './tvvSandbox';
+export * from './earn/growth';
+export * from './spatialArbEngine';
+export * from './keeper';

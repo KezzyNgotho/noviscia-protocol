@@ -1,0 +1,36 @@
+{
+  "generatedAt": "2026-09-07T15:12:46.002Z",
+  "metrics": {
+    "speed": null,
+    "safety": {
+      "timestamp": "2026-09-07T15:10:52.901Z",
+      "institution": "pm2tUw22SDofzdfmyJv3jRDhLagwiqYRmCG2BWN23NA",
+      "currentSlot": 494642023,
+      "windowStartSlot": "494190470",
+      "posture": "Breached",
+      "frozen": false,
+      "totalCreditLimit": "6000000000000",
+      "activeUtilization": "200000000",
+      "accumulatedPremiums": "240000",
+      "poolIdleCapital": "0",
+      "poolOutstandingPrincipal": "0",
+      "passed": true
+    },
+    "compounding": {
+      "timestamp": "2026-09-07T15:07:25.333Z",
+      "poolSize": "500000000",
+      "currentSharePrice": "1000000",
+      "totalIdleCapital": "0",
+      "activeCreditUtilization": "0",
+      "totalShares": "0",
+      "impliedApy": 2.831104,
+      "slotFeeMicroUsd": "3652",
+      "grossRevenue": "23040000",
+      "netRevenue": "17694400",
+      "lpYield": "14155520",
+      "passed": true
+    }
+  },
+  "allPassed": false,
+  "reportsFound": 2
+}

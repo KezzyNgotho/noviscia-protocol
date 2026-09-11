@@ -1,6 +1,7 @@
 node_modules/
 .vscode/
 .keeper/
+.searcher-key.json
 .railway-staging/
 .next/
 *.tsbuildinfo
@@ -44,3 +45,8 @@ blob-report/
 # Stray shell-redirect dumps
 
 devnet-window-observation.json
+
+# Large / scratch — never versioned
+*.tar.gz
+vendor/
+logs/

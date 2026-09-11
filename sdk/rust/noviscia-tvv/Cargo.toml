@@ -1,0 +1,15 @@
+[package]
+name = "noviscia-tvv"
+version = "0.1.0"
+edition = "2021"
+description = "Rust math twin for the nv-usdc-vault TVV (Jit-Risk Time-Slice) module."
+license = "Apache-2.0"
+
+[dependencies]
+anchor-lang = "0.31.1"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+default = []

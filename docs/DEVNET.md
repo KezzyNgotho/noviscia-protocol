@@ -92,7 +92,7 @@ cp target/idl/position_tracker.json app/web/app/idl/position_tracker.json
 
 Repeat steps 3–5 per-program (substitute `nv_usdc_vault`, `netting_engine`, etc.) — only redeploy what actually changed; program IDs stay fixed across upgrades.
 
-> **Migration note:** `position-tracker`'s `Market` account has grown across several migrations (`SPACE_V1` → `SPACE_V2` → current, appending `funding_index`/OI/insurance/`trading_fee_bps`). A market registered under an older layout needs `resize_market` run once before any instruction that does typed deserialization against the current struct will work. See `scripts/resize-markets-devnet.ts`.
+> **Migration note:** `position-tracker`'s `Market` account has grown across several migrations (`SPACE_V1` → `SPACE_V2` → current, appending `funding_index`/OI/insurance/`trading_fee_bps`). A market registered under an older layout needs `resize_market` run once before any instruction that does typed deserialization against the current struct will work.
 
 ---
 

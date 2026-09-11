@@ -1,0 +1,96 @@
+{
+  "suite": "noviscia-tvv-gate · adversarial invariant fuzz (off-chain parity replay)",
+  "invariant": "carry: settle_run requires final_balance >= initial_pool_balance (programs/noviscia-tvv-gate/src/lib.rs)",
+  "mode": "sandbox parity replay — no chain, no RPC",
+  "scenarioCount": 50000,
+  "seed": "20260912",
+  "generated": "2026-09-11",
+  "sourceRefs": {
+    "openRun": "programs/noviscia-tvv-gate/src/lib.rs#L352-L375",
+    "settleRun": "programs/noviscia-tvv-gate/src/lib.rs#L407-L467",
+    "invariantError": "TvvError::InvariantViolated · #1162 \"post-swap invariant violated: final vault balance < initial\"",
+    "difSplit": "realized * DIF_BPS(2000) / NAV_BPS_DENOM(10000) · 20% -> DIF reserve",
+    "unitTests": "cargo test -p noviscia-tvv-gate (invariant_arithmetic_credits_positive_spread, settle_splits_twenty_percent_to_dif)"
+  },
+  "families": {
+    "negative_slippage": {
+      "attempted": 8947,
+      "accepted": 0,
+      "rejected": 8947,
+      "realizedNetUsdc": 0
+    },
+    "oracle_stall": {
+      "attempted": 6024,
+      "accepted": 6024,
+      "rejected": 0,
+      "realizedNetUsdc": 0
+    },
+    "healthy_yield": {
+      "attempted": 15912,
+      "accepted": 15912,
+      "rejected": 0,
+      "realizedNetUsdc": 2526177.02881
+    },
+    "front_run_drain": {
+      "attempted": 6953,
+      "accepted": 0,
+      "rejected": 6953,
+      "realizedNetUsdc": 0
+    },
+    "reorg_double_settle": {
+      "attempted": 4461,
+      "accepted": 0,
+      "rejected": 4461,
+      "realizedNetUsdc": 0
+    },
+    "insufficient_funds": {
+      "attempted": 3502,
+      "accepted": 0,
+      "rejected": 3502,
+      "realizedNetUsdc": 0
+    },
+    "overflow_probe": {
+      "attempted": 2429,
+      "accepted": 2429,
+      "rejected": 0,
+      "realizedNetUsdc": 0
+    },
+    "external_surplus": {
+      "attempted": 1772,
+      "accepted": 1772,
+      "rejected": 0,
+      "realizedNetUsdc": 0
+    }
+  },
+  "totals": {
+    "attempted": 50000,
+    "accepted": 26137,
+    "rejected": 23863,
+    "leakageUsdc": 0
+  },
+  "carry": {
+    "settles": 26397,
+    "realizedNetUsdc": 2704976.810156,
+    "difReservedUsdc": 676244.192384
+  },
+  "stress": {
+    "overflowProbesAccepted": 2429,
+    "overflowProbesRejected": 0,
+    "externalSurplusDeposits": 1772,
+    "misattributedSurplusUsdc": 175819.494056
+  },
+  "observations": {
+    "reorgRefiresDeniedByRunState": 4461
+  },
+  "properties": {
+    "P1_neverBooksLoss": true,
+    "P2_rejectionsAtomic": true,
+    "P3_reserveNeverErodes": true,
+    "P2b_reorgRefiresDeniedByRunState": true
+  },
+  "reproductions": [
+    "npx tsx scripts/chaos/adversarial-invariant-fuzz.ts",
+    "FUZZ_SEED=<hex> npx tsx scripts/chaos/adversarial-invariant-fuzz.ts  (reproduce any run exactly)",
+    "cargo test -p noviscia-tvv-gate"
+  ]
+}
