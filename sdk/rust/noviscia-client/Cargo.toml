@@ -21,7 +21,7 @@ noviscia-types = { version = "0.2.2", path = "../noviscia-types" }
 noviscia-capacity-sdk = { version = "0.1.0", path = "../noviscia-capacity-sdk" }
 
 [build-dependencies]
-tonic-build = "0.12"
+tonic-build = "0.14"
 
 [dev-dependencies]
 futures = "0.3"
