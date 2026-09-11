@@ -28,5 +28,5 @@ wormhole-raw-vaas = { version = "0.1.3", features = [
     "ruint",
     "on-chain",
 ], default-features = false }
-pyth-solana-receiver-sdk = "0.6.1"
+pyth-solana-receiver-sdk = "2.0.0"
 rand = "0.8.5"
