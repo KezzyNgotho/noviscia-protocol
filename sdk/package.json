@@ -45,7 +45,7 @@
     "prepublishOnly": "npm run typecheck && npm run build && npm test"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "^0.31.1",
+    "@coral-xyz/anchor": "^0.32.1",
     "@noble/hashes": "^1.4.0",
     "@solana/spl-token": "^0.4.0",
     "@solana/web3.js": "^1.95.0"
