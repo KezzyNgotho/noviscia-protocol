@@ -1,52 +1,24 @@
 node_modules/
-.vscode/
-.keeper/
-.searcher-key.json
-.railway-staging/
-.next/
-*.tsbuildinfo
 target/
-.cache/
+dist/
+build/
+*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
+
+.key
 *.key
 *.pem
 .keys/
 *-keypair.json
+.searcher-key.json
+
 .DS_Store
-.env
-.env.local
-.env.*.local
-.sdk/.npmrc
-.tmp-build/
-dist/
-build/
-# TV datafeed bundle lives inside a dist/ folder but must be served in production
-!app/web/public/datafeeds/udf/dist/
-!app/web/public/datafeeds/udf/dist/bundle.js
 *.log
-.anchor/
+.cache/
+.tmp-build/
 test-ledger/
-solana.tar.bz2/
-# Local candle persistence written by lib/ticks/candles.ts (dev fallback)
-.data/
-
-programs/clearing-registry/clearing-registry-keypair.json
-programs/spot-dex/spot-dex-keypair.json
-
-# Playwright
-test-results/
-playwright-report/
-blob-report/
-.playwright/
-
-# Temp / scratch files
 *.tmp
-*.tmp.ts
-2ZUZf7sdhbbHgeg6QYVGXf8PNXyD1btKcKeCRqTP8mcG.json
-# Stray shell-redirect dumps
-
-devnet-window-observation.json
-
-# Large / scratch — never versioned
 *.tar.gz
-vendor/
-logs/
