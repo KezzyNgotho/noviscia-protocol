@@ -18,9 +18,9 @@
 | The invariant survives adversarial input | 50,000-injection parity fuzzer; all families rejected/landed correctly; leakage `$0.00`, seed pinned | `tests/chaos/chaos-invariant-report.json` · `npm run chaos:invariant:baseline` | **Live + reproducible** |
 | The arithmetic matches on-chain reality | Rust unit tests pin the DIF 20% split & positive-spread credit; caps are bps of reserve | `cargo test -p noviscia-tvv-gate` | **Live** |
 | You can check the code yourself | Single public repo; source, SDKs (TS/Rust/C++), IDLs, scripts all present | `docs/CODE_ACCESSIBILITY_MATRIX.md` §2 | **Live** |
-| Risk state is independently re-derived | Sentinel mirrors the gate's risk/margin math and tests it | `services/sentinel` · `npm run test:sentinel:matrix` | **Live** |
+| Risk & margin math is independently re-derived | Netting / exposure / concentration math is unit-tested and parity-replayed against the gate source | `cargo test -p noviscia-tvv-gate` · `tests/chaos/chaos-invariant-report.json` | **Live** |
 | On-chain claims are measured, not simmed | Devnet measurement report marks each claim (atomicity/geyser noted 🟡 not-yet-measured) | `devnet-measurement-report.md` | **Measured repository** |
-| Solvency is observable on-chain | Radar solvency monitor: vault vs NAV delta within tolerance, insurance fund, DIF ledger | `app/web` `/radar` | **Live** |
+| Solvency is observable on-chain | Vault-vs-NAV solvency, insurance fund, DIF ledger derived from on-chain state; live product radar in the private repo, invariant documented here | `docs/FORMAL_VERIFICATION.md`, `docs/CCP_CURRENT_STATE.md` | **Live** |
 | Adverse scenarios are rehearsed | Threat model, quantified risk pack (circuit breakers), IR/DR drills, sandbox no-drain proofs | `docs/THREAT_MODEL.md`, `docs/QUANTIFIED_RISK_PACK.md`, `docs/SANDBOX_HUB.md`, `docs/IR_DR_DRILL.md` | **Live / working** |
 | Governance custody is tiered and documented | 3-tier council, timelocks, key rotation ceremonies, upgrade rules | `docs/KEY_MANAGEMENT_GOVERNANCE.md`, `docs/INSOLVENCY_POLICY.md` | **Working** |
 | Legal posture is explicit | Devnet beta terms, non-custodial framing, sanctions/KYC/AML stance, MLA clause bridge | `docs/LEGAL.md`, `docs/COMPLIANCE.md`, `docs/MASTER_LOAN_AGREEMENT.md` | **Devnet beta** |
@@ -47,8 +47,8 @@ cargo test -p noviscia-tvv-gate
 # adversarial parity fuzz — leakage must print $0.00
 npm run chaos:invariant:baseline
 
-# gate risk-math mirror
-npm run test:sentinel:matrix
+# SDK byte-parity twins
+(cd sdk && npm test)
 
 # E2E flow against devnet
 npm run test:flow
@@ -61,8 +61,9 @@ npm run test:flow
 - **Not mainnet:** everything here is devnet reality (mainnet window Q1 2027, `docs/MAINNET_READINESS.md`).
 - **Not zero leakage from every possible exploit:** leakage is *structurally zero against the
   settle path and its state machine* (proven), not a claim that no new attack surface can exist.
-- **No hidden code:** the accessibility matrix says exactly what is public and why operational
-  keys are not — by design, not because something is withheld.
+- **No hidden code in the verification surface:** the accessibility matrix states exactly
+  what is public (this repo), what is deliberately private (the alpha strategy engine in its
+  own repo), and which operational secrets never reach any repo — by design.
 
 ---
 

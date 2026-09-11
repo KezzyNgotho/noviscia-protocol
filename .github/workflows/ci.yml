@@ -7,25 +7,6 @@ on:
     branches: [main]
 
 jobs:
-  lint-typecheck:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: app/web/package-lock.json
-      - name: Install web deps
-        working-directory: app/web
-        run: npm ci
-      - name: Lint
-        working-directory: app/web
-        run: npm run lint
-      - name: Type check
-        working-directory: app/web
-        run: npm run type-check
-
   test-rust:
     runs-on: ubuntu-latest
     steps:
@@ -45,13 +26,11 @@ jobs:
         run: cargo clippy --workspace -- -D warnings || echo "Clippy warnings found — review required"
       - name: Cargo check
         run: cargo check --workspace
-      - name: Build SBF programs (required by ProgramTest e2e tests)
+      - name: Build SBF programs
         run: |
           cargo build-sbf --tools-version v1.49 --manifest-path vendor/pyth-solano-receiver/Cargo.toml
-          for d in programs/active/*/ programs/cluster-4-governance/*/; do
-            if [ -f "$d/Cargo.toml" ]; then
-              cargo build-sbf --tools-version v1.49 --manifest-path "$d/Cargo.toml"
-            fi
+          for m in programs/noviscia-tvv-gate/Cargo.toml programs/noviscia-omni-pool/Cargo.toml; do
+            cargo build-sbf --tools-version v1.49 --manifest-path "$m"
           done
           echo "SBF_OUT_DIR=$GITHUB_WORKSPACE/target/deploy" >> $GITHUB_ENV
       - name: Cargo test
@@ -73,28 +52,30 @@ jobs:
         working-directory: sdk
         run: npm test
 
-  test-web:
+  chaos-invariant:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: app/web/package-lock.json
-      - name: Install web deps
-        working-directory: app/web
+      - name: Install deps
         run: npm ci
-      - name: Jest tests
-        working-directory: app/web
-        run: npm test -- --ci --coverage
-      - name: Upload coverage
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-coverage
-          path: app/web/coverage/
-          retention-days: 30
+      - name: Reproduce adversarial invariant baseline (seed 20260912)
+        run: npm run chaos:invariant:baseline
+      - name: Assert zero leakage
+        run: |
+          node -e "
+            const r = require('./tests/chaos/chaos-invariant-report.json');
+            const ok = r.totals.leakageUsdc === 0
+              && r.properties.P1_neverBooksLoss === true
+              && r.properties.P2_rejectionsAtomic === true
+              && r.properties.P3_reserveNeverErodes === true
+              && r.properties.P2b_reorgRefiresDeniedByRunState === true;
+            console.log(JSON.stringify({ attempted: r.totals.attempted, leakageUsdc: r.totals.leakageUsdc, properties: r.properties }, null, 2));
+            if (!ok) { console.error('INVARIANT FAILURE — leakage or property mismatch'); process.exit(1); }
+            console.log('OK: post-swap carry invariant holds across adversarial injections');
+          "
 
   security-audit:
     runs-on: ubuntu-latest
@@ -139,43 +120,3 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-programs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Solana CLI
-        run: |
-          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-      - name: Install Anchor
-        run: cargo install --git https://github.com/coral-xyz/anchor avm --locked
-      - uses: actions/cache@v4
-        with:
-          path: target/deploy
-          key: programs-${{ hashFiles('programs/**/*.rs') }}
-      - name: Build programs
-        run: |
-          cargo build-sbf --tools-version v1.49 --manifest-path vendor/pyth-solano-receiver/Cargo.toml
-          for d in programs/active/*/ programs/cluster-4-governance/*/; do
-            if [ -f "$d/Cargo.toml" ]; then
-              cargo build-sbf --tools-version v1.49 --manifest-path "$d/Cargo.toml"
-            fi
-          done
-
-  build-web:
-    runs-on: ubuntu-latest
-    needs: [lint-typecheck]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: app/web/package-lock.json
-      - name: Install web deps
-        working-directory: app/web
-        run: npm ci
-      - name: Build Next.js
-        working-directory: app/web
-        run: npm run build

@@ -7,6 +7,12 @@
 > Every document in `docs/` is grouped below by audience-and-purpose. Statuses are annotated so
 > readers immediately know what is final, what is aspirational, and what requires attention before
 > mainnet.
+>
+> **Repositories:** this is the public verification surface (`KezzyNgotho/noviscia-protocol`).
+> The off-chain alpha strategy engine, operator tooling, and the product web app live in a
+> separate private repo (`KezzyNgotho/Noviscia-protocal`); where the corpus references them
+> (sentinel, `app/web`, `scripts/devnet`), that is the private side. See
+> `CODE_ACCESSIBILITY_MATRIX.md`.
 
 ---
 
