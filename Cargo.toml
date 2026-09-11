@@ -24,7 +24,7 @@ edition = "2021"
 [workspace.dependencies]
 anchor-lang = "0.31.1"
 anchor-spl = "0.31.1"
-solana-program = "2"
+solana-program = "4"
 spl-token = "7"
 
 [profile.release]

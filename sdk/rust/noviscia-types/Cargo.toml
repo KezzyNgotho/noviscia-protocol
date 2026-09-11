@@ -12,5 +12,5 @@ keywords = ["solana", "defi", "clearing-house", "anchor", "noviscia"]
 categories = ["cryptography::cryptocurrencies", "no-std"]
 
 [dependencies]
-solana-program = "2"
+solana-program = "4"
 anchor-lang = "0.31.1"

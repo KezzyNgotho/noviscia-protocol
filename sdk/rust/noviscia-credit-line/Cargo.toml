@@ -6,7 +6,7 @@ description = "Low-latency instruction builder for the Noviscia Credit Line (ato
 license = "Apache-2.0"
 
 [dependencies]
-solana-program = "2"
+solana-program = "4"
 spl-token = "7"
 noviscia-types = { version = "0.2.2", path = "../noviscia-types" }
 

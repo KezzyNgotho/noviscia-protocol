@@ -7,5 +7,5 @@ license = "Apache-2.0"
 
 [dependencies]
 solana-sdk = "2"
-solana-program = "2"
+solana-program = "4"
 bincode = "1"

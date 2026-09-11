@@ -16,7 +16,7 @@ doctest = false
 
 [dependencies]
 solana-sdk = "2"
-solana-program = "2"
+solana-program = "4"
 anchor-lang = "0.31.1"
 spl-token = "7"
 sha3 = "0.10"

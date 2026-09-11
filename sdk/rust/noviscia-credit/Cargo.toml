@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 solana-sdk = "2"
-solana-program = "2"
+solana-program = "4"
 anchor-lang = "0.31.1"
 spl-token = "7"
 noviscia-types = { version = "0.2.2", path = "../noviscia-types" }
